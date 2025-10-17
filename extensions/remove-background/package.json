@@ -1,0 +1,27 @@
+{
+  "name": "remove-background",
+  "version": "1.0.0",
+  "description": "Remove background extension (Node + TypeScript)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "bundle": "node ../../cli/main.ts bundle",
+    "build": "npm run typecheck && npm run bundle",
+    "clean": "rimraf dist || rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
+  },
+  "dependencies": {
+    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api",
+    "zod": "^4.1.0",
+    "@huggingface/transformers": "3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.26",
+    "typescript": "^5.6.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

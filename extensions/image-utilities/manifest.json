@@ -1,0 +1,18 @@
+{
+	"id": "image-utilities",
+	"type": "jsx",
+	"version": 1,
+	"title": "Image Utilities",
+	"tools": [
+		{
+			"name": "image-converter",
+			"description": "Converts image format. Supported image formats are: JPEG, PNG, WebP, TIFF",
+			"title": "Convert image format"
+		},
+		{
+			"name": "image-optimizer",
+			"description": "Reduce file size of an image file. Supported image formats are: JPEG, PNG",
+			"title": "Reduce image file size"
+		}
+	]
+}

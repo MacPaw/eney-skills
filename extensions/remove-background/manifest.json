@@ -1,0 +1,13 @@
+{
+	"id": "remove-background",
+	"type": "jsx",
+	"version": 1,
+	"title": "Remove image background",
+	"tools": [
+		{
+			"name": "remove-background",
+			"description": "Removes image background from a provided source image",
+			"title": "Remove image background"
+		}
+	]
+}
