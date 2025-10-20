@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",
     "build": "npm run typecheck && npm run bundle",
-    "clean": "rimraf dist || rm -rf dist",
+    "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
