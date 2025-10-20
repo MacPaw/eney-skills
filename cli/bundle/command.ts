@@ -1,6 +1,8 @@
 import * as esbuild from "esbuild";
 import { resolve, join, basename } from "path";
 import { readFile, stat } from "fs/promises";
+import { copy, remove } from "fs-extra";
+import { execSync } from "child_process";
 
 const defaultOutFolder = "../../../eney-jsx-runtime/extensions";
 
@@ -17,6 +19,8 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
     console.error(`\nError: No tools found in manifest.json`);
     process.exit(1);
   }
+
+  const extensionFolderName = basename(extensionFolder);
 
   for (const tool of manifestData.tools) {
     let toolPath = null;
@@ -42,7 +46,6 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
       }
     }
 
-    const extensionFolderName = basename(extensionFolder);
     const outfile = join(
       outFolder,
       extensionFolderName,
@@ -50,9 +53,6 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
       tool.name,
       "main.js"
     );
-
-    console.log(`Entry: ${entryPoint}`);
-    console.log(`Output: ${outfile}`);
 
     try {
       await esbuild.build({
@@ -64,15 +64,13 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
         target: ["es2022"],
         jsx: "automatic",
         jsxImportSource: "react",
-        external: ["@eney/api", "react", "jsdom", "sharp", "mupdf", "onnxruntime-node"],
+        packages: "external",
         sourcemap: false,
         logLevel: "info",
         loader: {
           ".node": "file",
         },
       });
-
-      console.log(`\nBundle complete! ${extensionFolder}/${tool.name}`);
     } catch (error) {
       console.error("\nBuild failed with errors:");
       console.error(error);
@@ -82,5 +80,45 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
     }
   }
 
+  console.log("\nInstalling production dependencies...");
+  try {
+    execSync("npm i --omit=dev --omit=peer", {
+      cwd: extensionFolder,
+      stdio: "ignore",
+    });
+    console.log("Dependencies installed successfully");
+  } catch (error) {
+    console.error(`\nError installing dependencies: ${error}`);
+    process.exit(1);
+  }
+
+  const sourceNodeModules = resolve(extensionFolder, "node_modules");
+  const targetNodeModules = resolve(
+    outFolder,
+    extensionFolderName,
+    "node_modules"
+  );
+
+  try {
+    await stat(sourceNodeModules);
+    await remove(targetNodeModules);
+    await copy(sourceNodeModules, targetNodeModules);
+    console.log(
+      `${sourceNodeModules} copied successfully to ${targetNodeModules}`
+    );
+  } catch (error) {
+    console.warn(`\nWarning: Could not copy node_modules: ${error}`);
+  }
+
   console.log("\nBundle complete!");
+
+  try {
+    execSync("npm i", {
+      cwd: extensionFolder,
+      stdio: "ignore",
+    });
+  } catch (error) {
+    console.error(`\nError reverting dependencies: ${error}`);
+    process.exit(1);
+  }
 }
