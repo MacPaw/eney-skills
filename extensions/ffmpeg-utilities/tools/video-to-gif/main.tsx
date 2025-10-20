@@ -24,7 +24,7 @@ export default function Extension(props: Props) {
     if (!source) return;
     setLoading(true);
     const tmp = path.join(os.tmpdir(), `${randomUUID()}.gif`);
-    const cmd = ffmpeg([
+    const { code } = await ffmpeg([
       "-nostdin",
       "-y",
       "-i",
@@ -36,14 +36,12 @@ export default function Extension(props: Props) {
       tmp,
     ]);
 
-    cmd.on('exit', (code, signal) => {
-      if (code !== 0) {
-        throw Error(`ffmpeg_error: ${code}`);
-      }
+    if (code !== 0) {
+      throw Error(`ffmpeg_error: ${code}`);
+    }
 
-      setResult(tmp);
-      setLoading(false);
-    });
+    setResult(tmp);
+    setLoading(false);
   }
 
   function onSourceChange(path: string) {

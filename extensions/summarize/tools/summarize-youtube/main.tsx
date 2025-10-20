@@ -39,23 +39,18 @@ export default function Extension(props: Props) {
 	}
 
 	async function fetchSubtitles(source: string) {
-		const cmd = ytdlp({
-			args: [
-				'--skip-download',
-				'--dump-json',
-				source,
-			],
-		});
+		const { stdout, stderr, code } = await ytdlp([
+			'--skip-download',
+			'--dump-json',
+			source
+		]);
 
-		const output = await cmd.output();
-
-		if (output.code !== 0) {
-			const stderr = new TextDecoder().decode(output.stderr).trim();
+		if (code !== 0) {
 			throw Error(`ytdlp_error: ${stderr}`);
 		}
 
-		const stdout = new TextDecoder().decode(output.stdout);
 		const metadata: MetaData = JSON.parse(stdout);
+
 		const subtitles = metadata.subtitles.en ?? metadata.automatic_captions.en;
 		if (!subtitles) {
 			throw Error('no_english_subtitles');

@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 export const props = z.object({
-	source: z.string()
+	source: z
+		.string()
 		.optional()
 		.describe("The path to the video file to extract audio from."),
 });
@@ -22,24 +23,24 @@ export default function Extension(props: Props) {
 		if (!source) return;
 		setLoading(true);
 		const tmp = join(tmpdir(), `${randomUUID()}.mp3`);
-		const cmd = ffmpeg(["-nostdin",
-				"-y",
-				"-i",
-				source,
-				"-q:a",
-				"0",
-				"-map",
-				"a",
-				tmp]);
+		const { code, stderr } = await ffmpeg([
+			"-nostdin",
+			"-y",
+			"-i",
+			source,
+			"-q:a",
+			"0",
+			"-map",
+			"a",
+			tmp,
+		]);
 
-		cmd.on('exit', (code, signal) => {
-			if (code !== 0) {
-				throw Error(`ffmpeg_error: ${code}`);
-			}
+		if (code !== 0) {
+			throw Error(`ffmpeg_error: ${stderr}`);
+		}
 
-			setResult(tmp);
-			setLoading(false);
-		});
+		setResult(tmp);
+		setLoading(false);
 	}
 
 	function onSourceChange(path: string) {
