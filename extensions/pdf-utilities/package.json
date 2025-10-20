@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "PDF utilities extension (Node + TypeScript)",
   "type": "module",
-  "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",

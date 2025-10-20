@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "Security utilities extension (Node + TypeScript)",
   "type": "module",
-  "private": true,
-  "main": "dist/extract-audio/main.js",
-  "types": "dist/extract-audio/main.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",
@@ -21,8 +18,5 @@
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.26",
     "typescript": "^5.6.3"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
