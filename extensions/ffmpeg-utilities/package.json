@@ -11,8 +11,11 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
