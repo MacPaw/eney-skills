@@ -1,0 +1,23 @@
+{
+	"id": "system-utilities",
+	"type": "jsx",
+	"version": 1,
+	"title": "System Utilities",
+	"tools": [
+		{
+			"name": "sleep-mode",
+			"description": "Prevent macOS from going to sleep mode for some time interval",
+			"title": "Prevent sleeping mode"
+		},
+		{
+			"name": "wifi-password",
+			"description": "Reveal current WiFi password",
+			"title": "View WiFi Password"
+		},
+		{
+			"name": "how-long-until",
+			"description": "How long until a specific date and time",
+			"title": "How long until"
+		}
+	]
+}

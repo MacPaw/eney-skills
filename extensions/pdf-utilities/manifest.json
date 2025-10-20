@@ -1,0 +1,13 @@
+{
+	"id": "pdf-utilities",
+	"type": "jsx",
+	"version": 1,
+	"title": "PDF Utilities",
+	"tools": [
+		{
+			"name": "split-pages",
+			"description": "Splits a single PDF document to multiple files by pages",
+			"title": "Split PDF to multiple files"
+		}
+	]
+}

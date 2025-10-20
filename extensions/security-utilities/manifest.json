@@ -1,0 +1,13 @@
+{
+	"id": "security-utilities",
+	"type": "jsx",
+	"version": 1,
+	"title": "Security Utilities",
+	"tools": [
+		{
+			"name": "new-password",
+			"description": "Generate a new random secure password",
+			"title": "Generate Password"
+		}
+	]
+}

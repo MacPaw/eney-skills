@@ -1,0 +1,18 @@
+{
+	"id": "ffmpeg-utilities",
+	"type": "jsx",
+	"version": 1,
+	"title": "FFmpeg Utilities",
+	"tools": [
+		{
+			"name": "video-to-gif",
+			"title": "Convert video file to GIF",
+			"description": "Convert video file to GIF. Supported formats are: MP4, MOV"
+		},
+		{
+			"name": "extract-audio",
+			"title": "Extract audio from video file",
+			"description": "Extract audio from video file."
+		}
+	]
+}
