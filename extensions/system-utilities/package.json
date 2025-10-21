@@ -1,7 +1,7 @@
 {
   "name": "system-utilities",
   "version": "1.0.0",
-  "description": "System utilities extension (Node + TypeScript)",
+  "description": "System utilities extension",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",

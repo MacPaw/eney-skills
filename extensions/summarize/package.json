@@ -1,7 +1,7 @@
 {
   "name": "summarize",
   "version": "1.0.0",
-  "description": "Summarize content from website or video extension (Node + TypeScript)",
+  "description": "Summarize content from website or video extension",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
