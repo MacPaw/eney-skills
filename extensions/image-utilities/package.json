@@ -1,7 +1,7 @@
 {
   "name": "ffmpeg-utilities",
   "version": "1.0.0",
-  "description": "Security utilities extension (Node + TypeScript)",
+  "description": "Image utilities extension (Node + TypeScript)",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
