@@ -11,6 +11,8 @@ program
 program
   .command("bundle")
   .description("Bundle a tool")
-  .action(() => bundleCommand());
+  .option("-o, --output <path>", "Output folder", "../../../eney-jsx-runtime/extensions")
+  .option("--cwd <path>", "Current working directory", process.cwd())
+  .action(({ output, cwd }) => bundleCommand(output, cwd));
 
 program.parse(process.argv);

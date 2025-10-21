@@ -6,8 +6,8 @@ import { execSync } from "child_process";
 
 const defaultOutFolder = "../../../eney-jsx-runtime/extensions";
 
-export async function bundleCommand(outFolder: string = defaultOutFolder) {
-  const extensionFolder = process.cwd();
+export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: string = process.cwd()) {
+  const extensionFolder = cwd;
 
   console.log(`Extension folder: ${extensionFolder}`);
 
@@ -23,29 +23,11 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
   const extensionFolderName = basename(extensionFolder);
 
   for (const tool of manifestData.tools) {
-    let toolPath = null;
-    let entryPoint = null;
-
     // {extensionFolder}/tools/{tool}/main.tsx
     console.log(`Building extension tool: ${extensionFolder}/${tool.name}`);
+
     const toolsPath = resolve(extensionFolder, "tools", tool.name);
     const toolsEntry = resolve(toolsPath, "main.tsx");
-
-    try {
-      await stat(toolsEntry);
-      toolPath = toolsPath;
-      entryPoint = toolsEntry;
-    } catch {
-      try {
-        await stat(toolsEntry);
-        toolPath = toolsPath;
-        entryPoint = toolsEntry;
-      } catch {
-        console.error(`\nError: Entry point not found at: ${toolsEntry}`);
-        process.exit(1);
-      }
-    }
-
     const outfile = join(
       outFolder,
       extensionFolderName,
@@ -55,8 +37,15 @@ export async function bundleCommand(outFolder: string = defaultOutFolder) {
     );
 
     try {
+      await stat(toolsEntry);
+    } catch {
+      console.error(`\nError: Entry point not found at: ${toolsEntry}`);
+      process.exit(1);
+    }
+
+    try {
       await esbuild.build({
-        entryPoints: [entryPoint],
+        entryPoints: [toolsEntry],
         bundle: true,
         outfile,
         format: "esm",
