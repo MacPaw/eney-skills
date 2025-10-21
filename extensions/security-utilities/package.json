@@ -1,7 +1,7 @@
 {
   "name": "security-utilities",
   "version": "1.0.0",
-  "description": "Security utilities extension",
+  "description": "Security utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

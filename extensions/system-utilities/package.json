@@ -1,7 +1,7 @@
 {
   "name": "system-utilities",
   "version": "1.0.0",
-  "description": "System utilities extension",
+  "description": "System utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
