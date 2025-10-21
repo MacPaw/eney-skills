@@ -3,7 +3,7 @@ import { z } from 'zod';
 import OpenAI from 'openai';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
-import { Action, ActionPanel, Form, Paper } from '@eney/api';
+import { Action, ActionPanel, Form, Paper } from '@macpaw/eney-api';
 import config from '../../config.json' with { type: 'json' };
 
 export const props = z.object({

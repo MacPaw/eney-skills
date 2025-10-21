@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { useEffect, useState } from 'react';
-import { Form } from '@eney/api';
+import { Form } from '@macpaw/eney-api';
 
 type Props = {
 	source: string;

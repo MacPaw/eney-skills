@@ -1,6 +1,6 @@
 // https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
 import { z } from "zod";
-import { Action, ActionPanel, ffmpeg, Files, Form, Paper } from "@eney/api";
+import { Action, ActionPanel, ffmpeg, Files, Form, Paper } from "@macpaw/eney-api";
 import * as os from "node:os";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";

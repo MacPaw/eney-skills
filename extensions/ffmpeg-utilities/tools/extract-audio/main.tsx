@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { useState } from "react";
-import { Action, ActionPanel, ffmpeg, Files, Form } from "@eney/api";
+import { Action, ActionPanel, ffmpeg, Files, Form } from "@macpaw/eney-api";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";

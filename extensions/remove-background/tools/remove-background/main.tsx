@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { useState } from 'react';
 import { AutoModel, AutoProcessor, RawImage } from '@huggingface/transformers';
-import { Action, ActionPanel, Files, Form } from '@eney/api';
+import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';

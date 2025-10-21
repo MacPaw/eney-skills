@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { useState } from 'react';
 import { ColorSpace, Matrix, PDFDocument } from 'mupdf';
-import { Action, ActionPanel, Files, Form } from '@eney/api';
+import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

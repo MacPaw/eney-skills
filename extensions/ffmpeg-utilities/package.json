@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "zod": "^4.1.0",
-    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api"
+    "@macpaw/eney-api": "^1.1.0"
   },
   "peerDependencies": {
     "react": "^18.0.0"

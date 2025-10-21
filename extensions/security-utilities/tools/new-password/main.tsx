@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { Action, ActionPanel, Form } from "@eney/api";
+import { Action, ActionPanel, Form } from "@macpaw/eney-api";
 import { generatePassword } from "./generate-password.js";
 
 export const props = z.object({

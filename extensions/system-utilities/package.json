@@ -2,6 +2,7 @@
   "name": "system-utilities",
   "version": "1.0.0",
   "description": "System utilities extension",
+  "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",
@@ -10,7 +11,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api",
+    "@macpaw/eney-api": "^1.1.0",
     "react": "^18.3.1",
     "zod": "^4.1.0"
   },
