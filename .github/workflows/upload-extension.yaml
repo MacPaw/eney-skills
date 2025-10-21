@@ -2,8 +2,8 @@ name: "Upload Extension archive"
 
 on:
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
 
 jobs:
   changes:
