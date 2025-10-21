@@ -1,7 +1,7 @@
 {
   "name": "remove-background",
   "version": "1.0.0",
-  "description": "Remove background from image extension",
+  "description": "Remove background from image extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
