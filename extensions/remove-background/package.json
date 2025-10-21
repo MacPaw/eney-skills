@@ -1,7 +1,7 @@
 {
   "name": "remove-background",
   "version": "1.0.0",
-  "description": "Remove background extension (Node + TypeScript)",
+  "description": "Remove background from image extension (Node + TypeScript)",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
