@@ -1,7 +1,7 @@
 {
   "name": "ffmpeg-utilities",
   "version": "1.0.0",
-  "description": "FFmpeg utilities extension",
+  "description": "FFmpeg utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
