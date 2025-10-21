@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import OpenAI from 'openai';	
-import { Action, ActionPanel, Form, Paper, ytdlp } from '@eney/api';
+import { Action, ActionPanel, Form, Paper, ytdlp } from '@macpaw/eney-api';
 import config from '../../config.json' with { type: 'json' };
 
 const props = z.object({

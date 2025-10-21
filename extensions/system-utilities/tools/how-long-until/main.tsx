@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Action, ActionPanel, Form, Paper } from '@eney/api';
+import { Action, ActionPanel, Form, Paper } from '@macpaw/eney-api';
 import z from 'zod';
 
 export const props = z.object({

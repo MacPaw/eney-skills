@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import sharp from 'sharp';
 import { useEffect, useState } from 'react';
-import { Action, ActionPanel, Files, Form } from '@eney/api';
+import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

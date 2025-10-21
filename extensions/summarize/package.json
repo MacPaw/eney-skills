@@ -11,7 +11,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@eney/api": "file:/Users/yurii/Projects/eney-jsx-runtime/api",
+    "@macpaw/eney-api": "^1.1.0",
     "@mozilla/readability": "0.4.1",
     "jsdom": "26.1.0",
     "openai": "^6.2.0",

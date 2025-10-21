@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
-import { Action, ActionPanel, Form, Paper } from '@eney/api';
+import { Action, ActionPanel, Form, Paper } from '@macpaw/eney-api';
 import { OPTIONS } from './options.ts';
 import { Caffeinate } from './caffeinate.ts';
 import { prettyTime } from './pretty-time.ts';

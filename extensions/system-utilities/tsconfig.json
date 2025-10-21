@@ -11,7 +11,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "rewriteRelativeImportExtensions": true,
     "types": [
       "@types/react",
       "@types/node"
