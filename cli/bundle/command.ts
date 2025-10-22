@@ -73,7 +73,7 @@ export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: s
   try {
     execSync("npm i --omit=dev --omit=peer", {
       cwd: extensionFolder,
-      stdio: "ignore",
+      stdio: "inherit",
     });
     console.log("Dependencies installed successfully");
   } catch (error) {
