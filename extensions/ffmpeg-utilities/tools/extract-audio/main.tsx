@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { useState } from "react";
-import { Action, ActionPanel, ffmpeg, Files, Form } from "@macpaw/eney-api";
+import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -18,6 +18,8 @@ export default function Extension(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [result, setResult] = useState("");
 	const [loading, setLoading] = useState(false);
+
+	const { isLoading: isFFmpegLoading, exec: ffmpeg } = useBinary("ffmpeg");
 
 	async function onSubmit() {
 		if (!source) return;
@@ -47,6 +49,10 @@ export default function Extension(props: Props) {
 		setSource(path);
 	}
 
+	if (isFFmpegLoading) {
+		return <Paper markdown="FFmpeg is loading..." />;
+	}
+
 	if (result) {
 		return (
 			<Files>
@@ -67,6 +73,7 @@ export default function Extension(props: Props) {
 
 	return (
 		<Form actions={actions}>
+			{loading && <Paper markdown="Doing my work..." />}
 			<Form.FilePicker
 				name="source"
 				label="Source"

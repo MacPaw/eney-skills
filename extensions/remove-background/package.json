@@ -11,9 +11,9 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^1.1.0",
-    "zod": "^4.1.0",
-    "@huggingface/transformers": "3.4.0"
+    "@huggingface/transformers": "^3.7.6",
+    "@macpaw/eney-api": "^1.1.0-beta.1",
+    "zod": "^4.1.0"
   },
   "peerDependencies": {
     "react": "^18.0.0"

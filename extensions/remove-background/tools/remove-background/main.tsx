@@ -27,7 +27,8 @@ export default function Extension(props: Props) {
 		const model = await AutoModel.from_pretrained(MODEL_ID, {
 			dtype: 'q8',
 		});
-		const processor = await AutoProcessor.from_pretrained(MODEL_ID, {});
+		const processor = await AutoProcessor.from_pretrained(MODEL_ID, {
+		});
 		const image = await RawImage.fromURL(source);
 		const { pixel_values } = await processor(image);
 		const { output } = await model({ input: pixel_values });
