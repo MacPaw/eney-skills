@@ -1,6 +1,6 @@
 // https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
 import { z } from "zod";
-import { Action, ActionPanel, ffmpeg, Files, Form, Paper } from "@macpaw/eney-api";
+import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
 import * as os from "node:os";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -19,6 +19,8 @@ export default function Extension(props: Props) {
   const [source, setSource] = useState(props.source);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { isLoading: isFFmpegLoading, exec: ffmpeg } = useBinary("ffmpeg");
 
   async function onSubmit() {
     if (!source) return;
@@ -48,6 +50,10 @@ export default function Extension(props: Props) {
     setSource(path);
   }
 
+  if (isFFmpegLoading) {
+    return <Paper markdown="FFmpeg is loading..." />;
+  }
+
   if (result) {
     return (
       <Files>
@@ -68,7 +74,7 @@ export default function Extension(props: Props) {
         </ActionPanel>
       }
     >
-      {loading && <Paper markdown="Loading..." />}
+      {loading && <Paper markdown="Doing my work..." />}
       <Form.FilePicker
         name="source"
         label="Source"

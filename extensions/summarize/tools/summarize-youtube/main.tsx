@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import OpenAI from 'openai';	
-import { Action, ActionPanel, Form, Paper, ytdlp } from '@macpaw/eney-api';
+import { Action, ActionPanel, Form, Paper, useBinary } from '@macpaw/eney-api';
 import config from '../../config.json' with { type: 'json' };
 
 const props = z.object({
@@ -29,6 +29,8 @@ export default function Extension(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [loading, setLoading] = useState(false);
 	const [result, setResult] = useState('');
+
+	const { isLoading: isYtdlpLoading, exec: ytdlp } = useBinary("yt-dlp");
 
 	async function onSubmit() {
 		if (!source) return;
@@ -103,6 +105,10 @@ export default function Extension(props: Props) {
 
 	function onSourceChange(path: string) {
 		setSource(path);
+	}
+
+	if (isYtdlpLoading) {
+		return <Paper markdown="Ytdlp is loading..." />;
 	}
 
 	if (result) {
