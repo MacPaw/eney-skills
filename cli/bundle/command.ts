@@ -71,7 +71,7 @@ export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: s
 
   console.log("\nInstalling production dependencies...");
   try {
-    execSync("npm i --omit=dev --omit=peer", {
+    execSync("npm i --os=darwin --cpu=arm64 --omit=dev --omit=peer", {
       cwd: extensionFolder,
       stdio: "inherit",
     });
