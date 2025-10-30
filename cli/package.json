@@ -8,7 +8,9 @@
   },
   "type": "module",
   "dependencies": {
-    "fs-extra": "^11.3.2"
+    "fs-extra": "^11.3.2",
+    "typescript": "^5.9.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
