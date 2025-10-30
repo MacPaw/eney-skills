@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
 import { publishExtension } from "./management/publish.ts";
+import { checkVersion } from "./management/check-version.ts";
 
 const program = new Command();
 
@@ -20,6 +21,15 @@ program
   .command("publish")
   .description("Publish a tool")
   .option("--cwd <path>", "Current working directory", process.cwd())
-  .action(({ cwd }) => publishExtension(cwd));
+  .option("--extension-version <extensionVersion>", "Extension version")
+  .option("--hash <hash>", "Hash")
+  .option("--download-url <downloadUrl>", "Download URL")
+  .action(({ cwd, extensionVersion, hash, downloadUrl }) => publishExtension(cwd, extensionVersion, hash, downloadUrl));
+
+program
+  .command("check-version")
+  .description("Check version")
+  .option("--cwd <path>", "Current working directory", process.cwd())
+  .action(({ cwd }) => checkVersion(cwd));
 
 program.parse(process.argv);
