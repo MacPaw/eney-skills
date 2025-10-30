@@ -1,6 +1,5 @@
 {
   "name": "ffmpeg-utilities",
-  "version": "1.0.0",
   "description": "FFmpeg utilities extensions",
   "type": "module",
   "scripts": {

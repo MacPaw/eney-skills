@@ -53,7 +53,8 @@ jobs:
 
   uploadExtensionArchive:
     name: Upload extension archive
-    runs-on: ubuntu-latest
+    runs-on:
+      group: gcp-k8s
     needs: changes
     permissions:
       contents: read
@@ -89,6 +90,13 @@ jobs:
       - name: Bundle extension
         run: |
           node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
+
+      - name: Publish extension
+        run: |
+          node cli/main.ts publish --cwd extensions/${{ matrix.extension }}
+        env:
+          BACKEND_URL: https://core.eney.appflix.io
+          ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
 
       - name: Get extension version
         id: get-extension-version

@@ -99,6 +99,8 @@ export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: s
     console.warn(`\nWarning: Could not copy node_modules: ${error}`);
   }
 
+  await copy(manifestPath, resolve(outFolder, extensionFolderName, "manifest.json"));
+
   console.log("\nBundle complete!");
 
   try {
