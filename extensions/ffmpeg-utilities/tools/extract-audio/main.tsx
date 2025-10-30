@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
-export const props = z.object({
+const props = z.object({
 	source: z
 		.string()
 		.optional()

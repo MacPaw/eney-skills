@@ -6,7 +6,7 @@ import * as path from "node:path";
 import { randomUUID } from "node:crypto";
 import { useState } from "react";
 
-export const props = z.object({
+const props = z.object({
   source: z
     .string()
     .optional()
