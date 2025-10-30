@@ -53,8 +53,7 @@ jobs:
 
   uploadExtensionArchive:
     name: Upload extension archive
-    runs-on:
-      group: gcp-k8s
+    runs-on: ubuntu-latest
     needs: changes
     permissions:
       contents: read
@@ -75,28 +74,14 @@ jobs:
           service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
           access_token_lifetime: 300s
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Install dependencies for CLI
-        run: |
-          npm i --prefix cli
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
 
       - name: Set deployment token
         run: npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
 
       - name: Bundle extension
-        run: |
-          node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
-
-      - name: Publish extension
-        run: |
-          node cli/main.ts publish --cwd extensions/${{ matrix.extension }}
-        env:
-          BACKEND_URL: https://core.eney.appflix.io
-          ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
+        run: node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
 
       - name: Get extension version
         id: get-extension-version
@@ -124,3 +109,27 @@ jobs:
           destination: "eney-assets/extensions"
           predefinedAcl: "publicRead"
           process_gcloudignore: false
+
+  uploadExtensionInfo:
+    name: Upload extension info
+    runs-on:
+      group: gcp-k8s
+    needs: changes
+    if: needs.changes.outputs.has_changes == 'true'
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        extension: ${{ fromJson(needs.changes.outputs.extensions) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+
+      - name: Publish extension
+        run: node cli/main.ts publish --cwd extensions/${{ matrix.extension }}
+        env:
+          BACKEND_URL: https://core.eney.appflix.io
+          ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
