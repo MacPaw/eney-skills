@@ -6,62 +6,25 @@ on:
       - main
 
 jobs:
-  changes:
-    name: Detect changes in extensions
-    runs-on: ubuntu-latest
+  detect-changes:
+    uses: ./.github/workflows/detect-extension-changes.yaml
     permissions:
       pull-requests: read
       contents: read
-    outputs:
-      extensions: ${{ steps.print-changes.outputs.extensions }}
-      has_changes: ${{ steps.print-changes.outputs.has_changes }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Check for extension changes
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
-        id: filter
-        with:
-          list-files: json
-          filters: |
-            extensions:
-              - 'extensions/**'
-
-      - name: Print changed extensions
-        id: print-changes
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const filePaths = JSON.parse('${{ steps.filter.outputs.extensions_files }}');
-            const extensions = filePaths
-              .filter(path => path.startsWith('extensions/'))
-              .map(path => {
-                const segments = path.split('/');
-                if (segments.length < 2) {
-                  return null;
-                }
-
-                return segments[1];
-              })
-              .filter((ext, index, self) => self.indexOf(ext) === index)
-              .filter((ext) => ext !== null);
-
-            console.log(JSON.stringify(extensions, null, 2));
-            core.setOutput('extensions', extensions);
-            core.setOutput('has_changes', extensions.length > 0);
 
   uploadExtensionArchive:
     name: Upload extension archive
-    runs-on: ubuntu-latest
-    needs: changes
+    runs-on:
+      group: gcp-k8s
+    needs: detect-changes
     permissions:
       contents: read
       id-token: write
-    if: needs.changes.outputs.has_changes == 'true'
+    if: needs.detect-changes.outputs.has_changes == 'true'
     strategy:
+      fail-fast: false
       matrix:
-        extension: ${{ fromJson(needs.changes.outputs.extensions) }}
+        extension: ${{ fromJson(needs.detect-changes.outputs.extensions) }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -76,33 +39,40 @@ jobs:
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Set deployment token
-        run: npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
-
-      - name: Bundle extension
-        run: node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
+      - name: Check extension version
+        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
       - name: Get extension version
         id: get-extension-version
         run: |
           VERSION=$(cat extensions/${{ matrix.extension }}/manifest.json | jq -r '.version')
-          echo "Extension version: $VERSION"
           echo "EXTENSION_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bundle extension
+        run: node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
 
       - name: Get archive name
         id: get-archive-name
         run: |
           ARCHIVE_NAME=${{ matrix.extension }}@v${{ steps.get-extension-version.outputs.EXTENSION_VERSION }}.zip
-          echo "Archive name: $ARCHIVE_NAME"
           echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
 
       - name: Create extension archive
         run: |
           cd dist
-          zip -r ${{ steps.get-archive-name.outputs.ARCHIVE_NAME }} ${{ matrix.extension }}
+          tar -czf ${{ steps.get-archive-name.outputs.ARCHIVE_NAME }} ${{ matrix.extension }}
 
-      - name: Upload Extension Archive
+      - id: get-archive-sha
+        name: Get archive hash
+        run: |
+          ARCHIVE_SHA256=$(sha256sum dist/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }} | awk '{print $1}')
+          echo "ARCHIVE_SHA256=$ARCHIVE_SHA256" >> $GITHUB_OUTPUT
+
+      - id: upload-extension-archive
+        name: Upload Extension Archive
         uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3
         with:
           path: dist/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }}
@@ -110,26 +80,19 @@ jobs:
           predefinedAcl: "publicRead"
           process_gcloudignore: false
 
-  uploadExtensionInfo:
-    name: Upload extension info
-    runs-on:
-      group: gcp-k8s
-    needs: changes
-    if: needs.changes.outputs.has_changes == 'true'
-    permissions:
-      contents: read
-    strategy:
-      matrix:
-        extension: ${{ fromJson(needs.changes.outputs.extensions) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Setup CLI
-        uses: ./.github/actions/setup-cli
+      - id: get-download-url
+        name: Get download URL
+        run: |
+          DOWNLOAD_URL="https://storage.googleapis.com/eney-assets/extensions/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }}"
+          echo "DOWNLOAD_URL=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
 
       - name: Publish extension
-        run: node cli/main.ts publish --cwd extensions/${{ matrix.extension }}
+        run: |
+          node cli/main.ts publish \
+            --cwd extensions/${{ matrix.extension }} \
+            --extension-version ${{ steps.get-extension-version.outputs.EXTENSION_VERSION }} \
+            --hash ${{ steps.get-archive-sha.outputs.ARCHIVE_SHA256 }} \
+            --download-url ${{ steps.get-download-url.outputs.DOWNLOAD_URL }}
         env:
-          BACKEND_URL: https://core.eney.appflix.io
+          BACKEND_URL: https://core-pr-16.eney.appflix.io
           ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}

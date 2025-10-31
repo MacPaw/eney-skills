@@ -1,0 +1,57 @@
+name: "Detect Extension Changes"
+
+on:
+  workflow_call:
+    outputs:
+      extensions:
+        description: "List of extensions that changed"
+        value: ${{ jobs.detect.outputs.extensions }}
+      has_changes:
+        description: "Whether any extensions changed"
+        value: ${{ jobs.detect.outputs.has_changes }}
+
+jobs:
+  detect:
+    name: Detect changes in extensions
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    outputs:
+      extensions: ${{ steps.get-changes.outputs.extensions }}
+      has_changes: ${{ steps.get-changes.outputs.has_changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Check for extension changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          list-files: json
+          filters: |
+            extensions:
+              - 'extensions/**'
+
+      - name: Get changed extensions
+        id: get-changes
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const filePaths = JSON.parse('${{ steps.filter.outputs.extensions_files }}');
+            const extensions = filePaths
+              .filter(path => path.startsWith('extensions/'))
+              .map(path => {
+                const segments = path.split('/');
+                if (segments.length < 2) {
+                  return null;
+                }
+
+                return segments[1];
+              })
+              .filter((ext, index, self) => self.indexOf(ext) === index)
+              .filter((ext) => ext !== null);
+
+            console.log(JSON.stringify(extensions, null, 2));
+            core.setOutput('extensions', extensions);
+            core.setOutput('has_changes', extensions.length > 0);

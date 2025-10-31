@@ -1,0 +1,40 @@
+name: "Check version"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/detect-extension-changes.yaml
+    permissions:
+      pull-requests: read
+      contents: read
+
+  check-version:
+    name: "Check version"
+    runs-on:
+      group: gcp-k8s
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        extension: ${{ fromJson(needs.detect-changes.outputs.extensions) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Check extension version
+        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
+        env:
+          BACKEND_URL: https://core-pr-16.eney.appflix.io
+          ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
