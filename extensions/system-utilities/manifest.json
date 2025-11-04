@@ -1,7 +1,7 @@
 {
 	"id": "system-utilities",
 	"type": "jsx",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"title": "System Utilities",
 	"tools": [
 		{
@@ -20,9 +20,9 @@
 			"title": "How long until"
 		},
 		{
-			"name": "get-running-processes",
-			"description": "Get running processes",
-			"title": "Get running processes"
+			"name": "get-running-processes-list",
+			"description": "Get running processes list",
+			"title": "Get running processes list"
 		}
 	]
 }
