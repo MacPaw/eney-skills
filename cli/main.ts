@@ -24,7 +24,8 @@ program
   .option("--extension-version <extensionVersion>", "Extension version")
   .option("--hash <hash>", "Hash")
   .option("--download-url <downloadUrl>", "Download URL")
-  .action(({ cwd, extensionVersion, hash, downloadUrl }) => publishExtension(cwd, extensionVersion, hash, downloadUrl));
+  .option("--dry-run", "Do not publish remotely, just log actions", false)
+  .action(({ cwd, extensionVersion, hash, downloadUrl, dryRun }) => publishExtension(cwd, extensionVersion, hash, downloadUrl, dryRun));
 
 program
   .command("check-version")
