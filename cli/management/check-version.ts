@@ -33,6 +33,11 @@ export async function checkVersion(cwd: string) {
         'X-API-Token': accessToken,
       },
     });
+
+    if (response.status === 404) {
+      console.log(`Extension ${extensionName} artifact versions not found, ready to publish`);
+      return;
+    }
   
     if (!response.ok) {
       throw new Error(`Failed to get extension versions: ${response.status} ${response.statusText}`);
