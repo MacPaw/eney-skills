@@ -20,9 +20,9 @@
 			"title": "How long until"
 		},
 		{
-			"name": "get-running-processes",
-			"description": "Get running processes",
-			"title": "Get running processes"
+			"name": "get-running-processes-list",
+			"description": "Get running processes list",
+			"title": "Get running processes list"
 		}
 	]
 }
