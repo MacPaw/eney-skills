@@ -1,6 +1,5 @@
 {
   "name": "pdf-utilities",
-  "version": "1.0.0",
   "description": "PDF files utilities extensions",
   "type": "module",
   "scripts": {
@@ -11,7 +10,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^1.1.0-beta.1",
+    "@macpaw/eney-api": "1.1.1",
     "mupdf": "^1.26.4",
     "zod": "^4.1.0"
   },
