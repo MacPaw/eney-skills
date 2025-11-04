@@ -11,6 +11,7 @@ export async function publishExtension(cwd: string, version: string, hash: strin
 	const payload = {
 		extension_id: extensionName,
 		tools,
+		version,
 	};
 
   console.dir(payload, { depth: null });

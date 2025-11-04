@@ -1,6 +1,5 @@
 {
   "name": "system-utilities",
-  "version": "1.0.0",
   "description": "System/hardware utilities extensions",
   "type": "module",
   "scripts": {
@@ -11,9 +10,11 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^1.1.0-beta.1",
-    "react": "^18.3.1",
+    "@macpaw/eney-api": "1.1.0-beta.2",
     "zod": "^4.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
