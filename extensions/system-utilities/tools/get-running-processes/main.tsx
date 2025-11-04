@@ -10,7 +10,8 @@ interface ProcessInfo {
 }
 
 function escapeMarkdown(text: string): string {
-	return text.replace(/[|]/g, '\\$&');
+	// First escape backslashes, then escape pipes
+	return text.replace(/\\/g, '\\\\').replace(/[|]/g, '\\$&');
 }
 
 function formatProcesses(raw: string): ProcessInfo[] {
