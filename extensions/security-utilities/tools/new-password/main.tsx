@@ -81,7 +81,7 @@ export default function Extension(props: Props) {
         variant="switch"
         checked
       />
-      <Form.PasswordField
+      <Form.TextField
         name="password"
         value={password}
         onChange={onPasswordChange}
