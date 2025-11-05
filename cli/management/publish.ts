@@ -34,7 +34,7 @@ export async function publishExtension(cwd: string, version: string, hash: strin
 	}
 	
 	try {
-		const response = await fetch(`${backendUrl}/admin/v3/mcp/tools`, {
+		const response = await fetch(`${backendUrl}/admin/v3/extensions/tools`, {
 			method: 'POST',
 			body: JSON.stringify(metadataPayload),
 			headers: {
