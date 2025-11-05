@@ -63,7 +63,7 @@ export default function Extension(props: Props) {
     <Form actions={actions}>
       <Form.NumberField
         name="length"
-        label="Password length 22222"
+        label="Password length"
         value={length}
         onChange={onChangeLength}
       />
