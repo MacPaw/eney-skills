@@ -30,7 +30,7 @@ export default function Extension() {
 
 	const actions = (
 		<ActionPanel layout="row">
-			<Action.Finalize title="Done" style="primary" />
+			<Action.Finalize title="Done" />
 		</ActionPanel>
 	)
 

@@ -94,7 +94,7 @@ export default function Extension() {
 	const actions = (
 		<ActionPanel layout="row">
 			<Action title='Refresh' onAction={loadProcesses} style="secondary" loading={loading} />
-			<Action.Finalize title="Done" style="primary" />
+			<Action.Finalize title="Done" />
 		</ActionPanel>
 	);
 

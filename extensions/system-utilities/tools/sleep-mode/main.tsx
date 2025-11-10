@@ -111,7 +111,7 @@ export default function Extension(props: Props) {
 				markdown={`macOS will not sleep for: ${prettyTime(delta)}`}
 				actions={
 					<ActionPanel layout="row">
-						<Action.Finalize title="Done" style="primary" />
+						<Action.Finalize title="Done" />
 						<Action title='Sleep as usual' onAction={onTerminate} style="secondary" />
 					</ActionPanel>
 				}
@@ -125,7 +125,7 @@ export default function Extension(props: Props) {
 			actions={
 				<ActionPanel>
 					<Action.SubmitForm title='Stay Awake' onSubmit={onSubmit} style="secondary" />
-					<Action.Finalize title="Done" style="primary" />
+					<Action.Finalize title="Done" />
 				</ActionPanel>
 			}
 		>

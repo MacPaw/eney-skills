@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "zod": "^4.1.0",
-    "@macpaw/eney-api": "1.2.1"
+    "@macpaw/eney-api": "1.2.2"
   },
   "peerDependencies": {
     "react": "^18.0.0"

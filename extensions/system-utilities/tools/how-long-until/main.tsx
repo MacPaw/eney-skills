@@ -68,7 +68,7 @@ export default function Extension(props: Props) {
 			actions={
 				<ActionPanel>
 					<Action.SubmitForm title='Calculate' onSubmit={onSubmit} 	style="secondary" />
-					<Action.Finalize title="Done" style="primary" />
+					<Action.Finalize title="Done" />
 				</ActionPanel>
       }
     >

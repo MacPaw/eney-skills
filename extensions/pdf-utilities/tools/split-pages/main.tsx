@@ -45,7 +45,7 @@ export default function Extension(props: Props) {
 				style="secondary"
 				path={dirname(pages[0])}
 			/>
-			<Action.Finalize title="Done" style="primary" />
+			<Action.Finalize title="Done" />
 		</ActionPanel>
 	)
 

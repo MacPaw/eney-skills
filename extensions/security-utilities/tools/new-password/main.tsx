@@ -55,7 +55,7 @@ export default function Extension(props: Props) {
   const actions = (
     <ActionPanel layout="row">
       <Action.SubmitForm title="Generate" onSubmit={onSubmit} style="secondary" />
-      <Action.Finalize title="Done" style="primary" />
+      <Action.Finalize title="Done" />
     </ActionPanel>
   );
 

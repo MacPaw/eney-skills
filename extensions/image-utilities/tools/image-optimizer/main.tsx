@@ -56,7 +56,7 @@ export default function Extension(props: Props) {
 				style="secondary"
 				path={result}
 			/>
-			<Action.Finalize title="Done" style="primary" />
+			<Action.Finalize title="Done" />
 		</ActionPanel>
 	)
 
