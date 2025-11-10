@@ -55,11 +55,23 @@ export default function Extension(props: Props) {
 		});
 	}, [source]);
 
+	const fileActions = (
+		<ActionPanel layout="row">
+			<Action.ShowInFinder
+				style="secondary"
+				path={resultPath}
+			/>
+			<Action.Finalize title="Done" />
+		</ActionPanel>
+	)
+
 	if (resultPath) {
 		return (
-			<Files>
-				<Files.Item path={resultPath} />
-			</Files>
+			<Form actions={fileActions}>
+				<Files>
+					<Files.Item path={resultPath} $context={true} />
+				</Files>
+			</Form>
 		);
 	}
 

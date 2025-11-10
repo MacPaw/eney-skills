@@ -54,11 +54,12 @@ export default function Extension(props: Props) {
 	}
 
 	const fileActions = (
-		<ActionPanel>
+		<ActionPanel layout="row">
 			<Action.ShowInFinder
-				style="primary"
+				style="secondary"
 				path={result}
 			/>
+			<Action.Finalize title="Done" />
 		</ActionPanel>
 	)
 
@@ -66,7 +67,7 @@ export default function Extension(props: Props) {
 		return (
 			<Form actions={fileActions}>
 				<Files>
-					<Files.Item path={result} />
+					<Files.Item path={result} $context={true} />
 				</Files>
 			</Form>
 		);

@@ -50,11 +50,23 @@ export default function Extension(props: Props) {
 		});
 	}, [source]);
 
+	const fileActions = (
+		<ActionPanel layout="row">
+			<Action.ShowInFinder
+				style="secondary"
+				path={result}
+			/>
+			<Action.Finalize title="Done" />
+		</ActionPanel>
+	)
+
 	if (result) {
 		return (
-			<Files>
-				<Files.Item path={result} />
-			</Files>
+			<Form actions={fileActions}>
+				<Files>
+					<Files.Item path={result} $context={true} />
+				</Files>
+			</Form>
 		);
 	}
 
@@ -62,7 +74,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} loading={loading} />
+					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} loading={loading} style="primary" />
 				</ActionPanel>
 			}
 		>

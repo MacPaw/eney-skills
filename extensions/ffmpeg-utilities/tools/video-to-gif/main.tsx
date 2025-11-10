@@ -54,11 +54,23 @@ export default function Extension(props: Props) {
     return <Paper markdown="FFmpeg is loading..." />;
   }
 
+  const fileActions = (
+    <ActionPanel layout="row">
+      <Action.ShowInFinder
+        style="secondary"
+        path={result}
+      />
+      <Action.Finalize title="Done" />
+    </ActionPanel>
+  )
+
   if (result) {
     return (
-      <Files>
-        <Files.Item path={result} />
-      </Files>
+      <Form actions={fileActions}>
+        <Files>
+          <Files.Item path={result} $context={true} />
+        </Files>
+      </Form>
     );
   }
 
@@ -70,6 +82,7 @@ export default function Extension(props: Props) {
             title="Convert"
             onSubmit={onSubmit}
             loading={loading}
+            style="primary"
           />
         </ActionPanel>
       }

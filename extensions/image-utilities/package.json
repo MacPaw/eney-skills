@@ -10,7 +10,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "1.1.1",
+    "@macpaw/eney-api": "1.2.2",
     "sharp": "^0.34.4",
     "zod": "^4.1.0"
   },

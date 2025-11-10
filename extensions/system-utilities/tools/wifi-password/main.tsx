@@ -28,8 +28,14 @@ export default function Extension() {
 		return stdout;
 	}
 
+	const actions = (
+		<ActionPanel layout="row">
+			<Action.Finalize title="Done" />
+		</ActionPanel>
+	)
+
 	if (password) {
-		return <Paper markdown={password} />;
+		return <Paper markdown={password} actions={actions} />;
 	}
 
 	return (

@@ -4,7 +4,7 @@ import { ColorSpace, Matrix, PDFDocument } from 'mupdf';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 export const props = z.object({
@@ -39,13 +39,25 @@ export default function Extension(props: Props) {
 		setSource(path);
 	}
 
+	const fileActions = (
+		<ActionPanel layout="row">
+			<Action.ShowInFinder
+				style="secondary"
+				path={dirname(pages[0])}
+			/>
+			<Action.Finalize title="Done" />
+		</ActionPanel>
+	)
+
 	if (pages.length) {
 		return (
-			<Files>
-				{pages.map((path) => {
-					return <Files.Item key={path} path={path} />;
-				})}
-			</Files>
+			<Form actions={fileActions}>
+				<Files>
+					{pages.map((path) => {
+						return <Files.Item key={path} path={path} $context={true} />;
+					})}
+				</Files>
+			</Form>
 		);
 	}
 
@@ -53,7 +65,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Split' onSubmit={onSubmit} />
+					<Action.SubmitForm title='Split' onSubmit={onSubmit} style="primary" />
 				</ActionPanel>
 			}
 		>
