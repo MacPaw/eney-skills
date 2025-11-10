@@ -1,7 +1,7 @@
 {
 	"id": "ffmpeg-utilities",
 	"type": "jsx",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"title": "FFmpeg Utilities",
 	"tools": [
 		{
