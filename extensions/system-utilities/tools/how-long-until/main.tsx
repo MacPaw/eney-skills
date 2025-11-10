@@ -67,12 +67,13 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Calculate' onSubmit={onSubmit} />
+					<Action.SubmitForm title='Calculate' onSubmit={onSubmit} 	style="secondary" />
+					<Action.Finalize title="Done" style="primary" />
 				</ActionPanel>
-			}
-		>
-			<Form.DatePicker label='Select date' name='date' type='datetime' value={date} onChange={onTimeChange} />
-			{result && <Paper markdown={result} />}
-		</Form>
-	);
+      }
+    >
+      <Form.DatePicker label='Select date' name='date' type='datetime' value={date} onChange={onTimeChange} />
+      {result && <Paper markdown={result} $context={true} />}
+    </Form>
+  );
 }

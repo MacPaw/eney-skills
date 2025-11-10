@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { Action, ActionPanel, Form, Paper } from '@macpaw/eney-api';
-import { OPTIONS } from './options.ts';
-import { Caffeinate } from './caffeinate.ts';
-import { prettyTime } from './pretty-time.ts';
+import { OPTIONS } from './options.js';
+import { Caffeinate } from './caffeinate.js';
+import { prettyTime } from './pretty-time.js';
 
 export const props = z.object({
 	time: z.number()
@@ -110,10 +110,12 @@ export default function Extension(props: Props) {
 			<Paper
 				markdown={`macOS will not sleep for: ${prettyTime(delta)}`}
 				actions={
-					<ActionPanel>
-						<Action title='Sleep as usual' onAction={onTerminate} />
+					<ActionPanel layout="row">
+						<Action.Finalize title="Done" style="primary" />
+						<Action title='Sleep as usual' onAction={onTerminate} style="secondary" />
 					</ActionPanel>
 				}
+				$context={true}
 			/>
 		);
 	}
@@ -122,7 +124,8 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Stay Awake' onSubmit={onSubmit} />
+					<Action.SubmitForm title='Stay Awake' onSubmit={onSubmit} style="secondary" />
+					<Action.Finalize title="Done" style="primary" />
 				</ActionPanel>
 			}
 		>

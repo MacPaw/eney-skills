@@ -53,9 +53,9 @@ export default function Extension(props: Props) {
   }, [length, symbols, numbers]);
 
   const actions = (
-    <ActionPanel>
-      <Action.CopyToClipboard content={password} style="primary" />
-      <Action.SubmitForm title="Generate" onSubmit={onSubmit} style="primary" />
+    <ActionPanel layout="row">
+      <Action.SubmitForm title="Generate" onSubmit={onSubmit} style="secondary" />
+      <Action.Finalize title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -85,6 +85,7 @@ export default function Extension(props: Props) {
         name="password"
         value={password}
         onChange={onPasswordChange}
+        $context={true}
       />
     </Form>
   );

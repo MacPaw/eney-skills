@@ -92,8 +92,9 @@ export default function Extension() {
 	}, [loadProcesses]);
 
 	const actions = (
-		<ActionPanel>
-			<Action title='Refresh' onAction={loadProcesses} style='primary' loading={loading} />
+		<ActionPanel layout="row">
+			<Action title='Refresh' onAction={loadProcesses} style="secondary" loading={loading} />
+			<Action.Finalize title="Done" style="primary" />
 		</ActionPanel>
 	);
 
@@ -102,6 +103,7 @@ export default function Extension() {
 			<Paper
 				markdown={`**Error:** ${error}`}
 				actions={actions}
+				$context={true}
 			/>
 		);
 	}
@@ -122,6 +124,7 @@ export default function Extension() {
 		<Paper
 			markdown={loading && !processes.length ? 'Loading processes…' : markdown}
 			actions={actions}
+			$context={true}
 		/>
 	);
 }
