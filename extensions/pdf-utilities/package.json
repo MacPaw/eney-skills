@@ -12,6 +12,7 @@
   "dependencies": {
     "@macpaw/eney-api": "1.2.3",
     "mupdf": "^1.26.4",
+    "pdf-lib": "^1.17.1",
     "zod": "^4.1.0"
   },
   "peerDependencies": {
