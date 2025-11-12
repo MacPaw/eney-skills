@@ -24,7 +24,8 @@ export default function Extension(props: Props) {
 	async function onSubmit() {
 		if (!source) return;
 		setLoading(true);
-		const tmp = join(tmpdir(), `${randomUUID()}.mp3`);
+		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+		const fileName = join(downloadsDir, `${randomUUID()}.mp3`);
 		const { code, stderr } = await ffmpeg([
 			"-nostdin",
 			"-y",
@@ -34,14 +35,14 @@ export default function Extension(props: Props) {
 			"0",
 			"-map",
 			"a",
-			tmp,
+			fileName,
 		]);
 
 		if (code !== 0) {
 			throw Error(`ffmpeg_error: ${stderr}`);
 		}
 
-		setResult(tmp);
+		setResult(fileName);
 		setLoading(false);
 	}
 

@@ -1,13 +1,18 @@
 {
 	"id": "pdf-utilities",
 	"type": "jsx",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"title": "PDF Utilities",
 	"tools": [
 		{
 			"name": "split-pages",
 			"description": "Splits a single PDF document to multiple files by pages",
 			"title": "Split PDF to multiple files"
+		},
+		{
+			"name": "images-to-pdf",
+			"description": "Converts a set of images to a PDF document",
+			"title": "Convert images to PDF"
 		}
 	]
 }

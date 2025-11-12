@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { useState } from 'react';
-import { ColorSpace, Matrix, PDFDocument } from 'mupdf';
+import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 export const props = z.object({
@@ -18,19 +17,32 @@ type Props = z.infer<typeof props>;
 export default function Extension(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [pages, setPages] = useState<string[]>([]);
+	const [outputFolder, setOutputFolder] = useState<string>('');
 
 	async function onSubmit() {
 		if (!source) return;
 		const file = await readFile(source);
-		const doc = PDFDocument.openDocument(new Uint8Array(file.buffer), 'application/pdf');
-		const pageCount = doc.countPages();
+		const doc = await PDFDocument.load(file);
+
+		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+		const outputPath = join(downloadsDir, `${randomUUID()}`);
+
+		setOutputFolder(outputPath);
+
+		const pageCount = doc.getPageCount();
 		for (let i = 0; i < pageCount; i++) {
-			const page = doc.loadPage(i);
-			const tmp = join(tmpdir(), `${randomUUID()}.png`);
-			const png = page.toPixmap(Matrix.scale(2, 2), ColorSpace.DeviceRGB, false, true).asPNG();
-			await writeFile(tmp, Buffer.from(png));
+			// Create a new PDF document for each page
+			const newDoc = await PDFDocument.create();
+			const [copiedPage] = await newDoc.copyPages(doc, [i]);
+			newDoc.addPage(copiedPage);
+			
+			// Save the single-page PDF
+			const pdfBytes = await newDoc.save();
+			const outputFilename = join(outputPath, `page_${i + 1}.pdf`);
+			await writeFile(outputFilename, pdfBytes);
+			
 			setPages((prev) => {
-				return [...prev, tmp];
+				return [...prev, outputFilename];
 			});
 		}
 	}
@@ -43,7 +55,7 @@ export default function Extension(props: Props) {
 		<ActionPanel layout="row">
 			<Action.ShowInFinder
 				style="secondary"
-				path={dirname(pages[0])}
+				path={outputFolder}
 			/>
 			<Action.Finalize title="Done" />
 		</ActionPanel>
