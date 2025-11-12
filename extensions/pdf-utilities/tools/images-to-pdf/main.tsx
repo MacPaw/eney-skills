@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
-import { extname } from 'node:path';
-import tmp from 'tmp';
+import { extname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 export const props = z.object({
 	images: z.array(z.string())
@@ -55,11 +55,12 @@ export default function Extension(props: Props) {
 			}
 		}
 
-		const outputFile = tmp.fileSync({ postfix: '.pdf' }).name;
+		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+		const fileName = join(downloadsDir, `${randomUUID()}.pdf`);
 		const pdfBytes = await pdfDoc.save();
-		await writeFile(outputFile, pdfBytes);
+		await writeFile(fileName, pdfBytes);
 
-		setOutputPath(outputFile);
+		setOutputPath(fileName);
 	}
 
 	function onImageChange(paths: string[]) {

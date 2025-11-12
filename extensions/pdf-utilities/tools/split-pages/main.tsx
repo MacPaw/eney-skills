@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import tmp from 'tmp';
+import { randomUUID } from 'node:crypto';
 
 export const props = z.object({
 	source: z.string()
@@ -24,7 +24,8 @@ export default function Extension(props: Props) {
 		const file = await readFile(source);
 		const doc = await PDFDocument.load(file);
 
-		const outputPath = tmp.dirSync().name;
+		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+		const outputPath = join(downloadsDir, `${randomUUID()}`);
 
 		setOutputFolder(outputPath);
 
