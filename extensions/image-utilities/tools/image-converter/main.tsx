@@ -29,7 +29,8 @@ export default function Extension(props: Props) {
 		setLoading(true);
 		const suffix = `.${targetFormat}`;
 		const instance = sharp(source);
-		const tempFile = join(tmpdir(), `${randomUUID()}${suffix}`);
+		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+		const tempFile = join(downloadsDir, `${randomUUID()}${suffix}`);
 		await instance.toFormat(targetFormat).toFile(tempFile);
 		setLoading(false);
 		setResultPath(tempFile);

@@ -1,10 +1,9 @@
 // https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
 import { z } from "zod";
 import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
-import * as os from "node:os";
-import * as path from "node:path";
 import { randomUUID } from "node:crypto";
 import { useState } from "react";
+import { join } from "node:path";
 
 const props = z.object({
   source: z
@@ -25,7 +24,8 @@ export default function Extension(props: Props) {
   async function onSubmit() {
     if (!source) return;
     setLoading(true);
-    const tmp = path.join(os.tmpdir(), `${randomUUID()}.gif`);
+    const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
+    const fileName = join(downloadsDir, `${randomUUID()}.gif`);
     const { code } = await ffmpeg([
       "-nostdin",
       "-y",
@@ -35,14 +35,14 @@ export default function Extension(props: Props) {
       "fps=15,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
       "-loop",
       "0",
-      tmp,
+      fileName,
     ]);
 
     if (code !== 0) {
       throw Error(`ffmpeg_error: ${code}`);
     }
 
-    setResult(tmp);
+    setResult(fileName);
     setLoading(false);
   }
 
