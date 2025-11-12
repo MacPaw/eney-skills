@@ -20,18 +20,18 @@ export default function Extension(props: Props) {
 	const [result, setResult] = useState('');
 	const [options, setOptions] = useState({});
 	const [sourceFormat, setSourceFormat] = useState<ImageFormat | null>(null);
-	const [loading, setLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
 	async function onSubmit() {
 		if (!source) return;
-		setLoading(true);
+		setIsLoading(true);
 		if (sourceFormat === 'jpeg') {
 			setResult(await optimize.jpeg(source, options));
 		}
 		if (sourceFormat === 'png') {
 			setResult(await optimize.png(source));
 		}
-		setLoading(false);
+		setIsLoading(false);
 	}
 
 	function onSourceChange(path: string) {
@@ -74,7 +74,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} loading={loading} style="primary" />
+					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} isLoading={isLoading} style="primary" />
 				</ActionPanel>
 			}
 		>

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { useState } from "react";
 import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -17,13 +16,13 @@ type Props = z.infer<typeof props>;
 export default function Extension(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [result, setResult] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
 	const { isLoading: isFFmpegLoading, exec: ffmpeg } = useBinary("ffmpeg");
 
 	async function onSubmit() {
 		if (!source) return;
-		setLoading(true);
+		setIsLoading(true);
 		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
 		const fileName = join(downloadsDir, `${randomUUID()}.mp3`);
 		const { code, stderr } = await ffmpeg([
@@ -43,7 +42,7 @@ export default function Extension(props: Props) {
 		}
 
 		setResult(fileName);
-		setLoading(false);
+		setIsLoading(false);
 	}
 
 	function onSourceChange(path: string) {
@@ -79,7 +78,7 @@ export default function Extension(props: Props) {
 			<Action.SubmitForm
 				title="Extract"
 				onSubmit={onSubmit}
-				loading={loading}
+				isLoading={isLoading}
 				style="primary"
 			/>
 		</ActionPanel>
@@ -87,7 +86,7 @@ export default function Extension(props: Props) {
 
 	return (
 		<Form actions={actions}>
-			{loading && <Paper markdown="Doing my work..." />}
+			{isLoading && <Paper markdown="Doing my work..." />}
 			<Form.FilePicker
 				name="source"
 				label="Source"
