@@ -67,11 +67,11 @@ async function fetchProcesses(): Promise<ProcessInfo[]> {
 
 export default function Extension() {
 	const [processes, setProcesses] = useState<ProcessInfo[]>([]);
-	const [loading, setLoading] = useState(true);
+	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const loadProcesses = useCallback(async () => {
-		setLoading(true);
+		setIsLoading(true);
 		setError(null);
 		try {
 			const list = await fetchProcesses();
@@ -83,7 +83,7 @@ export default function Extension() {
 				setError('Failed to load running processes.');
 			}
 		} finally {
-			setLoading(false);
+			setIsLoading(false);
 		}
 	}, []);
 
@@ -93,7 +93,7 @@ export default function Extension() {
 
 	const actions = (
 		<ActionPanel layout="row">
-			<Action title='Refresh' onAction={loadProcesses} style="secondary" loading={loading} />
+			<Action title='Refresh' onAction={loadProcesses} style="secondary" isLoading={isLoading} />
 			<Action.Finalize title="Done" />
 		</ActionPanel>
 	);
@@ -122,9 +122,9 @@ export default function Extension() {
 
 	return (
 		<Paper
-			markdown={loading && !processes.length ? 'Loading processes…' : markdown}
+			markdown={isLoading && !processes.length ? 'Loading processes…' : markdown}
 			actions={actions}
-			$context={true}
+			isScrollable
 		/>
 	);
 }

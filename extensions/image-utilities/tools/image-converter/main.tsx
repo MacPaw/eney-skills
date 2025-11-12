@@ -22,17 +22,17 @@ export default function Extension(props: Props) {
 	const [sourceFormat, setSourceFormat] = useState<ImageFormat | null>(null);
 	const [targetFormat, setTargetFormat] = useState<ImageFormat>(supported[0]);
 	const [resultPath, setResultPath] = useState('');
-	const [loading, setLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
 	async function onSubmit() {
 		if (!source) return;
-		setLoading(true);
+		setIsLoading(true);
 		const suffix = `.${targetFormat}`;
 		const instance = sharp(source);
 		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
 		const tempFile = join(downloadsDir, `${randomUUID()}${suffix}`);
 		await instance.toFormat(targetFormat).toFile(tempFile);
-		setLoading(false);
+		setIsLoading(false);
 		setResultPath(tempFile);
 	}
 
@@ -80,7 +80,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Convert' onSubmit={onSubmit} loading={loading} />
+					<Action.SubmitForm title='Convert' onSubmit={onSubmit} isLoading={isLoading} style="primary" />
 				</ActionPanel>
 			}
 		>
