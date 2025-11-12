@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import { useState } from 'react';
-import { ColorSpace, Matrix, PDFDocument } from 'mupdf';
+import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join, basename } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import tmp from 'tmp';
 
 export const props = z.object({
 	source: z.string()
@@ -23,22 +22,26 @@ export default function Extension(props: Props) {
 	async function onSubmit() {
 		if (!source) return;
 		const file = await readFile(source);
-		const doc = PDFDocument.openDocument(new Uint8Array(file.buffer), 'application/pdf');
+		const doc = await PDFDocument.load(file);
 
-		// Create output folder based on source filename
-		const sourceNameWithoutExt = basename(source, '.pdf').replace(/\s+/g, '_');
-		const outputPath = join(tmpdir(), sourceNameWithoutExt);
-		await mkdir(outputPath, { recursive: true });
+		const outputPath = tmp.dirSync().name;
+
 		setOutputFolder(outputPath);
 
-		const pageCount = doc.countPages();
+		const pageCount = doc.getPageCount();
 		for (let i = 0; i < pageCount; i++) {
-			const page = doc.loadPage(i);
-			const tmp = join(outputPath, `${randomUUID()}.png`);
-			const png = page.toPixmap(Matrix.scale(2, 2), ColorSpace.DeviceRGB, false, true).asPNG();
-			await writeFile(tmp, Buffer.from(png));
+			// Create a new PDF document for each page
+			const newDoc = await PDFDocument.create();
+			const [copiedPage] = await newDoc.copyPages(doc, [i]);
+			newDoc.addPage(copiedPage);
+			
+			// Save the single-page PDF
+			const pdfBytes = await newDoc.save();
+			const outputFilename = join(outputPath, `page_${i + 1}.pdf`);
+			await writeFile(outputFilename, pdfBytes);
+			
 			setPages((prev) => {
-				return [...prev, tmp];
+				return [...prev, outputFilename];
 			});
 		}
 	}

@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join, extname } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
+import tmp from 'tmp';
 
 export const props = z.object({
 	images: z.array(z.string())
@@ -56,7 +55,7 @@ export default function Extension(props: Props) {
 			}
 		}
 
-		const outputFile = join(tmpdir(), `combined-${randomUUID()}.pdf`);
+		const outputFile = tmp.fileSync({ postfix: '.pdf' }).name;
 		const pdfBytes = await pdfDoc.save();
 		await writeFile(outputFile, pdfBytes);
 

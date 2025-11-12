@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@macpaw/eney-api": "1.2.3",
-    "mupdf": "^1.26.4",
     "pdf-lib": "^1.17.1",
+    "tmp": "^0.2.5",
     "zod": "^4.1.0"
   },
   "peerDependencies": {
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.26",
+    "@types/tmp": "^0.2.6",
     "typescript": "^5.6.3"
   }
 }
