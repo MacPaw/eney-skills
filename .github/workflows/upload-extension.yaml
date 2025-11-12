@@ -26,7 +26,8 @@ jobs:
     if: needs.detect-changes.outputs.has_changes == 'true'
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      BACKEND_URL: https://core.eney.appflix.io
+      # BACKEND_URL: https://core.eney.appflix.io
+      BACKEND_URL: https://core-pr-56.eney.appflix.io
       ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
     strategy:
       fail-fast: false

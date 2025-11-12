@@ -1,6 +1,6 @@
 {
   "name": "ffmpeg-utilities",
-  "description": "Image utilities extensions for JSX",
+  "description": "Image utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
