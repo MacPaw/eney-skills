@@ -82,7 +82,7 @@ export default function Extension(props: Props) {
 				</ActionPanel>
 			}
 		>
-			<Form.FilePicker name='source' value={source} onChange={onSourceChange} />
+			<Form.FilePicker name='source' value={source} onChange={onSourceChange} accept={['application/pdf']} />
 		</Form>
 	);
 }

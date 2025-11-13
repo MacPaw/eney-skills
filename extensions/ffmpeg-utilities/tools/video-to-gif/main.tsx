@@ -93,6 +93,7 @@ export default function Extension(props: Props) {
         label="Source"
         value={source}
         onChange={onSourceChange}
+        accept={['video/*']}
       />
     </Form>
   );

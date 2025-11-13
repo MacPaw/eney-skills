@@ -78,7 +78,7 @@ export default function Extension(props: Props) {
 				</ActionPanel>
 			}
 		>
-			<Form.FilePicker name='source' label='Source' value={source} onChange={onSourceChange} />
+			<Form.FilePicker name='source' accept={['image/*']} label='Source' value={source} onChange={onSourceChange} />
 			{source && sourceFormat === 'jpeg' && <JPEGOptions source={source} onChange={onOptionsChange} />}
 		</Form>
 	);

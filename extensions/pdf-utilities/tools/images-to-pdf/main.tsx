@@ -104,6 +104,7 @@ export default function Extension(props: Props) {
 				value={images}
 				onChange={onImageChange}
         multiple
+        accept={['image/png', 'image/jpeg']}
 			/>
 		</Form>
 	);
