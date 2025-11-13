@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -26,6 +26,7 @@ export default function Extension(props: Props) {
 
 		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
 		const outputPath = join(downloadsDir, `${randomUUID()}`);
+		await mkdir(outputPath, { recursive: true });
 
 		setOutputFolder(outputPath);
 
