@@ -3,7 +3,6 @@ import sharp from 'sharp';
 import { useEffect, useState } from 'react';
 import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
 import { randomUUID } from 'node:crypto';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export const props = z.object({
@@ -84,7 +83,7 @@ export default function Extension(props: Props) {
 				</ActionPanel>
 			}
 		>
-			<Form.FilePicker name='source' label='Source' value={source} onChange={onSourceChange} />
+			<Form.FilePicker name='source' label='Source' value={source} onChange={onSourceChange} accept={['image/*']} />
 			<Form.Dropdown name='format' value={targetFormat} onChange={onTargetFormatChange} label='Target format'>
 				{supported.filter((format) => format !== sourceFormat).map((format) => (
 					<Form.Dropdown.Item key={format} title={format ?? ''} value={format} />
