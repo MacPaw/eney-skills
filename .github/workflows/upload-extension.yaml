@@ -56,6 +56,10 @@ jobs:
       - name: Get extension version
         id: get-extension-version
         run: |
+          if [ ! -f extensions/${{ matrix.extension }}/manifest.json ]; then
+            echo "manifest.json not found for extension ${{ matrix.extension }}, skipping."
+            exit 0
+          fi
           VERSION=$(cat extensions/${{ matrix.extension }}/manifest.json | jq -r '.version')
           echo "EXTENSION_VERSION=$VERSION" >> $GITHUB_OUTPUT
 
