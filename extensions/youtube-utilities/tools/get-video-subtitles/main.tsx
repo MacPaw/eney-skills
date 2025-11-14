@@ -98,7 +98,7 @@ export default function Extension(props: Props) {
   );
 
 	if (result) {
-		return <Paper markdown={result} actions={actions} $context={true} />;
+		return <Paper markdown={result} actions={actions} isScrollable={true} $context={true} />;
 	}
 
 	return (
