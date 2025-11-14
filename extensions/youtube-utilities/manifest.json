@@ -1,0 +1,13 @@
+{
+	"id": "youtube-utilities",
+	"type": "jsx",
+	"version": "1",
+	"title": "Youtube Utilities",
+	"tools": [
+		{
+			"name": "get-video-subtitles",
+			"title": "Get video subtitles",
+			"description": "Get video subtitles."
+		}
+	]
+}
