@@ -50,9 +50,6 @@ jobs:
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Check extension version
-        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
-
       - name: Get extension version
         id: get-extension-version
         run: |
@@ -62,6 +59,9 @@ jobs:
           fi
           VERSION=$(cat extensions/${{ matrix.extension }}/manifest.json | jq -r '.version')
           echo "EXTENSION_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check extension version
+        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
       - name: Bundle extension
         run: node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
