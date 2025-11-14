@@ -18,7 +18,7 @@ export async function checkVersion(cwd: string) {
   const extensionName = basename(cwd);
 
   const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
-  const currentVersion = manifest.version;
+  const currentVersion = semver.coerce(manifest.version);
 
   console.log(`Current version: ${currentVersion}`);
 
@@ -45,8 +45,8 @@ export async function checkVersion(cwd: string) {
 
     const data: ExtensionVersion[] = await response.json();
 
-    const versionList = data.map((version) => version.version).sort((a, b) => semver.compare(b, a));
-    const latestVersion = versionList[0];
+    const versionList = data.map((version) => semver.coerce(version.version)).sort((a, b) => semver.compare(b, a));
+    const latestVersion = semver.coerce(versionList[0]);
 
     if (versionList.includes(currentVersion)) {
       throw new Error(`Version ${currentVersion} already exists! Please update the version in the manifest.json file.`);
