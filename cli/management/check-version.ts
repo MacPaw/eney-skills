@@ -25,7 +25,7 @@ export async function checkVersion(cwd: string) {
   if (!backendUrl || !accessToken) {
 		throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
 	}
-	
+
   try {
     const response = await fetch(`${backendUrl}/admin/v3/artifacts/extension/${extensionName}/versions`, {
       method: 'GET',
@@ -38,28 +38,28 @@ export async function checkVersion(cwd: string) {
       console.log(`Extension ${extensionName} artifact versions not found, ready to publish`);
       return;
     }
-  
+
     if (!response.ok) {
       throw new Error(`Failed to get extension versions: ${response.status} ${response.statusText}`);
     }
-  
+
     const data: ExtensionVersion[] = await response.json();
-  
+
     const versionList = data.map((version) => version.version).sort((a, b) => semver.compare(b, a));
     const latestVersion = versionList[0];
-  
+
     if (versionList.includes(currentVersion)) {
       throw new Error(`Version ${currentVersion} already exists! Please update the version in the manifest.json file.`);
     }
-  
+
     if (!semver.valid(currentVersion)) {
       throw new Error(`Version ${currentVersion} is not a valid semver version! Please update the version in the manifest.json file.`);
     }
-  
+
     if (semver.lt(currentVersion, latestVersion)) {
       throw new Error(`Version ${currentVersion} is less than the latest version ${versionList[0]}! Please update the version in the manifest.json file.`);
     }
-  
+
     console.log(`Version ${currentVersion} does not exist, all good!`);
   } catch (error) {
     console.error(`\nError checking extension version!\n${error.message}`);
