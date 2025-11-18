@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { z } from 'zod';
-import OpenAI from 'openai';	
 import { Action, ActionPanel, Form, Paper, useBinary } from '@macpaw/eney-api';
-import config from '../../config.json' with { type: 'json' };
 
 const props = z.object({
 	source: z.string()
 		.optional()
-		.describe('The YouTube URL to summarize.'),
+		.describe('The YouTube URL to get subtitles for.'),
 });
 
 type Props = z.infer<typeof props>;
@@ -26,17 +24,17 @@ type MetaData = {
 type SubtitlesJSON3 = { events: Array<{ segs?: Array<{ utf8?: string }> }> };
 
 export default function Extension(props: Props) {
-	const [source, setSource] = useState(props.source);
+	const [source, setSource] = useState(props.source ?? "");
 	const [loading, setLoading] = useState(false);
 	const [result, setResult] = useState('');
 
 	const { isLoading: isYtdlpLoading, exec: ytdlp } = useBinary("yt-dlp");
 
 	async function onSubmit() {
-		if (!source) return;
+		if (!source.trim()) return;
 		setLoading(true);
 		const subtitles = await fetchSubtitles(source);
-		await summarize(subtitles);
+		setResult(subtitles);
 		setLoading(false);
 	}
 
@@ -84,24 +82,6 @@ export default function Extension(props: Props) {
 		return lines.join('\n');
 	}
 
-	async function summarize(content: string) {
-		const client = new OpenAI({
-			apiKey: config.OPENAI_KEY,
-		});
-		const stream = await client.responses.create({
-			model: 'gpt-4o',
-			stream: true,
-			instructions: [
-				'Provide detailed summary of the video',
-				'Use first two lines metadata marked as [TITLE] and [DESCRIPTION] as hint, but DO NOT include this content into summary',
-			].join('\n'),
-			input: content,
-		});
-		for await (const event of stream) {
-			if (event.type !== 'response.output_text.delta') continue;
-			setResult((prev) => prev += event.delta);
-		}
-	}
 
 	function onSourceChange(path: string) {
 		setSource(path);
@@ -111,15 +91,21 @@ export default function Extension(props: Props) {
 		return <Paper markdown="Ytdlp is loading..." />;
 	}
 
+  const actions = (
+    <ActionPanel>
+      <Action.Finalize title="Done" />
+    </ActionPanel>
+  );
+
 	if (result) {
-		return <Paper markdown={result} />;
+		return <Paper markdown={result} actions={actions} isScrollable={true} $context={true} />;
 	}
 
 	return (
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Summarize' onSubmit={onSubmit} loading={loading} />
+					<Action.SubmitForm title='Summarize' onSubmit={onSubmit} isLoading={loading} />
 				</ActionPanel>
 			}
 		>

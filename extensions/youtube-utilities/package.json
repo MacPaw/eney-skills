@@ -1,6 +1,6 @@
 {
-  "name": "summarize",
-  "description": "Summarize content from websites or videos extensions",
+  "name": "youtube-utilities",
+  "description": "Youtube utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -10,18 +10,13 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "1.3.0",
-    "@mozilla/readability": "0.4.1",
-    "jsdom": "26.1.0",
-    "openai": "^6.2.0",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "@macpaw/eney-api": "1.3.0"
   },
   "peerDependencies": {
     "react": "^18.0.0"
   },
   "devDependencies": {
-    "@types/jsdom": "21.1.7",
-    "@types/mozilla-readability": "0.2.1",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.26",
     "typescript": "^5.6.3"
