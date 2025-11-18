@@ -2,7 +2,7 @@
 	"id": "pdf-utilities",
 	"type": "jsx",
 	"version": "2",
-	"title": "PDF Utilities",
+	"title": "PDF utilities",
 	"tools": [
 		{
 			"name": "split-pages",

@@ -2,7 +2,7 @@
 	"id": "security-utilities",
 	"type": "jsx",
 	"version": "2",
-	"title": "Security Utilities",
+	"title": "Security utilities",
 	"tools": [
 		{
 			"name": "new-password",

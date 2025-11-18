@@ -1,5 +1,6 @@
 import { getToolsWithSchemas } from './extract-schemas.ts';
 import { basename } from 'path';
+import semver from 'semver';
 
 const backendUrl = process.env.BACKEND_URL;
 const accessToken = process.env.ADMIN_AUTH_TOKEN;
@@ -8,10 +9,15 @@ export async function publishExtension(cwd: string, version: string, hash: strin
   const extensionName = basename(cwd);
 	const tools = await getToolsWithSchemas(cwd);
 
+	const parsedVersion = semver.coerce(version).toString();
+	if (!parsedVersion) {
+		throw new Error(`Invalid version: ${version}`);
+	}
+	
 	const metadataPayload = {
 		extension_id: extensionName,
 		tools,
-		version,
+		version: parsedVersion,
 	};
 
 	console.dir(metadataPayload, { depth: null });
