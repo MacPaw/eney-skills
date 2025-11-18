@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { z } from 'zod';
-import { Action, ActionPanel, Form, Paper, useBinary } from '@macpaw/eney-api';
+import { Action, ActionPanel, Form, Paper, useBinary, setupTool } from '@macpaw/eney-api';
 
 const props = z.object({
 	source: z.string()
@@ -113,3 +113,5 @@ export default function Extension(props: Props) {
 		</Form>
 	);
 }
+
+setupTool(Extension);
