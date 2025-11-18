@@ -13,7 +13,7 @@ export async function publishExtension(cwd: string, version: string, hash: strin
 	if (!parsedVersion) {
 		throw new Error(`Invalid version: ${version}`);
 	}
-	
+
 	const metadataPayload = {
 		extension_id: extensionName,
 		tools,
@@ -23,7 +23,7 @@ export async function publishExtension(cwd: string, version: string, hash: strin
 	console.dir(metadataPayload, { depth: null });
 
 	const artifactPayload = {
-		version,
+		version: parsedVersion,
 		hash,
 		downloadUrl
 	};
