@@ -2,7 +2,7 @@
 	"id": "ffmpeg-utilities",
 	"type": "jsx",
 	"version": "2",
-	"title": "FFmpeg Utilities",
+	"title": "Ffmpeg Utilities",
 	"tools": [
 		{
 			"name": "video-to-gif",

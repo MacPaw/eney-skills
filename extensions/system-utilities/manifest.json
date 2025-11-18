@@ -2,7 +2,7 @@
 	"id": "system-utilities",
 	"type": "jsx",
 	"version": "2",
-	"title": "System Utilities",
+	"title": "System utilities",
 	"tools": [
 		{
 			"name": "sleep-mode",

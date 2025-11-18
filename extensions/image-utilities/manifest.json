@@ -2,7 +2,7 @@
 	"id": "image-utilities",
 	"type": "jsx",
 	"version": "2",
-	"title": "Image Utilities",
+	"title": "Image utilities",
 	"tools": [
 		{
 			"name": "image-converter",
