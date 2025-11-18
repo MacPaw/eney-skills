@@ -25,17 +25,17 @@ type SubtitlesJSON3 = { events: Array<{ segs?: Array<{ utf8?: string }> }> };
 
 export default function Extension(props: Props) {
 	const [source, setSource] = useState(props.source ?? "");
-	const [loading, setLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 	const [result, setResult] = useState('');
 
 	const { isLoading: isYtdlpLoading, exec: ytdlp } = useBinary("yt-dlp");
 
 	async function onSubmit() {
 		if (!source.trim()) return;
-		setLoading(true);
+		setIsLoading(true);
 		const subtitles = await fetchSubtitles(source);
 		setResult(subtitles);
-		setLoading(false);
+		setIsLoading(false);
 	}
 
 	async function fetchSubtitles(source: string) {
@@ -105,10 +105,11 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Summarize' onSubmit={onSubmit} isLoading={loading} />
+					<Action.SubmitForm title='Get subtitles' onSubmit={onSubmit} isLoading={isLoading} />
 				</ActionPanel>
 			}
 		>
+			{isLoading && <Paper markdown="Subtitles are loading..." />}
 			<Form.TextField name='source' label='Source' value={source} onChange={onSourceChange} />
 		</Form>
 	);
