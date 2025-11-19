@@ -35,7 +35,7 @@ export default function Extension(props: Props) {
   }
 
   function onChangeLength(value: number) {
-    setLength(value);
+    setLength(Math.min(Math.max(value, 6), 128));
   }
 
   function onPasswordChange(value: string) {
@@ -85,7 +85,8 @@ export default function Extension(props: Props) {
         name="password"
         value={password}
         onChange={onPasswordChange}
-        $context={true}
+        isCopyable
+        $context
       />
     </Form>
   );
