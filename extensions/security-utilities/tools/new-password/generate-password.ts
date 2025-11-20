@@ -1,5 +1,5 @@
 type Options = {
-  length?: number;
+  length?: number | null;
   symbols: boolean;
   numbers: boolean;
 };
@@ -28,8 +28,11 @@ function pick(str: string) {
 }
 
 export function generatePassword(options: Options) {
-  const minSize = 6;
-  const length = options.length ? Math.max(options.length, minSize) : 20;
+  const maxSize = 128;
+  const length = options.length ? Math.min(options.length, maxSize) : null;
+
+  if (!length) return "";
+
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
   const symbols = "!@#$%^&*?_~";
