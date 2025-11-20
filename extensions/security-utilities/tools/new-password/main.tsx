@@ -21,7 +21,7 @@ export const props = z.object({
 type Props = z.infer<typeof props>;
 
 export default function Extension(props: Props) {
-  const [length, setLength] = useState(props.length ?? 20);
+  const [length, setLength] = useState<number | null>(props.length ?? 20);
   const [symbols, setSymbols] = useState(props.symbols ?? true);
   const [numbers, setNumbers] = useState(props.numbers ?? true);
   const [password, setPassword] = useState("");
@@ -34,8 +34,8 @@ export default function Extension(props: Props) {
     setNumbers(value);
   }
 
-  function onChangeLength(value: number) {
-    setLength(Math.min(Math.max(value, 6), 128));
+  function onChangeLength(value: number | null) {
+    setLength(value);
   }
 
   function onPasswordChange(value: string) {
@@ -63,7 +63,7 @@ export default function Extension(props: Props) {
     <Form actions={actions}>
       <Form.NumberField
         name="length"
-        label="Password length"
+        label="Password length (max 128)"
         value={length}
         onChange={onChangeLength}
       />
