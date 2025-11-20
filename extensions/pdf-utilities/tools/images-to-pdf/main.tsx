@@ -94,6 +94,7 @@ export default function Extension(props: Props) {
 					<Action.SubmitForm
 						title={images.length > 0 ? `Create PDF from ${images.length} image${images.length > 1 ? 's' : ''}` : 'Create PDF'}
 						onSubmit={onSubmit}
+						isDisabled={images.length === 0}
 						style="primary"
 					/>
 				</ActionPanel>
