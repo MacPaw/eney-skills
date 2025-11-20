@@ -78,7 +78,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Split' onSubmit={onSubmit} style="primary" />
+					<Action.SubmitForm title='Split' onSubmit={onSubmit} isDisabled={!source} style="primary" />
 				</ActionPanel>
 			}
 		>

@@ -82,6 +82,7 @@ export default function Extension(props: Props) {
             title="Convert"
             onSubmit={onSubmit}
             isLoading={isLoading}
+            isDisabled={!source}
             style="primary"
           />
         </ActionPanel>

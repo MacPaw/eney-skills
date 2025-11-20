@@ -79,7 +79,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Convert' onSubmit={onSubmit} isLoading={isLoading} style="primary" />
+					<Action.SubmitForm title='Convert' onSubmit={onSubmit} isDisabled={!source} isLoading={isLoading} style="primary" />
 				</ActionPanel>
 			}
 		>

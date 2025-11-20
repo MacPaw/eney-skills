@@ -74,7 +74,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} isLoading={isLoading} style="primary" />
+					<Action.SubmitForm title='Optimize' onSubmit={onSubmit} isDisabled={!source} isLoading={isLoading} style="primary" />
 				</ActionPanel>
 			}
 		>

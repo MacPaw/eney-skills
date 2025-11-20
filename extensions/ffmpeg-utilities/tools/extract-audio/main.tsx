@@ -79,6 +79,7 @@ export default function Extension(props: Props) {
 				title="Extract"
 				onSubmit={onSubmit}
 				isLoading={isLoading}
+				isDisabled={!source}
 				style="primary"
 			/>
 		</ActionPanel>
