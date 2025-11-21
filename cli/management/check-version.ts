@@ -2,17 +2,7 @@ import { basename, join } from 'path';
 import fs from 'fs/promises';
 import semver from 'semver';
 
-const backendUrl = process.env.BACKEND_URL;
-const accessToken = process.env.ADMIN_AUTH_TOKEN;
-
-type ExtensionVersion = {
-  artifactType: 'extension';
-  artifactId: string;
-  version: string;
-  hash: string;
-  downloadUrl: string;
-  createdAt: string;
-}
+import { getExtensionVersions } from '../lib/api.ts';
 
 export async function checkVersion(cwd: string) {
   const extensionName = basename(cwd);
@@ -22,30 +12,15 @@ export async function checkVersion(cwd: string) {
 
   console.log(`Current version: ${currentVersion}`);
 
-  if (!backendUrl || !accessToken) {
-		throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
-	}
-
   try {
-    const response = await fetch(`${backendUrl}/admin/v3/artifacts/extension/${extensionName}/versions`, {
-      method: 'GET',
-      headers: {
-        'X-API-Token': accessToken,
-      },
-    });
+    const versions = await getExtensionVersions(extensionName);
 
-    if (response.status === 404) {
+    if (versions.length === 0) {
       console.log(`Extension ${extensionName} artifact versions not found, ready to publish`);
       return;
     }
 
-    if (!response.ok) {
-      throw new Error(`Failed to get extension versions: ${response.status} ${response.statusText}`);
-    }
-
-    const data: ExtensionVersion[] = await response.json();
-
-    const versionList = data.map((version) => semver.coerce(version.version)).sort((a, b) => semver.compare(b, a));
+    const versionList = versions.map((version) => semver.coerce(version.version)).sort((a, b) => semver.compare(b, a));
     const latestVersion = semver.coerce(versionList[0]);
 
     if (versionList.includes(currentVersion)) {
