@@ -1,7 +1,8 @@
 import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
-import { publishExtension } from "./management/publish.ts";
+import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersion } from "./management/check-version.ts";
+import { packExtensionCommand } from "./management/pack.ts";
 
 const program = new Command();
 
@@ -25,12 +26,19 @@ program
   .requiredOption("--hash <hash>", "Hash")
   .requiredOption("--download-url <downloadUrl>", "Download URL")
   .option("--dry-run", "Do not publish remotely, just log actions", false)
-  .action(({ cwd, extensionVersion, hash, downloadUrl, dryRun }) => publishExtension(cwd, extensionVersion, hash, downloadUrl, dryRun));
+  .action(({ cwd, extensionVersion, hash, downloadUrl, dryRun }) => publishExtensionCommand(cwd, extensionVersion, hash, downloadUrl, dryRun));
 
 program
   .command("check-version")
   .description("Check version")
   .option("--cwd <path>", "Current working directory", process.cwd())
   .action(({ cwd }) => checkVersion(cwd));
+
+program
+  .command("pack")
+  .description("Create extension archive")
+  .option("--cwd <path>", "Current working directory", process.cwd())
+  .option("-o, --output <path>", "Directory to place the archive")
+  .action(({ cwd, output }) => packExtensionCommand(cwd, output));
 
 program.parse(process.argv);
