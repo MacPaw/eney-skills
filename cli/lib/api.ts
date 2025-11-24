@@ -38,9 +38,8 @@ export async function getExtensionVersions(extensionName: string) {
 
 type PublishExtensionPayload = {
   extension_id: string;
+  tools: Record<string, any>[];
   version: string;
-  hash: string;
-  downloadUrl: string;
 }
 
 export async function publishExtension(payload: PublishExtensionPayload) {
@@ -59,14 +58,14 @@ export async function publishExtension(payload: PublishExtensionPayload) {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to publish extension: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to publish extension: ${response.status} ${response.statusText} ${await response.text()}`);
     }
 
     const data = await response.json();
 
     return data;
   } catch (error) {
-    console.error(`\nError publishing extension!\n${error.message}`);
+    console.error(`\nError publishing extension!\n${error}`);
     throw error;
   }
 }
