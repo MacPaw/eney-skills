@@ -54,9 +54,6 @@ jobs:
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
       - name: Publish extension
-        run: node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging
-
-      - name: Publish extension
         run: |
           DRY_RUN_ARG=""
 
