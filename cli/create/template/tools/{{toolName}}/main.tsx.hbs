@@ -1,0 +1,42 @@
+import { useState } from "react";
+import { Action, ActionPanel, Form, Paper } from "@macpaw/eney-api";
+import { z } from "zod";
+
+const props = z.object({
+	name: z.string()
+		.optional()
+		.describe("The name to greet."),
+});
+
+type Props = z.infer<typeof props>;
+
+export default function Extension(props: Props) {
+	const [name, setName] = useState(props.name ?? "");
+	const [result, setResult] = useState("");
+
+	function onSubmit() {
+		setResult(`Hello,${name}!`);
+	}
+
+	function onNameChange(name: string) {
+		setName(name);
+	}
+
+	const actions = (
+		<ActionPanel>
+			<Action.SubmitForm title="Submit" onSubmit={onSubmit} style="primary" />
+		</ActionPanel>
+	);
+
+	return (
+		<Form actions={actions}>
+			{result && <Paper markdown={result} />}
+			<Form.TextField
+				name="name"
+				label="Name"
+				value={name}
+				onChange={onNameChange}
+			/>
+		</Form>
+	);
+}

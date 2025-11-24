@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
+import { createCommand } from "./create/command.ts";
 import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersion } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
@@ -10,6 +11,12 @@ program
   .name("eney-extension-helper")
   .description("CLI for Eney Extension Helper")
   .version("1.0.0");
+
+program
+  .command("create")
+  .description("Create a new extension")
+  .option("-o, --output <path>", "Output directory (defaults to current directory)")
+  .action((options) => createCommand(options));
 
 program
   .command("bundle")
