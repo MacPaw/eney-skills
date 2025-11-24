@@ -2,9 +2,10 @@ import { basename, join } from 'path';
 import fs from 'fs/promises';
 import semver from 'semver';
 
-import { getExtensionVersions } from '../lib/api.ts';
+import { getExtensionVersions, setupFetchClient } from '../lib/api.ts';
 
-export async function checkVersion(cwd: string) {
+export async function checkVersion(cwd: string, mode: "staging" | "production" = "staging") {
+  const { fetchClient } = await setupFetchClient(mode);
   const extensionName = basename(cwd);
 
   const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
@@ -13,7 +14,7 @@ export async function checkVersion(cwd: string) {
   console.log(`Current version: ${currentVersion}`);
 
   try {
-    const versions = await getExtensionVersions(extensionName);
+    const versions = await getExtensionVersions(extensionName, fetchClient);
 
     if (versions.length === 0) {
       console.log(`Extension ${extensionName} artifact versions not found, ready to publish`);

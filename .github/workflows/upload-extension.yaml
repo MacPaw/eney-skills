@@ -53,47 +53,8 @@ jobs:
       - name: Check extension version
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
-      - name: Get extension version
-        id: get-extension-version
-        run: |
-          VERSION=$(cat extensions/${{ matrix.extension }}/manifest.json | jq -r '.version')
-          echo "EXTENSION_VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Bundle extension
-        run: node cli/main.ts bundle --cwd extensions/${{ matrix.extension }} -o dist
-
-      - name: Get archive name
-        id: get-archive-name
-        run: |
-          ARCHIVE_NAME=${{ matrix.extension }}@v${{ steps.get-extension-version.outputs.EXTENSION_VERSION }}.zip
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-
-      - name: Create extension archive
-        run: |
-          cd dist
-          tar -czf ${{ steps.get-archive-name.outputs.ARCHIVE_NAME }} ${{ matrix.extension }}
-
-      - id: get-archive-sha
-        name: Get archive hash
-        run: |
-          ARCHIVE_SHA256=$(shasum -a 256 dist/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }} | awk '{print $1}')
-          echo "ARCHIVE_SHA256=$ARCHIVE_SHA256" >> $GITHUB_OUTPUT
-
-      - id: upload-extension-archive
-        name: Upload Extension Archive
-        uses: google-github-actions/upload-cloud-storage@6397bd7208e18d13ba2619ee21b9873edc94427a # v3
-        if: env.IS_DRY_RUN != 'true'
-        with:
-          path: dist/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }}
-          destination: "eney-assets/extensions"
-          predefinedAcl: "publicRead"
-          process_gcloudignore: false
-
-      - id: get-download-url
-        name: Get download URL
-        run: |
-          DOWNLOAD_URL="https://storage.googleapis.com/eney-assets/extensions/${{ steps.get-archive-name.outputs.ARCHIVE_NAME }}"
-          echo "DOWNLOAD_URL=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+      - name: Publish extension
+        run: node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging
 
       - name: Publish extension
         run: |
@@ -105,7 +66,5 @@ jobs:
 
           node cli/main.ts publish \
             --cwd extensions/${{ matrix.extension }} \
-            --extension-version ${{ steps.get-extension-version.outputs.EXTENSION_VERSION }} \
-            --hash ${{ steps.get-archive-sha.outputs.ARCHIVE_SHA256 }} \
-            --download-url ${{ steps.get-download-url.outputs.DOWNLOAD_URL }} \
+            --mode staging \
             $DRY_RUN_ARG

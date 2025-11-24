@@ -22,8 +22,9 @@ program
   .command("publish")
   .description("Publish a tool")
   .option("--cwd <path>", "Current working directory", process.cwd())
+  .option("--mode <mode>", "Publish mode", "staging")
   .option("--dry-run", "Do not publish remotely, just log actions", false)
-  .action(({ cwd, dryRun }) => publishExtensionCommand(cwd, dryRun));
+  .action(({ cwd, mode, dryRun }) => publishExtensionCommand(cwd, mode, dryRun));
 
 program
   .command("check-version")

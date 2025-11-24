@@ -2,10 +2,10 @@ import { Storage } from "@google-cloud/storage";
 import { basename } from "path";
 import fs from "fs-extra";
 
-export async function uploadToCloud(filePath: string) {
+export async function uploadToCloud(filePath: string, mode: string = "staging") {
   const bucketName = "eney-assets";
   const fileName = basename(filePath);
-  const destination = `extensions/${fileName}`;
+  const destination = `extensions/${mode}/${fileName}`;
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);

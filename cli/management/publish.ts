@@ -2,13 +2,14 @@ import { basename, join } from 'path';
 import semver from 'semver';
 import fs from 'fs/promises';
 
-import { publishExtension, publishExtensionVersion } from '../lib/api.ts';
+import { publishExtension, publishExtensionVersion, setupFetchClient } from '../lib/api.ts';
 
-import { getToolsWithSchemas } from './extract-schemas.ts';
 import { getFileDownloadUrl, getFileHash, packExtension } from './pack.ts';
+import { getToolsWithSchemas } from './extract-schemas.ts';
 import { uploadToCloud } from './upload-to-cloud.ts';
 
-export async function publishExtensionCommand(cwd: string, dryRun = false) {
+export async function publishExtensionCommand(cwd: string, mode: "staging" | "production" = "staging", dryRun = false) {
+	const { fetchClient } = await setupFetchClient(mode);
   const extensionName = basename(cwd);
 	const tools = await getToolsWithSchemas(cwd);
 
@@ -17,7 +18,7 @@ export async function publishExtensionCommand(cwd: string, dryRun = false) {
 	
 	const archivePath = await packExtension(cwd);
 	const hash = await getFileHash(archivePath);
-	const downloadUrl = await getFileDownloadUrl(archivePath);
+	const downloadUrl = await getFileDownloadUrl(archivePath, mode);
 
 	const metadataPayload = {
 		extension_id: extensionName,
@@ -41,7 +42,7 @@ export async function publishExtensionCommand(cwd: string, dryRun = false) {
 	}
 
 	try {
-		const data = await publishExtension(metadataPayload);
+		const data = await publishExtension(metadataPayload, fetchClient);
 	
 		console.log('Extension published successfully:', data);
 	} catch (error) {
@@ -49,7 +50,7 @@ export async function publishExtensionCommand(cwd: string, dryRun = false) {
 		throw error;
 	}
 	
-	await uploadToCloud(archivePath);
+	await uploadToCloud(archivePath, mode);
 
 	await fs.rm(archivePath, { force: true });
 
@@ -57,8 +58,8 @@ export async function publishExtensionCommand(cwd: string, dryRun = false) {
 		const data = await publishExtensionVersion(extensionName, {
 			version: parsedVersion,
 			hash,
-			downloadUrl
-		});
+			downloadUrl,
+		}, fetchClient);
 	
 		console.log('Extension version published successfully:', data);
 	} catch (error) {

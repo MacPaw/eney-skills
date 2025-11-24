@@ -1,4 +1,3 @@
-const backendUrl = process.env.BACKEND_URL;
 const accessToken = process.env.ADMIN_AUTH_TOKEN;
 
 type ExtensionVersion = {
@@ -10,18 +9,29 @@ type ExtensionVersion = {
   createdAt: string;
 }
 
-export async function getExtensionVersions(extensionName: string) {
-  if (!backendUrl || !accessToken) {
-		throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
+export async function setupFetchClient(mode: "staging" | "production" = "staging") {
+  const backendUrl =  mode === 'staging' ? `https://core.eney.appflix.io` : `https://core.internal.eney.ai`;
+
+  if (!accessToken) {
+		throw new Error('ADMIN_AUTH_TOKEN must be set');
 	}
 
-  try {
-    const response = await fetch(`${backendUrl}/admin/v3/artifacts/extension/${extensionName}/versions`, {
-      method: 'GET',
+  const newFetch = (url: string, options: RequestInit) => {
+    return fetch(`${backendUrl}${url}`, {
+      ...options,
       headers: {
+        'Content-Type': 'application/json',
         'X-API-Token': accessToken,
       },
     });
+  }
+
+  return { fetchClient: newFetch };
+}
+
+export async function getExtensionVersions(extensionName: string, fetch: (url: string, options: RequestInit) => Promise<Response>) {
+  try {
+    const response = await fetch(`/admin/v3/artifacts/extension/${extensionName}/versions`, { method: 'GET' });
 
     if (!response.ok) {
       throw new Error(`Failed to get extension versions: ${response.status} ${response.statusText}`);
@@ -42,18 +52,10 @@ type PublishExtensionPayload = {
   version: string;
 }
 
-export async function publishExtension(payload: PublishExtensionPayload) {
-  if (!backendUrl || !accessToken) {
-    throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
-  }
-
+export async function publishExtension(payload: PublishExtensionPayload, fetch: (url: string, options: RequestInit) => Promise<Response>) {
   try {
-    const response = await fetch(`${backendUrl}/admin/v3/extensions/tools`, {
+    const response = await fetch(`/admin/v3/extensions/tools`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Token': accessToken,
-      },
       body: JSON.stringify(payload),
     });
 
@@ -76,18 +78,10 @@ type PublishExtensionVersionPayload = {
   downloadUrl: string;
 }
 
-export async function publishExtensionVersion(extensionName: string, payload: PublishExtensionVersionPayload) {
-  if (!backendUrl || !accessToken) {
-    throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
-  }
-
+export async function publishExtensionVersion(extensionName: string, payload: PublishExtensionVersionPayload, fetch: (url: string, options: RequestInit) => Promise<Response>) {
   try {
-    const response = await fetch(`${backendUrl}/admin/v3/artifacts/extension/${extensionName}/versions`, {
+    const response = await fetch(`/admin/v3/artifacts/extension/${extensionName}/versions`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Token': accessToken,
-      },
       body: JSON.stringify(payload),
     });
 

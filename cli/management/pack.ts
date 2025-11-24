@@ -3,9 +3,9 @@ import fs from 'fs/promises';
 import { spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { tmpdir } from 'os';
+import { existsSync } from 'fs';
 
 import { bundle } from '../bundle/command.ts';
-import { existsSync } from 'fs';
 
 export async function packExtension(cwd: string, out?: string) {
   const extensionDir = resolve(cwd);
@@ -81,8 +81,8 @@ export async function getFileHash(filePath: string) {
   return createHash('sha256').update(fileBuffer).digest('hex');
 }
 
-export async function getFileDownloadUrl(filePath: string) {
-  return `https://storage.googleapis.com/eney-assets/extensions/${basename(filePath)}`;
+export async function getFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging") {
+  return `https://storage.googleapis.com/eney-assets/extensions/${mode}/${basename(filePath)}`;
 }
 
 export async function packExtensionCommand(cwd: string, outputDir?: string) {
