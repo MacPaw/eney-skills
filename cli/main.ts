@@ -22,11 +22,8 @@ program
   .command("publish")
   .description("Publish a tool")
   .option("--cwd <path>", "Current working directory", process.cwd())
-  .requiredOption("--extension-version <extensionVersion>", "Extension version")
-  .requiredOption("--hash <hash>", "Hash")
-  .requiredOption("--download-url <downloadUrl>", "Download URL")
   .option("--dry-run", "Do not publish remotely, just log actions", false)
-  .action(({ cwd, extensionVersion, hash, downloadUrl, dryRun }) => publishExtensionCommand(cwd, extensionVersion, hash, downloadUrl, dryRun));
+  .action(({ cwd, dryRun }) => publishExtensionCommand(cwd, dryRun));
 
 program
   .command("check-version")

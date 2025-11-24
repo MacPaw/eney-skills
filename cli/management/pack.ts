@@ -1,11 +1,15 @@
 import { basename, dirname, join, resolve } from 'path';
 import fs from 'fs/promises';
 import { spawn } from 'child_process';
+import { createHash } from 'crypto';
+import { tmpdir } from 'os';
 
-export async function packExtensionCommand(cwd: string, outputDir?: string) {
+import { bundle } from '../bundle/command.ts';
+import { existsSync } from 'fs';
+
+export async function packExtension(cwd: string, out?: string) {
   const extensionDir = resolve(cwd);
   const extensionName = basename(extensionDir);
-  const parentDir = dirname(extensionDir);
   const manifestPath = join(extensionDir, 'manifest.json');
 
   try {
@@ -28,21 +32,29 @@ export async function packExtensionCommand(cwd: string, outputDir?: string) {
     throw new Error(`Missing "version" field in manifest at ${manifestPath}`);
   }
 
+  let outputDir = tmpdir();
+
+  if (out) {
+    outputDir = resolve(out);
+
+    if (!existsSync(outputDir)) {
+      await fs.mkdir(outputDir, { recursive: true });
+    }
+  }
+
   const archiveName = `${extensionName}@v${manifestVersion}.zip`;
-  const archiveBaseDir = outputDir ? resolve(outputDir) : parentDir;
-  const archivePath = join(archiveBaseDir, archiveName);
+  const archiveResultPath = join(outputDir, archiveName);
 
-  await fs.mkdir(archiveBaseDir, { recursive: true });
+  const folderWithBundle = await bundle(cwd, "./dist");
+  const parentFolderOfBundle = dirname(folderWithBundle);
 
-  await fs.rm(archivePath, { force: true }).catch(() => undefined);
+  await fs.rm(archiveResultPath, { force: true }).catch(() => undefined);
 
-  console.log(`Creating archive ${archiveName} in ${archiveBaseDir}...`);
-
-  const tarOutputPath = outputDir ? archivePath : archiveName;
+  console.log(`Creating archive ${archiveName} in ${outputDir}...`);
 
   await new Promise<void>((resolve, reject) => {
-    const tarProcess = spawn('tar', ['-czf', tarOutputPath, extensionName], {
-      cwd: parentDir,
+    const tarProcess = spawn('tar', ['-czf', archiveResultPath, extensionName], {
+      cwd: parentFolderOfBundle,
       stdio: 'inherit',
     });
 
@@ -59,6 +71,20 @@ export async function packExtensionCommand(cwd: string, outputDir?: string) {
     });
   });
 
-  console.log(`Archive created at ${archivePath}`);
+  console.log(`Archive created at ${archiveResultPath}`);
+
+  return archiveResultPath;
 }
 
+export async function getFileHash(filePath: string) {
+  const fileBuffer = await fs.readFile(filePath);
+  return createHash('sha256').update(fileBuffer).digest('hex');
+}
+
+export async function getFileDownloadUrl(filePath: string) {
+  return `https://storage.googleapis.com/eney-assets/extensions/${basename(filePath)}`;
+}
+
+export async function packExtensionCommand(cwd: string, outputDir?: string) {
+  await packExtension(cwd, outputDir);
+}

@@ -8,6 +8,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@google-cloud/storage": "^7.17.3",
     "fs-extra": "^11.3.2",
     "semver": "^7.7.3",
     "typescript": "^5.9.3",

@@ -1,16 +1,23 @@
-import { getToolsWithSchemas } from './extract-schemas.ts';
-import { basename } from 'path';
+import { basename, join } from 'path';
 import semver from 'semver';
+import fs from 'fs/promises';
+
 import { publishExtension, publishExtensionVersion } from '../lib/api.ts';
 
-export async function publishExtensionCommand(cwd: string, version: string, hash: string, downloadUrl: string, dryRun = false) {
+import { getToolsWithSchemas } from './extract-schemas.ts';
+import { getFileDownloadUrl, getFileHash, packExtension } from './pack.ts';
+import { uploadToCloud } from './upload-to-cloud.ts';
+
+export async function publishExtensionCommand(cwd: string, dryRun = false) {
   const extensionName = basename(cwd);
 	const tools = await getToolsWithSchemas(cwd);
 
-	const parsedVersion = semver.coerce(version).toString();
-	if (!parsedVersion) {
-		throw new Error(`Invalid version: ${version}`);
-	}
+	const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
+	const parsedVersion = semver.coerce(manifest.version).toString();
+	
+	const archivePath = await packExtension(cwd);
+	const hash = await getFileHash(archivePath);
+	const downloadUrl = await getFileDownloadUrl(archivePath);
 
 	const metadataPayload = {
 		extension_id: extensionName,
@@ -34,18 +41,17 @@ export async function publishExtensionCommand(cwd: string, version: string, hash
 	}
 
 	try {
-		const data = await publishExtension({
-			extension_id: extensionName,
-			version: parsedVersion,
-			hash,
-			downloadUrl
-		});
+		const data = await publishExtension(metadataPayload);
 	
 		console.log('Extension published successfully:', data);
 	} catch (error) {
 		console.error('Error publishing extension:', error);
 		throw error;
 	}
+	
+	await uploadToCloud(archivePath);
+
+	await fs.rm(archivePath, { force: true });
 
 	try {
 		const data = await publishExtensionVersion(extensionName, {
