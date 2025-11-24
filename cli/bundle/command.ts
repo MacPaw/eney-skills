@@ -101,8 +101,6 @@ export async function bundle(cwd: string, outFolder: string) {
 
   await copy(manifestPath, resolve(outFolder, extensionFolderName, "manifest.json"));
 
-  console.log("\nBundle complete!");
-
   try {
     execSync("npm i", {
       cwd: extensionFolder,
