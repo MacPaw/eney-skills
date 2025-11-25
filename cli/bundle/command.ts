@@ -6,7 +6,7 @@ import { execSync } from "child_process";
 
 const defaultOutFolder = "../../../eney-jsx-runtime/extensions";
 
-export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: string = process.cwd()) {
+export async function bundle(cwd: string, outFolder: string) {
   const extensionFolder = cwd;
 
   console.log(`Extension folder: ${extensionFolder}`);
@@ -101,8 +101,6 @@ export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: s
 
   await copy(manifestPath, resolve(outFolder, extensionFolderName, "manifest.json"));
 
-  console.log("\nBundle complete!");
-
   try {
     execSync("npm i", {
       cwd: extensionFolder,
@@ -112,4 +110,12 @@ export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: s
     console.error(`\nError reverting dependencies: ${error}`);
     process.exit(1);
   }
+
+  const bundledPath = resolve(outFolder, extensionFolderName);
+  return bundledPath;
+}
+
+export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: string = process.cwd()) {
+  const bundledFolder = await bundle(cwd, outFolder);
+  console.log(`Bundle complete! Output folder: ${bundledFolder}`);
 }

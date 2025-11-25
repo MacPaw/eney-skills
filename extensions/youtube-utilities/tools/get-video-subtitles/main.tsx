@@ -104,11 +104,10 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Get subtitles' onSubmit={onSubmit} isLoading={isLoading} isDisabled={!source} />
+					<Action.SubmitForm title='Get subtitles' style="primary" onSubmit={onSubmit} isLoading={isLoading} isDisabled={!source} />
 				</ActionPanel>
 			}
 		>
-			{isLoading && <Paper markdown="Subtitles are loading..." />}
 			<Form.TextField name='source' label='Source' value={source} onChange={onSourceChange} />
 		</Form>
 	);

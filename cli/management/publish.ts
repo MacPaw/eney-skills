@@ -1,18 +1,24 @@
-import { getToolsWithSchemas } from './extract-schemas.ts';
-import { basename } from 'path';
+import { basename, join } from 'path';
 import semver from 'semver';
+import fs from 'fs/promises';
 
-const backendUrl = process.env.BACKEND_URL;
-const accessToken = process.env.ADMIN_AUTH_TOKEN;
+import { publishExtension, publishExtensionVersion, setupFetchClient } from '../lib/api.ts';
 
-export async function publishExtension(cwd: string, version: string, hash: string, downloadUrl: string, dryRun = false) {
+import { getFileDownloadUrl, getFileHash, packExtension } from './pack.ts';
+import { getToolsWithSchemas } from './extract-schemas.ts';
+import { uploadToCloud } from './upload-to-cloud.ts';
+
+export async function publishExtensionCommand(cwd: string, mode: "staging" | "production" = "staging", dryRun = false) {
+	const { fetchClient } = await setupFetchClient(mode);
   const extensionName = basename(cwd);
 	const tools = await getToolsWithSchemas(cwd);
 
-	const parsedVersion = semver.coerce(version).toString();
-	if (!parsedVersion) {
-		throw new Error(`Invalid version: ${version}`);
-	}
+	const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
+	const parsedVersion = semver.coerce(manifest.version).toString();
+	
+	const archivePath = await packExtension(cwd);
+	const hash = await getFileHash(archivePath);
+	const downloadUrl = await getFileDownloadUrl(archivePath, mode);
 
 	const metadataPayload = {
 		extension_id: extensionName,
@@ -35,43 +41,25 @@ export async function publishExtension(cwd: string, version: string, hash: strin
 		return;
 	}
 
-	if (!backendUrl || !accessToken) {
-		throw new Error('BACKEND_URL and ADMIN_AUTH_TOKEN must be set');
-	}
-	
 	try {
-		const response = await fetch(`${backendUrl}/admin/v3/extensions/tools`, {
-			method: 'POST',
-			body: JSON.stringify(metadataPayload),
-			headers: {
-				'Content-Type': 'application/json',
-				'X-API-Token': accessToken,
-			},
-		});
-	
-		const data = await response.json();
+		const data = await publishExtension(metadataPayload, fetchClient);
 	
 		console.log('Extension published successfully:', data);
 	} catch (error) {
 		console.error('Error publishing extension:', error);
 		throw error;
 	}
+	
+	await uploadToCloud(archivePath, mode);
+
+	await fs.rm(archivePath, { force: true });
 
 	try {
-		const response = await fetch(`${backendUrl}/admin/v3/artifacts/extension/${extensionName}/versions`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-API-Token': accessToken
-			},
-			body: JSON.stringify(artifactPayload)
-		})
-
-		const data = await response.json();
-
-		if (!response.ok) {
-			throw new Error(`Failed to publish extension version: ${response.status} ${response.statusText}\n${JSON.stringify(data)}`);
-		}
+		const data = await publishExtensionVersion(extensionName, {
+			version: parsedVersion,
+			hash,
+			downloadUrl,
+		}, fetchClient);
 	
 		console.log('Extension version published successfully:', data);
 	} catch (error) {
