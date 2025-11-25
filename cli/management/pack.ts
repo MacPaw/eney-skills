@@ -1,7 +1,7 @@
 import { basename, dirname, join, resolve } from 'path';
 import fs from 'fs/promises';
 import { spawn } from 'child_process';
-import { createHash } from 'crypto';
+import { spawnSync } from 'child_process';
 import { tmpdir } from 'os';
 import { existsSync } from 'fs';
 
@@ -77,8 +77,13 @@ export async function packExtension(cwd: string, out?: string) {
 }
 
 export async function getFileHash(filePath: string) {
-  const fileBuffer = await fs.readFile(filePath);
-  return createHash('sha256').update(fileBuffer).digest('hex');
+  const result = spawnSync('shasum', ['-a', '256', filePath], { encoding: 'utf8' });
+  if (result.status !== 0) {
+    throw new Error(`Failed to calculate sha256 hash: ${result.stderr}`);
+  }
+  // shasum outputs "<hash>  <filename>"
+  const hash = result.stdout.split(' ')[0].trim();
+  return hash;
 }
 
 export async function getFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging") {

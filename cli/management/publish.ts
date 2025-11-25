@@ -49,7 +49,7 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 		console.error('Error publishing extension:', error);
 		throw error;
 	}
-	
+
 	await uploadToCloud(archivePath, mode);
 
 	await fs.rm(archivePath, { force: true });

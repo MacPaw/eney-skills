@@ -1,5 +1,5 @@
 {
-  "name": "{{extensionId}}",
+  "name": "send-mail",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

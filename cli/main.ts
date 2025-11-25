@@ -7,17 +7,20 @@ import { packExtensionCommand } from "./management/pack.ts";
 
 const program = new Command();
 
-program
-  .name("eney-extension-helper")
-  .description("CLI for Eney Extension Helper")
-  .version("1.0.0");
+program.name("eney-extension-helper").description("CLI for Eney Extension Helper").version("1.0.0");
 
 program
   .command("create")
   .description("Create a new extension")
   .option("-o, --output <path>", "Output directory (defaults to current directory)")
-  .action((options) => createCommand(options));
-
+  .option("--id <id>", "Extension ID")
+  .option("--extension-title <title>", "Extension title")
+  .option("--tool-name <name>", "Tool name")
+  .option("--tool-description <description>", "Tool description")
+  .option("--tool-title <title>", "Tool title", "Tool title")
+  .action(({ output, id, extensionTitle, toolName, toolDescription, toolTitle }) =>
+    createCommand({ output, extensionId: id, extensionTitle, toolName, toolDescription, toolTitle })
+  );
 program
   .command("bundle")
   .description("Bundle a tool")
