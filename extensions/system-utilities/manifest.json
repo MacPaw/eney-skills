@@ -1,7 +1,7 @@
 {
 	"id": "system-utilities",
 	"type": "jsx",
-	"version": "2",
+	"version": "3",
 	"title": "System Utilities",
 	"tools": [
 		{
@@ -13,6 +13,11 @@
 			"name": "get-running-processes-list",
 			"description": "Get running processes list",
 			"title": "Get running processes list"
+		},
+		{
+			"name": "get-system-info",
+			"description": "Show basic system information: Mac model, chip, memory, serial number, and macOS version",
+			"title": "About This Mac"
 		}
 	]
 }
