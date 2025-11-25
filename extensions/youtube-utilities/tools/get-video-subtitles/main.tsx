@@ -82,7 +82,6 @@ export default function Extension(props: Props) {
 		return lines.join('\n');
 	}
 
-
 	function onSourceChange(path: string) {
 		setSource(path);
 	}
@@ -105,7 +104,7 @@ export default function Extension(props: Props) {
 		<Form
 			actions={
 				<ActionPanel>
-					<Action.SubmitForm title='Get subtitles' onSubmit={onSubmit} isLoading={isLoading} />
+					<Action.SubmitForm title='Get subtitles' onSubmit={onSubmit} isLoading={isLoading} isDisabled={!source} />
 				</ActionPanel>
 			}
 		>
