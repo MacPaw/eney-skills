@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@macpaw/eney-api": "^1.5.1",
-    "pdf-lib": "^1.17.1",
     "zod": "^4.1.0"
   },
   "peerDependencies": {
