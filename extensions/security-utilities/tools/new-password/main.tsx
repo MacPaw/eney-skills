@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { Action, ActionPanel, Form } from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, setupTool } from "@macpaw/eney-api";
 import { generatePassword } from "./generate-password.js";
 
-export const props = z.object({
+const props = z.object({
   length: z
     .number()
     .optional()
@@ -91,3 +91,5 @@ export default function Extension(props: Props) {
     </Form>
   );
 }
+
+setupTool(Extension);
