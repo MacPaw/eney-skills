@@ -1,7 +1,7 @@
 {
 	"id": "send-mail",
 	"type": "jsx",
-	"version": "1.3",
+	"version": "1.4",
 	"title": "Send Mail",
 	"tools": [
 		{
