@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { useState } from "react";
-import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
+import { Action, ActionPanel, Files, Form, Paper, useBinary, setupTool } from "@macpaw/eney-api";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -98,3 +98,5 @@ export default function Extension(props: Props) {
 		</Form>
 	);
 }
+
+setupTool(Extension);

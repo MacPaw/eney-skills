@@ -1,6 +1,6 @@
 // https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
 import { z } from "zod";
-import { Action, ActionPanel, Files, Form, Paper, useBinary } from "@macpaw/eney-api";
+import { Action, ActionPanel, Files, Form, Paper, useBinary, setupTool } from "@macpaw/eney-api";
 import { randomUUID } from "node:crypto";
 import { useState } from "react";
 import { join } from "node:path";
@@ -99,3 +99,5 @@ export default function Extension(props: Props) {
     </Form>
   );
 }
+
+setupTool(Extension);
