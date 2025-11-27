@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Action, ActionPanel, Form, Paper } from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
 import { z } from "zod";
 
@@ -155,3 +155,5 @@ export default function Extension(props: Props) {
 		</Form>
 	);
 }
+
+setupTool(Extension);
