@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
 import { publishExtensionCommand } from "./management/publish.ts";
-import { checkVersion } from "./management/check-version.ts";
+import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
 
 const program = new Command();
@@ -40,7 +40,7 @@ program
   .command("check-version")
   .description("Check version")
   .option("--cwd <path>", "Current working directory", process.cwd())
-  .action(({ cwd }) => checkVersion(cwd));
+  .action(({ cwd }) => checkVersionCommand(cwd));
 
 program
   .command("pack")
