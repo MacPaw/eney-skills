@@ -114,7 +114,7 @@ export default function Extension(props: Props) {
 				title={isSending ? "Sending..." : "Send Email"}
 				onSubmit={onSubmit}
 				style="primary"
-				isDisabled={!recipient || !subject || !body}
+				isDisabled={!recipient}
 				isLoading={isSending}
 			/>
 		</ActionPanel>
