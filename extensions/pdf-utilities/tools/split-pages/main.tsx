@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
+import { Action, ActionPanel, Files, Form, setupTool } from '@macpaw/eney-api';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -86,3 +86,5 @@ export default function Extension(props: Props) {
 		</Form>
 	);
 }
+
+setupTool(Extension);

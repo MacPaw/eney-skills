@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Action, ActionPanel, Paper } from '@macpaw/eney-api';
+import { Action, ActionPanel, Paper, setupTool } from '@macpaw/eney-api';
 import { spawn } from 'node:child_process';
 
 interface SystemInfo {
@@ -114,3 +114,5 @@ ${info?.modelIdentifier}
 		/>
 	);
 }
+
+setupTool(Extension);

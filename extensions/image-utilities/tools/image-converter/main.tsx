@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import sharp from 'sharp';
 import { useEffect, useState } from 'react';
-import { Action, ActionPanel, Files, Form } from '@macpaw/eney-api';
+import { Action, ActionPanel, Files, Form, setupTool } from '@macpaw/eney-api';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 
@@ -92,3 +92,5 @@ export default function Extension(props: Props) {
 		</Form>
 	);
 }
+
+setupTool(Extension);
