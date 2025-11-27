@@ -5,6 +5,12 @@ import ts from 'typescript';
 
 type JsonSchema = z.core.JSONSchema.BaseSchema;
 
+type ToolWithSchema = {
+  name: string;
+  inputSchema: JsonSchema | Record<string, never>;
+  [key: string]: unknown;
+}
+
 async function extractPropsSchemaExpression(filePath: string): Promise<string | null> {
 	try {
 		const fileContents = await fs.readFile(filePath, 'utf8');
@@ -100,7 +106,7 @@ export async function getToolsWithSchemas(extensionDir: string) {
 			return;
 		}
 
-		const toolsWithSchemas: Record<string, any>[] = [];
+		const toolsWithSchemas: ToolWithSchema[] = [];
 
 		for (const tool of manifestJson.tools) {
 			if (!tool.name) continue;

@@ -2,10 +2,10 @@ import { basename, join } from 'path';
 import fs from 'fs/promises';
 import semver from 'semver';
 
-import { getExtensionVersions, setupFetchClient } from '../lib/api.ts';
+import { ApiClient } from '../lib/api.ts';
 
 export async function checkVersion(cwd: string, mode: "staging" | "production" = "staging") {
-  const { fetchClient } = await setupFetchClient(mode);
+  const api = new ApiClient(mode);
   const extensionName = basename(cwd);
 
   const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
@@ -14,7 +14,7 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
   console.log(`Current version: ${currentVersion}`);
 
   try {
-    const versions = await getExtensionVersions(extensionName, fetchClient);
+    const versions = await api.getExtensionVersions(extensionName);
 
     if (versions.length === 0) {
       console.log(`Extension ${extensionName} artifact versions not found, ready to publish`);
@@ -41,4 +41,8 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
     console.error(`\nError checking extension version!\n${error.message}`);
     process.exit(1);
   }
+}
+
+export async function checkVersionCommand(cwd: string, mode: "staging" | "production" = "staging") {
+  await checkVersion(cwd, mode);
 }

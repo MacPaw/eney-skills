@@ -2,14 +2,14 @@ import { basename, join } from 'path';
 import semver from 'semver';
 import fs from 'fs/promises';
 
-import { publishExtension, publishExtensionVersion, setupFetchClient } from '../lib/api.ts';
+import { ApiClient } from '../lib/api.ts';
 
 import { getFileDownloadUrl, getFileHash, packExtension } from './pack.ts';
 import { getToolsWithSchemas } from './extract-schemas.ts';
 import { uploadToCloud } from './upload-to-cloud.ts';
 
 export async function publishExtensionCommand(cwd: string, mode: "staging" | "production" = "staging", dryRun = false) {
-	const { fetchClient } = await setupFetchClient(mode);
+	const api = new ApiClient(mode);
   const extensionName = basename(cwd);
 	const tools = await getToolsWithSchemas(cwd);
 
@@ -42,7 +42,7 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 	}
 
 	try {
-		const data = await publishExtension(metadataPayload, fetchClient);
+		const data = await api.publishExtension(metadataPayload);
 	
 		console.log('Extension published successfully:', data);
 	} catch (error) {
@@ -55,11 +55,11 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 	await fs.rm(archivePath, { force: true });
 
 	try {
-		const data = await publishExtensionVersion(extensionName, {
+		const data = await api.publishExtensionVersion(extensionName, {
 			version: parsedVersion,
 			hash,
 			downloadUrl,
-		}, fetchClient);
+		});
 	
 		console.log('Extension version published successfully:', data);
 	} catch (error) {
