@@ -103,7 +103,7 @@ export default function Extension(props: Props) {
 	if (status?.type && status.type === 'success') {
 		return (
 			<Form actions={successActions}>
-				<Paper markdown={`✅ Message sent successfully to **${recipient}** with subject **${subject}**`} />
+				<Paper markdown={`✅ Message sent successfully to **${recipient}** with subject **${subject}**`} $context={true} />
 			</Form>
 		);
 	}
