@@ -1,7 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
+import { statSync } from "node:fs";
+import { basename } from "node:path";
 import { z } from "zod";
+
+const MAX_FILE_SIZE_MB = 35;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+interface OversizedFile {
+	path: string;
+	name: string;
+	sizeMB: number;
+}
+
+function getOversizedFiles(filePaths: string[]): OversizedFile[] {
+	const oversized: OversizedFile[] = [];
+	for (const filePath of filePaths) {
+		try {
+			const stats = statSync(filePath);
+			if (stats.size > MAX_FILE_SIZE_BYTES) {
+				oversized.push({
+					path: filePath,
+					name: basename(filePath),
+					sizeMB: Math.round(stats.size / (1024 * 1024) * 100) / 100,
+				});
+			}
+		} catch {
+			// File doesn't exist or can't be accessed, skip
+		}
+	}
+	return oversized;
+}
 
 const props = z.object({
 	recipient: z.string().optional().describe("Email recipient address"),
@@ -76,6 +106,11 @@ export default function Extension(props: Props) {
 	const [attachments, setAttachments] = useState<string[]>(props.attachments ?? []);
 	const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 	const [isSending, setIsSending] = useState(false);
+	const [oversizedFiles, setOversizedFiles] = useState<OversizedFile[]>([]);
+
+	useEffect(() => {
+		setOversizedFiles(getOversizedFiles(attachments));
+	}, [attachments]);
 
 	async function onSubmit() {
 		setIsSending(true);
@@ -108,13 +143,15 @@ export default function Extension(props: Props) {
 		);
 	}
 
+	const hasOversizedFiles = oversizedFiles.length > 0;
+
 	const actions = (
 		<ActionPanel>
 			<Action.SubmitForm
 				title={isSending ? "Sending..." : "Send Email"}
 				onSubmit={onSubmit}
 				style="primary"
-				isDisabled={!recipient}
+				isDisabled={!recipient || hasOversizedFiles}
 				isLoading={isSending}
 			/>
 		</ActionPanel>
@@ -127,6 +164,12 @@ export default function Extension(props: Props) {
 					markdown={`❌ ${status.message}`}
 				/>
 			)}
+			{oversizedFiles.map((file) => (
+				<Paper
+					key={file.path}
+					markdown={`❌ File "${file.name}" is too large (${file.sizeMB} MB). Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`}
+				/>
+			))}
 			<Form.TextField
 				name="recipient"
 				label="To"
