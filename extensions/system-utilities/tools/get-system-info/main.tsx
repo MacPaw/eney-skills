@@ -3,8 +3,7 @@ import { Action, ActionPanel, Paper, setupTool } from '@macpaw/eney-api';
 import { spawn } from 'node:child_process';
 
 interface SystemInfo {
-	modelName: string;
-	modelIdentifier: string;
+	productDescription: string | null;
 	chip: string;
 	memory: string;
 	serialNumber: string;
@@ -45,15 +44,25 @@ function extractValue(output: string, key: string): string {
 	return match?.[1]?.trim() ?? 'Unknown';
 }
 
+async function fetchProductDescription(): Promise<string | null> {
+	try {
+		const output = await runCommand('ioreg', ['-l']);
+		const match = output.match(/"product-description"\s*=\s*<"([^"]+)">/);
+		return match?.[1] ?? null;
+	} catch {
+		return null;
+	}
+}
+
 async function fetchSystemInfo(): Promise<SystemInfo> {
-	const [hardware, software] = await Promise.all([
+	const [hardware, software, productDescription] = await Promise.all([
 		runCommand('system_profiler', ['SPHardwareDataType']),
-		runCommand('system_profiler', ['SPSoftwareDataType'])
+		runCommand('system_profiler', ['SPSoftwareDataType']),
+		fetchProductDescription()
 	]);
 
 	return {
-		modelName: extractValue(hardware, 'Model Name'),
-		modelIdentifier: extractValue(hardware, 'Model Identifier'),
+		productDescription: productDescription ?? extractValue(hardware, 'Model Name'),
 		chip: extractValue(hardware, 'Chip'),
 		memory: extractValue(hardware, 'Memory'),
 		serialNumber: extractValue(hardware, 'Serial Number \\(system\\)'),
@@ -92,15 +101,14 @@ export default function Extension() {
 		);
 	}
 
-	const markdown = `## ${info?.modelName}
-${info?.modelIdentifier}
+	const markdown = `## ${info?.productDescription}
 
 | | |
 |---|---|
-| **Chip** | ${info?.chip} |
-| **Memory** | ${info?.memory} |
-| **Serial Number** | ${info?.serialNumber} |
-| **macOS** | ${info?.osVersion} |`;
+| **Chip** | ${info?.chip ?? 'Unknown'} |
+| **Memory** | ${info?.memory ?? 'Unknown'} |
+| **Serial Number** | ${info?.serialNumber ?? 'Unknown'} |
+| **macOS** | ${info?.osVersion ?? 'Unknown'} |`;
 
 	return (
 		<Paper
