@@ -5,7 +5,7 @@ import { statSync } from "node:fs";
 import { basename } from "node:path";
 import { z } from "zod";
 
-const MAX_FILE_SIZE_MB = 35;
+const MAX_FILE_SIZE_MB = 20;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 interface OversizedFile {
