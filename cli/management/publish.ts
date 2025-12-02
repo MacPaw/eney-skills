@@ -50,7 +50,12 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 		throw error;
 	}
 
-	await uploadToCloud(archivePath, mode);
+	try {
+		await uploadToCloud(archivePath, mode);
+	} catch (error) {
+		console.error('Error uploading archive to cloud:', error);
+		throw error;
+	}
 
 	await fs.rm(archivePath, { force: true });
 

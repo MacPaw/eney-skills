@@ -87,7 +87,7 @@ export async function getFileHash(filePath: string) {
 }
 
 export async function getFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging") {
-  return `https://storage.googleapis.com/eney-assets/extensions/${mode}/${basename(filePath)}`;
+  return mode === "production" ? `https://cdn.eney.ai/extensions/${basename(filePath)}` : `https://staging-cdn.eney.ai/extensions/${basename(filePath)}`;
 }
 
 export async function packExtensionCommand(cwd: string, outputDir?: string) {
