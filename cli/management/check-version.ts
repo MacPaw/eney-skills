@@ -22,7 +22,7 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
     const versionList = versions.map((version) => semver.coerce(version.version)).sort((a, b) => semver.compare(b, a));
     const latestVersion = semver.coerce(versionList[0]);
 
-    if (versionList.some((version) => version.toString() === currentVersion.toString())) {
+    if (versionList.some((version) => semver.eq(version, currentVersion))) {
       throw new Error(`Version ${currentVersion} already exists! Please update the version in the manifest.json file.`);
     }
 

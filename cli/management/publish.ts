@@ -16,12 +16,12 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 
 	const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
 	const parsedVersion = semver.coerce(manifest.version).toString();
+
+	await checkVersion(cwd, mode);
 	
 	const archivePath = await packExtension(cwd);
 	const hash = await getFileHash(archivePath);
 	const downloadUrl = await getFileDownloadUrl(archivePath, mode);
-
-	await checkVersion(cwd, mode);
 
 	const metadataPayload = {
 		extension_id: extensionName,
