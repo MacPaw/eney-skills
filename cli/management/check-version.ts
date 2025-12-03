@@ -11,8 +11,6 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
   const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
   const currentVersion = semver.coerce(manifest.version);
 
-  console.log(`Current version: ${currentVersion}`);
-
   try {
     const versions = await api.getExtensionVersions(extensionName);
 
@@ -24,7 +22,7 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
     const versionList = versions.map((version) => semver.coerce(version.version)).sort((a, b) => semver.compare(b, a));
     const latestVersion = semver.coerce(versionList[0]);
 
-    if (versionList.includes(currentVersion)) {
+    if (versionList.some((version) => version.toString() === currentVersion.toString())) {
       throw new Error(`Version ${currentVersion} already exists! Please update the version in the manifest.json file.`);
     }
 
