@@ -7,6 +7,7 @@ import { ApiClient } from '../lib/api.ts';
 import { getFileDownloadUrl, getFileHash, packExtension } from './pack.ts';
 import { getToolsWithSchemas } from './extract-schemas.ts';
 import { uploadToCloud } from './upload-to-cloud.ts';
+import { checkVersion } from './check-version.ts';
 
 export async function publishExtensionCommand(cwd: string, mode: "staging" | "production" = "staging", dryRun = false) {
 	const api = new ApiClient(mode);
@@ -19,6 +20,8 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
 	const archivePath = await packExtension(cwd);
 	const hash = await getFileHash(archivePath);
 	const downloadUrl = await getFileDownloadUrl(archivePath, mode);
+
+	await checkVersion(cwd, mode);
 
 	const metadataPayload = {
 		extension_id: extensionName,
