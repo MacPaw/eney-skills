@@ -3,7 +3,7 @@
 // Usage: node scripts/bump-version-for-changed.js
 //        node scripts/bump-version-for-changed.js --dry-run
 
-import { readdirSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { readdirSync, existsSync, readFileSync, openSync, writeSync, closeSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 
@@ -45,7 +45,9 @@ for (const name of extensions) {
 
     if (!dryRun) {
       manifest.version = newVersion;
-      writeFileSync(manifestPath, JSON.stringify(manifest, null, '\t') + '\n');
+      const file = openSync(manifestPath, 'w');
+      writeSync(file, JSON.stringify(manifest, null, '\t') + '\n');
+      closeSync(file);
     }
 
     changedCount++;
