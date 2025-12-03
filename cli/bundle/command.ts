@@ -71,7 +71,7 @@ export async function bundle(cwd: string, outFolder: string) {
 
   console.log("\nInstalling production dependencies...");
   try {
-    execSync("npm i --os=darwin --cpu=arm64 --omit=dev", {
+    execSync("npm i --os=darwin --cpu=arm64 --omit=dev --no-fund --no-audit", {
       cwd: extensionFolder,
       stdio: "inherit",
     });
