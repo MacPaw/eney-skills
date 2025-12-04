@@ -1,9 +1,14 @@
+import dotenv from "dotenv";
 import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
 import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
+import { analyticsCommand } from "./analytics/command.ts";
+import path from "path";
+
+dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const program = new Command();
 
@@ -48,5 +53,14 @@ program
   .option("--cwd <path>", "Current working directory", process.cwd())
   .option("-o, --output <path>", "Directory to place the archive")
   .action(({ cwd, output }) => packExtensionCommand(cwd, output));
+
+program
+  .command("analytics")
+  .description("Analyze Cloudflare HTTP traffic by path")
+  .option("--sort <order>", "Sort order: most or least", "most")
+  .option("--limit <n>", "Number of results to show", "50")
+  .option("-o, --output <path>", "Output JSON file path")
+  .option("--host <hostname>", "Request host to filter", "staging-cdn.eney.ai")
+  .action((options) => analyticsCommand(options));
 
 program.parse(process.argv);
