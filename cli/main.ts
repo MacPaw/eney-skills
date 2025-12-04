@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import { Command } from "commander";
 import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
@@ -5,6 +6,9 @@ import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
 import { analyticsCommand } from "./analytics/command.ts";
+import path from "path";
+
+dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const program = new Command();
 
