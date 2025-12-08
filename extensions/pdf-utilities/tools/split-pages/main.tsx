@@ -14,7 +14,7 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function SplitPages(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [pages, setPages] = useState<string[]>([]);
 	const [outputFolder, setOutputFolder] = useState<string>('');
@@ -87,4 +87,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(SplitPages);

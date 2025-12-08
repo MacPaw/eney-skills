@@ -70,7 +70,7 @@ async function fetchSystemInfo(): Promise<SystemInfo> {
 	};
 }
 
-export default function Extension() {
+export default function GetSystemInfo() {
 	const [info, setInfo] = useState<SystemInfo | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -123,4 +123,4 @@ export default function Extension() {
 	);
 }
 
-setupTool(Extension);
+setupTool(GetSystemInfo);

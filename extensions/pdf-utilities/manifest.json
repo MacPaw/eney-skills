@@ -1,7 +1,7 @@
 {
 	"id": "pdf-utilities",
 	"type": "jsx",
-	"version": "3.5",
+	"version": "3.6",
 	"title": "PDF Utilities",
 	"tools": [
 		{

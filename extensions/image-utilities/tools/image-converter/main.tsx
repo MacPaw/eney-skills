@@ -15,7 +15,7 @@ type Props = z.infer<typeof props>;
 
 type ImageFormat = keyof sharp.FormatEnum;
 
-export default function Extension(props: Props) {
+export default function ImageConverter(props: Props) {
 	const supported: ImageFormat[] = ['png', 'jpeg', 'webp', 'tiff'];
 	const [source, setSource] = useState(props.source);
 	const [sourceFormat, setSourceFormat] = useState<ImageFormat | null>(null);
@@ -93,4 +93,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(ImageConverter);

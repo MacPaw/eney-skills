@@ -65,7 +65,7 @@ async function fetchProcesses(): Promise<ProcessInfo[]> {
 	});
 }
 
-export default function Extension() {
+export default function GetRunningProcessesList() {
 	const [processes, setProcesses] = useState<ProcessInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -129,4 +129,4 @@ export default function Extension() {
 	);
 }
 
-setupTool(Extension);
+setupTool(GetRunningProcessesList);

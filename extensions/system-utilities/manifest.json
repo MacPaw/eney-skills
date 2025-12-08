@@ -1,7 +1,7 @@
 {
 	"id": "system-utilities",
 	"type": "jsx",
-	"version": "3.7",
+	"version": "3.8",
 	"title": "System Utilities",
 	"tools": [
 		{

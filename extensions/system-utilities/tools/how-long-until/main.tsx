@@ -10,7 +10,7 @@ export const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function HowLongUntil(props: Props) {
 	const [date, setDate] = useState<Date>(props.date ?? new Date());
 	const [result, setResult] = useState<string | undefined>(undefined);
 
@@ -57,4 +57,4 @@ export default function Extension(props: Props) {
   );
 }
 
-setupTool(Extension);
+setupTool(HowLongUntil);

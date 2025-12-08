@@ -15,7 +15,7 @@ type Props = z.infer<typeof props>;
 
 type ImageFormat = keyof sharp.FormatEnum;
 
-export default function Extension(props: Props) {
+export default function ImageOptimizer(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [result, setResult] = useState('');
 	const [options, setOptions] = useState({});
@@ -84,4 +84,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(ImageOptimizer);

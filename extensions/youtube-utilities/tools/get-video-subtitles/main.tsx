@@ -23,7 +23,7 @@ type MetaData = {
 
 type SubtitlesJSON3 = { events: Array<{ segs?: Array<{ utf8?: string }> }> };
 
-export default function Extension(props: Props) {
+export default function GetVideoSubtitles(props: Props) {
 	const [source, setSource] = useState(props.source ?? "");
 	const [isLoading, setIsLoading] = useState(false);
 	const [result, setResult] = useState('');
@@ -113,4 +113,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(GetVideoSubtitles);

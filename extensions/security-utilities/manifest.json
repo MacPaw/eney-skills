@@ -1,7 +1,7 @@
 {
 	"id": "security-utilities",
 	"type": "jsx",
-	"version": "4.8",
+	"version": "4.9",
 	"title": "Security Utilities",
 	"tools": [
 		{

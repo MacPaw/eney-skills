@@ -20,7 +20,7 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function NewPassword(props: Props) {
   const [length, setLength] = useState<number | null>(props.length ?? 20);
   const [symbols, setSymbols] = useState(props.symbols ?? true);
   const [numbers, setNumbers] = useState(props.numbers ?? true);
@@ -92,4 +92,4 @@ export default function Extension(props: Props) {
   );
 }
 
-setupTool(Extension);
+setupTool(NewPassword);

@@ -14,7 +14,7 @@ export const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function ImagesToPdf(props: Props) {
 	const [images, setImages] = useState<string[]>(props.images || []);
 	const [outputPath, setOutputPath] = useState<string>('');
 
@@ -111,4 +111,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(ImagesToPdf);
