@@ -29,7 +29,7 @@ program
 program
   .command("bundle")
   .description("Bundle a tool")
-  .option("-o, --output <path>", "Output folder", "../../../eney-jsx-runtime/extensions")
+  .option("-o, --output <path>", "Output folder", "./dist")
   .option("--cwd <path>", "Current working directory", process.cwd())
   .action(({ output, cwd }) => bundleCommand(output, cwd));
 
