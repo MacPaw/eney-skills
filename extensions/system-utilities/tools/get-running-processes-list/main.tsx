@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Action, ActionPanel, Paper, setupTool } from '@macpaw/eney-api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Action, ActionPanel, Form, Paper, setupTool } from '@macpaw/eney-api';
 import { spawn } from 'node:child_process';
 
 interface ProcessInfo {
@@ -12,58 +12,86 @@ function escapeMarkdown(text: string): string {
 	return text.replace(/\\/g, '\\\\').replace(/[|]/g, '\\$&');
 }
 
-function getShortProcessName(fullCommand: string): string {
-	const execPath = fullCommand.split(/\s+-/)[0].trim();
-	const name = execPath.split('/').pop() || execPath;
-	return name || '[unknown]';
+function parseMemory(memStr: string): number {
+	const match = memStr.match(/^([\d.]+)([KMGB])?/i);
+	if (!match) return 0;
+
+	const value = Number.parseFloat(match[1]);
+	const unit = (match[2] || 'B').toUpperCase();
+
+	switch (unit) {
+		case 'K':
+			return value / 1024;
+		case 'M':
+			return value;
+		case 'G':
+			return value * 1024;
+		default:
+			return value / (1024 * 1024);
+	}
 }
 
 function formatProcesses(raw: string): ProcessInfo[] {
-	return raw
-		.split('\n')
+	const lines = raw.split('\n');
+
+	const processStartIndex = lines.findIndex((line) => line.startsWith('PID'));
+	if (processStartIndex === -1) return [];
+
+	return lines
+		.slice(processStartIndex + 1)
 		.map((line) => line.trim())
 		.filter(Boolean)
 		.map((line) => {
-			const [cpu, rss, ...commandParts] = line.split(/\s+/);
-			const fullCommand = commandParts.join(' ');
-			const cpuValue = Number.parseFloat(cpu ?? '0');
-			const rssKb = Number.parseInt(rss ?? '0', 10);
+			// top output: PID CPU MEM COMMAND (command is last, can have spaces)
+			const parts = line.split(/\s+/);
+			if (parts.length < 4) return null;
+
+			const [, cpuStr, memStr, ...commandParts] = parts;
+			const cpu = Number.parseFloat(cpuStr);
+			const memoryMb = parseMemory(memStr);
+			const command = commandParts.join(' ');
+
 			return {
-				cpu: Number.isFinite(cpuValue) ? cpuValue : 0,
-				memoryMb: Number.isFinite(rssKb) ? rssKb / 1024 : 0,
-				command: getShortProcessName(fullCommand)
+				cpu: Number.isFinite(cpu) ? cpu : 0,
+				memoryMb,
+				command: command || '[unknown]'
 			};
 		})
-		.filter((process) => Number.isFinite(process.cpu));
+		.filter((p): p is ProcessInfo => p !== null);
 }
 
-async function fetchProcesses(): Promise<ProcessInfo[]> {
-	const ps = spawn('ps', ['-axo', 'pcpu=,rss=,command=', '-r']);
+type SortBy = 'cpu' | 'mem';
+
+async function fetchProcesses(sortBy: SortBy): Promise<ProcessInfo[]> {
+	// -l 2: two samples (second is more accurate), -n 10: top 10 processes
+	// -o: sort order, -stats: columns to show
+	// tail -n 11: get header + 10 processes from second sample
+	const cmd = spawn('sh', [
+		'-c',
+		`top -l 2 -n 10 -o ${sortBy} -stats pid,cpu,mem,command | tail -n 11`
+	]);
 	return await new Promise((resolve, reject) => {
 		let stdout = '';
 		let stderr = '';
 
-		ps.stdout?.on('data', (data) => {
+		cmd.stdout?.on('data', (data) => {
 			stdout += data.toString();
 		});
 
-		ps.stderr?.on('data', (data) => {
+		cmd.stderr?.on('data', (data) => {
 			stderr += data.toString();
 		});
 
-		ps.on('error', (error) => {
+		cmd.on('error', (error) => {
 			reject(error);
 		});
 
-		ps.on('close', (code) => {
+		cmd.on('close', (code) => {
 			if (code !== 0) {
-				reject(new Error(stderr.trim() || `ps exited with code ${code}`));
+				reject(new Error(stderr.trim() || `top exited with code ${code}`));
 				return;
 			}
-			const processes = formatProcesses(stdout)
-				.sort((a, b) => b.cpu - a.cpu)
-				.slice(0, 10);
-			resolve(processes);
+			resolve(formatProcesses(stdout));
 		});
 	});
 }
@@ -72,12 +100,13 @@ export default function GetRunningProcessesList() {
 	const [processes, setProcesses] = useState<ProcessInfo[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [sortBy, setSortBy] = useState<SortBy>('cpu');
 
-	const loadProcesses = useCallback(async () => {
+	const loadProcesses = useCallback(async (sort: SortBy) => {
 		setIsLoading(true);
 		setError(null);
 		try {
-			const list = await fetchProcesses();
+			const list = await fetchProcesses(sort);
 			setProcesses(list);
 		} catch (err) {
 			if (err instanceof Error) {
@@ -91,12 +120,18 @@ export default function GetRunningProcessesList() {
 	}, []);
 
 	useEffect(() => {
-		void loadProcesses();
-	}, [loadProcesses]);
+		void loadProcesses(sortBy);
+	}, [loadProcesses, sortBy]);
+
+	const handleSortChange = (newSort: SortBy) => {
+		if (newSort !== sortBy) {
+			setSortBy(newSort);
+		}
+	};
 
 	const actions = (
 		<ActionPanel layout="row">
-			<Action title='Refresh' onAction={loadProcesses} style="secondary" isLoading={isLoading} />
+			<Action title="Refresh" onAction={() => loadProcesses(sortBy)} style="secondary" isLoading={isLoading} />
 			<Action.Finalize title="Done" />
 		</ActionPanel>
 	);
@@ -124,12 +159,18 @@ export default function GetRunningProcessesList() {
 		: 'No running processes found.';
 
 	return (
-		<Paper
-			markdown={isLoading && !processes.length ? 'Loading processes…' : markdown}
-			actions={actions}
-			isScrollable
-			$context={true}
-		/>
+		<Form>
+			<Form.Dropdown name="sortBy" label="Sort by" value={sortBy} onChange={(value) => handleSortChange(value as SortBy)}>
+				<Form.Dropdown.Item title="CPU" value="cpu" />
+				<Form.Dropdown.Item title="Memory" value="mem" />
+			</Form.Dropdown>
+			<Paper
+				markdown={isLoading && !processes.length ? 'Loading processes…' : markdown}
+				actions={actions}
+				isScrollable
+				$context={true}
+			/>
+		</Form>
 	);
 }
 
