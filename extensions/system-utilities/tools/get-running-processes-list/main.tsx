@@ -3,15 +3,19 @@ import { Action, ActionPanel, Paper, setupTool } from '@macpaw/eney-api';
 import { spawn } from 'node:child_process';
 
 interface ProcessInfo {
-	pid: string;
 	cpu: number;
 	memoryMb: number;
 	command: string;
 }
 
 function escapeMarkdown(text: string): string {
-	// First escape backslashes, then escape pipes
 	return text.replace(/\\/g, '\\\\').replace(/[|]/g, '\\$&');
+}
+
+function getShortProcessName(fullCommand: string): string {
+	const execPath = fullCommand.split(/\s+-/)[0].trim();
+	const name = execPath.split('/').pop() || execPath;
+	return name || '[unknown]';
 }
 
 function formatProcesses(raw: string): ProcessInfo[] {
@@ -20,22 +24,21 @@ function formatProcesses(raw: string): ProcessInfo[] {
 		.map((line) => line.trim())
 		.filter(Boolean)
 		.map((line) => {
-			const [pid, cpu, rss, ...commandParts] = line.split(/\s+/);
-			const command = commandParts.join(' ');
+			const [cpu, rss, ...commandParts] = line.split(/\s+/);
+			const fullCommand = commandParts.join(' ');
 			const cpuValue = Number.parseFloat(cpu ?? '0');
-			const rssValue = Number.parseInt(rss ?? '0', 10);
+			const rssKb = Number.parseInt(rss ?? '0', 10);
 			return {
-				pid,
 				cpu: Number.isFinite(cpuValue) ? cpuValue : 0,
-				memoryMb: Number.isFinite(rssValue) ? rssValue / 1024 : 0,
-				command: command || '[unknown]'
+				memoryMb: Number.isFinite(rssKb) ? rssKb / 1024 : 0,
+				command: getShortProcessName(fullCommand)
 			};
 		})
-		.filter((process) => Boolean(process.pid) && Number.isFinite(process.cpu));
+		.filter((process) => Number.isFinite(process.cpu));
 }
 
 async function fetchProcesses(): Promise<ProcessInfo[]> {
-	const ps = spawn('ps', ['-axo', 'pid=,pcpu=,rss=,command=', '-r']);
+	const ps = spawn('ps', ['-axo', 'pcpu=,rss=,command=', '-r']);
 	return await new Promise((resolve, reject) => {
 		let stdout = '';
 		let stderr = '';
@@ -110,12 +113,12 @@ export default function GetRunningProcessesList() {
 
 	const markdown = processes.length
 		? [
-				'| PID | CPU % | RSS MB | Command |',
-				'| --- | ---: | ---: | --- |',
+				'| CPU % | Memory (MB) | Process |',
+				'| ---: | ---: | --- |',
 				...processes.map((process) => {
 					const cpu = process.cpu.toFixed(1);
 					const memory = process.memoryMb.toFixed(1);
-					return `| ${process.pid} | ${cpu} | ${memory} | ${escapeMarkdown(process.command)} |`;
+					return `| ${cpu} | ${memory} | ${escapeMarkdown(process.command)} |`;
 				})
 		  ].join('\n')
 		: 'No running processes found.';
@@ -125,6 +128,7 @@ export default function GetRunningProcessesList() {
 			markdown={isLoading && !processes.length ? 'Loading processes…' : markdown}
 			actions={actions}
 			isScrollable
+			$context={true}
 		/>
 	);
 }
