@@ -125,12 +125,9 @@ await server.withMethodHandler(CallTool.self) { params in
 
             logger.debug("did start get_note tool execution, identifier - \(identifier)")
             if let note = try await notesScript.getNote(identifier: identifier) {
-                let name = note["name", default: "no name"]
-                let body = note["body", default: "body"]
+                let body = note["body", default: "empty body"]
                 let resultString = """
                     This is the requested note:
-                        Name: 
-                            \(name)
                         Content: 
                             \(body)
                     """
@@ -166,6 +163,7 @@ do {
     logger.info("Starting NoteBodyMCP Server...")
     try await server.start(transport: transport)
     await server.waitUntilCompleted()
+    logger.info("Finishing NoteBodyMCP Server...")
 } catch {
     logger.error("Server error: \(error.localizedDescription)")
     exit(1)
