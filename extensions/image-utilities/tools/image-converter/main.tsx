@@ -1,36 +1,72 @@
 import { z } from 'zod';
 import sharp from 'sharp';
+import heicConvert from 'heic-convert';
 import { useEffect, useState } from 'react';
 import { Action, ActionPanel, Files, Form, setupTool } from '@macpaw/eney-api';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export const props = z.object({
 	source: z.string()
 		.optional()
 		.describe('The path to the image file to convert.'),
+	format: z.enum(['png', 'jpeg', 'webp', 'tiff', 'gif', 'heif'])
+		.optional()
+		.describe('The desired output format. Supported formats: png, jpeg, webp, tiff, gif, heif (for HEIC).'),
 });
 
 type Props = z.infer<typeof props>;
 
 type ImageFormat = keyof sharp.FormatEnum;
 
+const formatLabels: Record<string, string> = {
+	png: 'PNG',
+	jpeg: 'JPEG',
+	webp: 'WebP',
+	tiff: 'TIFF',
+	gif: 'GIF',
+	heif: 'HEIC',
+};
+
 export default function ImageConverter(props: Props) {
-	const supported: ImageFormat[] = ['png', 'jpeg', 'webp', 'tiff'];
+	const supported: ImageFormat[] = ['png', 'jpeg', 'webp', 'tiff', 'gif', 'heif'];
 	const [source, setSource] = useState(props.source);
 	const [sourceFormat, setSourceFormat] = useState<ImageFormat | null>(null);
-	const [targetFormat, setTargetFormat] = useState<ImageFormat>(supported[0]);
+	const [targetFormat, setTargetFormat] = useState<ImageFormat>(props.format ?? supported[0]);
 	const [resultPath, setResultPath] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 
 	async function onSubmit() {
 		if (!source) return;
 		setIsLoading(true);
-		const suffix = `.${targetFormat}`;
-		const instance = sharp(source);
+		const extension = targetFormat === 'heif' ? 'heic' : targetFormat;
+		const suffix = `.${extension}`;
 		const downloadsDir = join(process.env.HOME ?? "~", "Downloads");
 		const tempFile = join(downloadsDir, `${randomUUID()}${suffix}`);
-		await instance.toFormat(targetFormat).toFile(tempFile);
+
+		const isHeicSource = sourceFormat === 'heif';
+
+		let instance: sharp.Sharp;
+
+		if (isHeicSource) {
+			const inputBuffer = await readFile(source);
+			const inputUint8Array = new Uint8Array(inputBuffer);
+			const outputArrayBuffer = await heicConvert({
+				buffer: inputUint8Array as unknown as ArrayBufferLike,
+				format: 'PNG',
+			});
+			instance = sharp(Buffer.from(outputArrayBuffer)).keepMetadata();
+		} else {
+			instance = sharp(source).keepMetadata();
+		}
+
+		if (targetFormat === 'heif') {
+			await instance.heif({}).toFile(tempFile);
+		} else {
+			await instance.toFormat(targetFormat).toFile(tempFile);
+		}
+
 		setIsLoading(false);
 		setResultPath(tempFile);
 	}
@@ -45,6 +81,15 @@ export default function ImageConverter(props: Props) {
 
 	useEffect(() => {
 		if (!source) return;
+		const ext = source.toLowerCase().split('.').pop();
+		if (ext === 'heic' || ext === 'heif') {
+			setSourceFormat('heif');
+			if (targetFormat === 'heif') {
+				const filtered = supported.filter((f) => f !== 'heif');
+				setTargetFormat(filtered[0]);
+			}
+			return;
+		}
 		sharp(source).metadata().then(({ format }) => {
 			if (!format) return;
 			setSourceFormat(format);
@@ -86,7 +131,7 @@ export default function ImageConverter(props: Props) {
 			<Form.FilePicker name='source' label='Source' value={source} onChange={onSourceChange} accept={['image/*']} />
 			<Form.Dropdown name='format' value={targetFormat} onChange={onTargetFormatChange} label='Target format'>
 				{supported.filter((format) => format !== sourceFormat).map((format) => (
-					<Form.Dropdown.Item key={format} title={format ?? ''} value={format} />
+					<Form.Dropdown.Item key={format} title={formatLabels[format] ?? format} value={format} />
 				))}
 			</Form.Dropdown>
 		</Form>

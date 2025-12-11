@@ -1,12 +1,12 @@
 {
 	"id": "image-utilities",
 	"type": "jsx",
-	"version": "4.7",
+	"version": "4.8",
 	"title": "Image Utilities",
 	"tools": [
 		{
 			"name": "image-converter",
-			"description": "Converts image format. Supported image formats are: JPEG, PNG, WebP, TIFF",
+			"description": "Converts image format. Supported image formats are: JPEG, PNG, WebP, TIFF, GIF, HEIC",
 			"title": "Convert image format"
 		},
 		{
