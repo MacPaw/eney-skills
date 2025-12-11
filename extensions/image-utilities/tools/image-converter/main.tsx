@@ -62,7 +62,7 @@ export default function ImageConverter(props: Props) {
 		}
 
 		if (targetFormat === 'heif') {
-			await instance.heif({}).toFile(tempFile);
+			await instance.heif({ compression: 'av1' }).toFile(tempFile);
 		} else {
 			await instance.toFormat(targetFormat).toFile(tempFile);
 		}
