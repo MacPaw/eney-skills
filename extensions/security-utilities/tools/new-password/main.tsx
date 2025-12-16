@@ -65,6 +65,8 @@ export default function NewPassword(props: Props) {
         name="length"
         label="Password length (max 128)"
         value={length}
+        min={1}
+        max={128}
         onChange={onChangeLength}
       />
       <Form.Checkbox
