@@ -4,13 +4,13 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "bundle": "node ../../cli/main.ts bundle",
+    "bundle": "node ../../cli/main.ts bundle -o ../../dist",
     "build": "npm run typecheck && npm run bundle",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^2.1.1",
+    "@macpaw/eney-api": "^2.1.2",
     "react": "^18.0.0",
     "zod": "^4.1.0"
   },
