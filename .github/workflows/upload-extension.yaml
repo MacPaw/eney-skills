@@ -97,8 +97,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ${GITHUB_WORKSPACE}/.gpg
+          echo ${{ secrets.CI_GITHUB_GPG_KEY_BASE64 }} | base64 -d > ${GITHUB_WORKSPACE}/.gpg/private.key
+          gpg --import ${GITHUB_WORKSPACE}/.gpg/private.key
+
+          git config --global user.signingkey ${{ secrets.CI_GITHUB_GPG_KEY_SIGNING }}
+          git config --global commit.gpgsign true
+          git config user.name ci-macpaw
+          git config user.email admin+ci-gh@macpaw.com
 
           # Check if there are changes to commit
           git add extensions/*/manifest.json
@@ -110,7 +116,7 @@ jobs:
           # Create branch and commit
           BRANCH="chore/bump-versions-$(date +%Y%m%d-%H%M%S)"
           git checkout -b "$BRANCH"
-          git commit -m "chore: bump extension versions"
+          git commit -m "chore: bump extension versions" -S
           git push origin "$BRANCH"
 
           # Create PR with [skip ci] in title
