@@ -1,14 +1,14 @@
-import { basename, join } from 'path';
-import fs from 'fs/promises';
-import semver from 'semver';
+import { basename, join } from "path";
+import fs from "fs/promises";
+import semver from "semver";
 
-import { ApiClient } from '../lib/api.ts';
+import { ApiClient } from "../lib/api.ts";
 
 export async function checkVersion(cwd: string, mode: "staging" | "production" = "staging") {
   const api = new ApiClient(mode);
   const extensionName = basename(cwd);
 
-  const manifest = JSON.parse(await fs.readFile(join(cwd, 'manifest.json'), 'utf8'));
+  const manifest = JSON.parse(await fs.readFile(join(cwd, "manifest.json"), "utf8"));
   const currentVersion = semver.coerce(manifest.version);
 
   try {
@@ -27,11 +27,15 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
     }
 
     if (!semver.valid(currentVersion)) {
-      throw new Error(`Version ${currentVersion} is not a valid semver version! Please update the version in the manifest.json file.`);
+      throw new Error(
+        `Version ${currentVersion} is not a valid semver version! Please update the version in the manifest.json file.`
+      );
     }
 
     if (semver.lt(currentVersion, latestVersion)) {
-      throw new Error(`Version ${currentVersion} is less than the latest version ${versionList[0]}! Please update the version in the manifest.json file.`);
+      throw new Error(
+        `Version ${currentVersion} is less than the latest version ${versionList[0]}! Please update the version in the manifest.json file.`
+      );
     }
 
     console.log(`Version ${currentVersion} does not exist, all good!`);
