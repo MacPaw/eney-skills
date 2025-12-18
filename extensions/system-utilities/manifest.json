@@ -2,7 +2,7 @@
 	"id": "system-utilities",
 	"type": "jsx",
 	"version": "3.12",
-	"title": "System Utilities",
+	"title": "System utilities",
 	"tools": [
 		{
 			"name": "how-long-until",
