@@ -55,6 +55,7 @@ jobs:
         run: node scripts/bump-version-for-changed.js --extension ${{ matrix.extension }}
 
       - name: Check extension version
+        if: github.event_name == 'push'
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
       - name: Publish extension
