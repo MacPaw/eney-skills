@@ -1,6 +1,6 @@
 {
   "name": "pdf-utilities",
-  "description": "PDF utilities extensions",
+  "description": "PDF Utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
