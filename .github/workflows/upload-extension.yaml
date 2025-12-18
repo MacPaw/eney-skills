@@ -91,7 +91,7 @@ jobs:
           node-version: "24"
 
       - name: Bump versions for changed extensions
-        run: node scripts/bump-version-for-changed.js --base ${{ github.event.before }}
+        run: node scripts/bump-version-for-changed.js --base HEAD~1
 
       - name: Create PR with version bumps
         env:
