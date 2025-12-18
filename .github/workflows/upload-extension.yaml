@@ -50,9 +50,9 @@ jobs:
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Bump versions for changed extensions
+      - name: Bump extension version
         if: github.event_name == 'push'
-        run: node scripts/bump-version-for-changed.js
+        run: node scripts/bump-version-for-changed.js --extension ${{ matrix.extension }}
 
       - name: Check extension version
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
@@ -70,8 +70,28 @@ jobs:
             --mode staging \
             $DRY_RUN_ARG
 
+  commit-version-bumps:
+    name: Commit version bumps
+    runs-on: ubuntu-latest
+    needs: [detect-changes, uploadExtensionArchive]
+    if: github.event_name == 'push' && needs.detect-changes.outputs.has_changes == 'true'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Bump versions for changed extensions
+        run: node scripts/bump-version-for-changed.js --base ${{ github.event.before }}
+
       - name: Commit version bumps
-        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
