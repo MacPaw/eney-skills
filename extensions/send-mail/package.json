@@ -1,6 +1,7 @@
 {
   "name": "send-mail",
   "type": "module",
+  "description": "Send mail utilities extensions",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle",

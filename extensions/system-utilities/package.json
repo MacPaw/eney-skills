@@ -1,6 +1,6 @@
 {
   "name": "system-utilities",
-  "description": "System, Hardware, Network utilities extensions",
+  "description": "System, Hardware, Network Utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

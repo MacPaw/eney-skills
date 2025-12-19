@@ -1,16 +1,17 @@
-import { basename, dirname, join, resolve } from 'path';
-import fs from 'fs/promises';
-import { spawn } from 'child_process';
-import { spawnSync } from 'child_process';
-import { tmpdir } from 'os';
-import { existsSync } from 'fs';
+import { basename, dirname, join, resolve } from "path";
+import fs from "fs/promises";
+import { spawn } from "child_process";
+import { spawnSync } from "child_process";
+import { tmpdir } from "os";
+import { existsSync } from "fs";
 
-import { bundle } from '../bundle/command.ts';
+import { bundle } from "../bundle/command.ts";
 
 export async function packExtension(cwd: string, out?: string) {
   const extensionDir = resolve(cwd);
   const extensionName = basename(extensionDir);
-  const manifestPath = join(extensionDir, 'manifest.json');
+  const manifestPath = join(extensionDir, "manifest.json");
+  const packageJsonPath = join(extensionDir, "package.json");
 
   try {
     await fs.stat(extensionDir);
@@ -21,7 +22,7 @@ export async function packExtension(cwd: string, out?: string) {
   let manifestVersion: string | undefined;
 
   try {
-    const manifestRaw = await fs.readFile(manifestPath, 'utf8');
+    const manifestRaw = await fs.readFile(manifestPath, "utf8");
     const manifest = JSON.parse(manifestRaw);
     manifestVersion = manifest.version;
   } catch (error: any) {
@@ -48,17 +49,19 @@ export async function packExtension(cwd: string, out?: string) {
   const folderWithBundle = await bundle(cwd, "./dist");
   const parentFolderOfBundle = dirname(folderWithBundle);
 
+  await fs.cp(packageJsonPath, join(folderWithBundle, "package.json"));
+
   await fs.rm(archiveResultPath, { force: true }).catch(() => undefined);
 
   console.log(`Creating archive ${archiveName} in ${outputDir}...`);
 
   await new Promise<void>((resolve, reject) => {
-    const tarProcess = spawn('tar', ['-czf', archiveResultPath, extensionName], {
+    const tarProcess = spawn("tar", ["-czf", archiveResultPath, extensionName], {
       cwd: parentFolderOfBundle,
-      stdio: 'inherit',
+      stdio: "inherit",
     });
 
-    tarProcess.on('close', (code) => {
+    tarProcess.on("close", (code) => {
       if (code === 0) {
         resolve();
       } else {
@@ -66,7 +69,7 @@ export async function packExtension(cwd: string, out?: string) {
       }
     });
 
-    tarProcess.on('error', (error) => {
+    tarProcess.on("error", (error) => {
       reject(error);
     });
   });
@@ -77,17 +80,19 @@ export async function packExtension(cwd: string, out?: string) {
 }
 
 export async function getFileHash(filePath: string) {
-  const result = spawnSync('shasum', ['-a', '256', filePath], { encoding: 'utf8' });
+  const result = spawnSync("shasum", ["-a", "256", filePath], { encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(`Failed to calculate sha256 hash: ${result.stderr}`);
   }
   // shasum outputs "<hash>  <filename>"
-  const hash = result.stdout.split(' ')[0].trim();
+  const hash = result.stdout.split(" ")[0].trim();
   return hash;
 }
 
 export async function getFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging") {
-  return mode === "production" ? `https://cdn.eney.ai/extensions/${basename(filePath)}` : `https://staging-cdn.eney.ai/extensions/${basename(filePath)}`;
+  return mode === "production"
+    ? `https://cdn.eney.ai/extensions/${basename(filePath)}`
+    : `https://staging-cdn.eney.ai/extensions/${basename(filePath)}`;
 }
 
 export async function packExtensionCommand(cwd: string, outputDir?: string) {
