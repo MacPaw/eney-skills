@@ -1,6 +1,6 @@
 {
   "name": "image-utilities",
-  "description": "Image utilities extensions",
+  "description": "Image Utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
