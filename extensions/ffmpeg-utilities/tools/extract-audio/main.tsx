@@ -13,7 +13,7 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function ExtractAudio(props: Props) {
 	const [source, setSource] = useState(props.source);
 	const [result, setResult] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -99,4 +99,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(ExtractAudio);

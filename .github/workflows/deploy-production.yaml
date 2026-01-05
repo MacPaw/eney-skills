@@ -1,0 +1,67 @@
+name: "Deploy to Production"
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.ref_name }} to production
+    runs-on:
+      group: gcp-k8s
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      BACKEND_URL: https://core.internal.eney.ai
+      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+    steps:
+      - name: Parse tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          EXTENSION="${TAG%@*}"
+          VERSION="${TAG#*@}"
+          echo "extension=$EXTENSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying $EXTENSION version $VERSION to production"
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Validate extension exists
+        run: |
+          if [ ! -d "extensions/${{ steps.parse.outputs.extension }}" ]; then
+            echo "Error: Extension '${{ steps.parse.outputs.extension }}' not found"
+            exit 1
+          fi
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
+          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
+          access_token_lifetime: 300s
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Verify version matches manifest
+        run: |
+          MANIFEST_VERSION=$(node -p "require('./extensions/${{ steps.parse.outputs.extension }}/manifest.json').version")
+          if [ "$MANIFEST_VERSION" != "${{ steps.parse.outputs.version }}" ]; then
+            echo "Error: Tag version (${{ steps.parse.outputs.version }}) doesn't match manifest ($MANIFEST_VERSION)"
+            exit 1
+          fi
+
+      - name: Publish to production
+        run: |
+          node cli/main.ts publish \
+            --cwd extensions/${{ steps.parse.outputs.extension }} \
+            --mode production

@@ -23,11 +23,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    if: needs.detect-changes.outputs.has_changes == 'true'
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
       BACKEND_URL: https://core.eney.appflix.io
-      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN }}
+      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
       fail-fast: false
       matrix:
@@ -50,7 +50,11 @@ jobs:
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
+      - name: Bump extension version
+        run: node scripts/bump-version-for-changed.js --extension ${{ matrix.extension }}
+
       - name: Check extension version
+        if: github.event_name == 'push'
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
 
       - name: Publish extension
@@ -65,3 +69,59 @@ jobs:
             --cwd extensions/${{ matrix.extension }} \
             --mode staging \
             $DRY_RUN_ARG
+
+  commit-version-bumps:
+    name: Commit version bumps
+    runs-on: ubuntu-latest
+    needs: [detect-changes, uploadExtensionArchive]
+    if: github.event_name == 'push' && needs.detect-changes.outputs.has_changes == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Bump versions for changed extensions
+        run: node scripts/bump-version-for-changed.js --base ${{ github.event.before }}
+
+      - name: Create PR with version bumps
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ${GITHUB_WORKSPACE}/.gpg
+          echo ${{ secrets.CI_GITHUB_GPG_KEY_BASE64 }} | base64 -d > ${GITHUB_WORKSPACE}/.gpg/private.key
+          gpg --import ${GITHUB_WORKSPACE}/.gpg/private.key
+
+          git config --global user.signingkey ${{ secrets.CI_GITHUB_GPG_KEY_SIGNING }}
+          git config --global commit.gpgsign true
+          git config user.name ci-macpaw
+          git config user.email admin+ci-gh@macpaw.com
+
+          # Check if there are changes to commit
+          git add extensions/*/manifest.json
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+            exit 0
+          fi
+
+          # Create branch and commit
+          BRANCH="chore/bump-versions-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git commit -m "chore: bump extension versions" -S
+          git push origin "$BRANCH"
+
+          # Create PR with [skip ci] in title
+          gh pr create \
+            --title "[skip ci] chore: bump extension versions" \
+            --body "Auto-generated version bump after staging deploy." \
+            --base main \
+            --head "$BRANCH"

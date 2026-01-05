@@ -99,7 +99,7 @@ end tell
 	});
 }
 
-export default function Extension(props: Props) {
+export default function SendMail(props: Props) {
 	const [recipient, setRecipient] = useState(props.recipient ?? "");
 	const [subject, setSubject] = useState(props.subject ?? "");
 	const [body, setBody] = useState(props.body ?? "");
@@ -199,4 +199,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(SendMail);

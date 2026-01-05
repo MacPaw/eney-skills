@@ -3,15 +3,15 @@ import { Action, ActionPanel, Form, Paper, setupTool } from '@macpaw/eney-api';
 import z from 'zod';
 
 export const props = z.object({
-	date: z.date()
+	date: z.number()
 		.optional()
-		.describe('The date to calculate the time until.'),
+		.describe('The timestamp of the date to calculate the time until. Example: 1734567890'),
 });
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
-	const [date, setDate] = useState<Date>(props.date ?? new Date());
+export default function HowLongUntil(props: Props) {
+	const [date, setDate] = useState<Date>(new Date(props.date ?? Date.now()));
 	const [result, setResult] = useState<string | undefined>(undefined);
 
 	function onTimeChange(value: Date) {
@@ -57,4 +57,4 @@ export default function Extension(props: Props) {
   );
 }
 
-setupTool(Extension);
+setupTool(HowLongUntil);
