@@ -1,6 +1,6 @@
 {
   "name": "youtube-utilities",
-  "description": "Youtube utilities extensions",
+  "description": "Youtube Utilities extensions",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
