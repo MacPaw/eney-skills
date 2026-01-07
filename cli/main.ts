@@ -57,10 +57,11 @@ program
 program
   .command("analytics")
   .description("Analyze Cloudflare HTTP traffic by path")
-  .option("--sort <order>", "Sort order: most or least", "most")
-  .option("--limit <n>", "Number of results to show", "50")
+  .option("--sort <order>", "Sort order: most or least")
+  .option("--limit <n>", "Number of results to show")
+  .option("--days <n>", "Number of days to analyze")
   .option("-o, --output <path>", "Output JSON file path")
-  .option("--host <hostname>", "Request host to filter", "staging-cdn.eney.ai")
+  .option("--host <hostname>", "Request host to filter")
   .action((options) => analyticsCommand(options));
 
 program.parse(process.argv);
