@@ -4,8 +4,6 @@ import { readFile, stat } from "fs/promises";
 import { copy, remove } from "fs-extra";
 import { execSync } from "child_process";
 
-const defaultOutFolder = "../../../eney-jsx-runtime/extensions";
-
 export async function bundle(cwd: string, outFolder: string) {
   const extensionFolder = cwd;
 
@@ -28,13 +26,7 @@ export async function bundle(cwd: string, outFolder: string) {
 
     const toolsPath = resolve(extensionFolder, "tools", tool.name);
     const toolsEntry = resolve(toolsPath, "main.tsx");
-    const outfile = join(
-      outFolder,
-      extensionFolderName,
-      "tools",
-      tool.name,
-      "main.js"
-    );
+    const outfile = join(outFolder, extensionFolderName, "tools", tool.name, "main.js");
 
     try {
       await stat(toolsEntry);
@@ -82,19 +74,13 @@ export async function bundle(cwd: string, outFolder: string) {
   }
 
   const sourceNodeModules = resolve(extensionFolder, "node_modules");
-  const targetNodeModules = resolve(
-    outFolder,
-    extensionFolderName,
-    "node_modules"
-  );
+  const targetNodeModules = resolve(outFolder, extensionFolderName, "node_modules");
 
   try {
     await stat(sourceNodeModules);
     await remove(targetNodeModules);
     await copy(sourceNodeModules, targetNodeModules);
-    console.log(
-      `${sourceNodeModules} copied successfully to ${targetNodeModules}`
-    );
+    console.log(`${sourceNodeModules} copied successfully to ${targetNodeModules}`);
   } catch (error) {
     console.warn(`\nWarning: Could not copy node_modules: ${error}`);
   }
@@ -115,7 +101,7 @@ export async function bundle(cwd: string, outFolder: string) {
   return bundledPath;
 }
 
-export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: string = process.cwd()) {
+export async function bundleCommand(outFolder: string, cwd: string = process.cwd()) {
   const bundledFolder = await bundle(cwd, outFolder);
   console.log(`Bundle complete! Output folder: ${bundledFolder}`);
 }
