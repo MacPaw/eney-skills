@@ -3,6 +3,7 @@ import { readdir, mkdir, readFile, writeFile, rename, rm } from 'node:fs/promise
 import { fileURLToPath } from 'node:url';
 import { copy } from 'fs-extra';
 import handlebars from 'handlebars';
+import * as p from '@clack/prompts';
 import {
 	askExtensionDetails,
 	askExtensionId,
@@ -37,6 +38,8 @@ type CreateCommandOptions = {
 } & Partial<ExtensionDetails>;
 
 export async function createCommand(options: CreateCommandOptions) {
+	p.intro('Create Extension');
+
 	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
 	const extensionId = options.extensionId || (await askExtensionId());
 
@@ -46,6 +49,7 @@ export async function createCommand(options: CreateCommandOptions) {
 	const folderAction = await getFolderAction(localOutputFolder);
 
 	if (folderAction === 'cancel') {
+		p.cancel('Operation cancelled.');
 		process.exit(0);
 	}
 
@@ -66,6 +70,9 @@ export async function createCommand(options: CreateCommandOptions) {
 		extensionId,
 		...extensionDetails,
 	};
+
+	const spinner = p.spinner();
+	spinner.start('Creating extension...');
 
 	if (folderAction === 'overwrite') {
 		await rm(localOutputFolder, { recursive: true, force: true });
@@ -103,5 +110,7 @@ export async function createCommand(options: CreateCommandOptions) {
 		await rename(directory.oldPath, directory.newPath);
 	}
 
-	console.log(`🎉 Extension created successfully at ${localOutputFolder}`);
+	spinner.stop('Extension created');
+
+	p.outro(`Extension created at ${localOutputFolder}`);
 }

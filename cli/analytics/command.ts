@@ -31,7 +31,7 @@ function checkAllRequiredOptions(options: AnalyticsOptions): boolean {
   );
 }
 
-async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOptions | null> {
+async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOptions> {
   p.intro("Cloudflare Analytics");
 
   const answers = await p.group(
@@ -96,10 +96,6 @@ async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOpti
     }
   );
 
-  if (p.isCancel(answers)) {
-    return null;
-  }
-
   return {
     host: answers.host as string,
     sort: answers.sort as "most" | "least",
@@ -144,9 +140,7 @@ export async function analyticsCommand(options: AnalyticsOptions) {
 
   if (!hasAllRequiredOptions) {
     const resolved = await promptForOptions(options);
-    if (resolved) {
-      await runAnalytics(resolved);
-    }
+    await runAnalytics(resolved);
   } else {
     const limit = parseInt(options.limit!, 10);
     if (isNaN(limit) || limit <= 0) {
