@@ -27,7 +27,8 @@ jobs:
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
       BACKEND_URL: https://core.eney.appflix.io
-      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
     strategy:
       fail-fast: false
       matrix:
