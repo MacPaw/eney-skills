@@ -26,8 +26,15 @@ export async function askExtensionId(): Promise<string> {
 }
 
 export async function getFolderAction(outputFolder: string): Promise<'overwrite' | 'cancel' | 'create'> {
+	const isCI = process.env.CI === 'true';
+
 	try {
 		await stat(outputFolder);
+
+		if (isCI) {
+			console.log(`Extension at "${outputFolder}" already exists, overwriting in CI mode`);
+			return 'overwrite';
+		}
 
 		p.log.warn(`Extension at "${outputFolder}" already exists`);
 

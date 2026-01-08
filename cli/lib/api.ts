@@ -32,9 +32,9 @@ export class ApiClient {
     this.mode = mode;
     this.backendUrl = mode === "staging" ? "https://core.eney.appflix.io" : "https://core.internal.eney.ai";
 
-    const token = process.env.ADMIN_AUTH_TOKEN;
+    const token = process.env[`ADMIN_AUTH_TOKEN_${mode.toUpperCase()}`];
     if (!token) {
-      throw new Error("ADMIN_AUTH_TOKEN must be set");
+      throw new Error(`ADMIN_AUTH_TOKEN_${mode.toUpperCase()} must be set`);
     }
     this.accessToken = token;
   }

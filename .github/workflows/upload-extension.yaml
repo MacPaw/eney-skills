@@ -56,20 +56,14 @@ jobs:
 
       - name: Check extension version
         if: github.event_name == 'push'
-        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }}
+        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }} --mode staging
 
       - name: Publish extension
         run: |
-          DRY_RUN_ARG=""
-
-          if [ "${{ env.IS_DRY_RUN }}" = "true" ]; then
-            DRY_RUN_ARG="--dry-run"
-          fi
-
           node cli/main.ts publish \
             --cwd extensions/${{ matrix.extension }} \
             --mode staging \
-            $DRY_RUN_ARG
+            --dry-run ${{ env.IS_DRY_RUN }}
 
   commit-version-bumps:
     name: Commit version bumps

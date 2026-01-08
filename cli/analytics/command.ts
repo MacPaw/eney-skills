@@ -137,34 +137,39 @@ async function runAnalytics(resolved: ResolvedOptions): Promise<void> {
 
 export async function analyticsCommand(options: AnalyticsOptions) {
   const hasAllRequiredOptions = checkAllRequiredOptions(options);
+  const isCI = process.env.CI === "true";
 
-  if (!hasAllRequiredOptions) {
+  if (!hasAllRequiredOptions && isCI) {
+    console.error("Error: --sort, --limit, --days, and --host are required in CI mode");
+    process.exit(1);
+  } else if (!hasAllRequiredOptions) {
     const resolved = await promptForOptions(options);
     await runAnalytics(resolved);
-  } else {
-    const limit = parseInt(options.limit!, 10);
-    if (isNaN(limit) || limit <= 0) {
-      console.error("Error: --limit must be a positive number");
-      process.exit(1);
-    }
-
-    const days = parseInt(options.days!, 10);
-    if (isNaN(days) || days <= 0) {
-      console.error("Error: --days must be a positive number");
-      process.exit(1);
-    }
-
-    if (options.sort !== "most" && options.sort !== "least") {
-      console.error("Error: --sort must be either 'most' or 'least'");
-      process.exit(1);
-    }
-
-    await runAnalytics({
-      limit,
-      days,
-      sort: options.sort,
-      host: options.host!,
-      output: options.output,
-    });
+    return;
   }
+
+  const limit = parseInt(options.limit!, 10);
+  if (isNaN(limit) || limit <= 0) {
+    console.error("Error: --limit must be a positive number");
+    process.exit(1);
+  }
+
+  const days = parseInt(options.days!, 10);
+  if (isNaN(days) || days <= 0) {
+    console.error("Error: --days must be a positive number");
+    process.exit(1);
+  }
+
+  if (options.sort !== "most" && options.sort !== "least") {
+    console.error("Error: --sort must be either 'most' or 'least'");
+    process.exit(1);
+  }
+
+  await runAnalytics({
+    limit,
+    days,
+    sort: options.sort,
+    host: options.host!,
+    output: options.output,
+  });
 }

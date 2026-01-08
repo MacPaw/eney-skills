@@ -1,6 +1,7 @@
 import { basename, join } from "path";
 import fs from "fs/promises";
 import semver from "semver";
+import * as p from "@clack/prompts";
 
 import { ApiClient } from "../lib/api.ts";
 
@@ -45,6 +46,59 @@ export async function checkVersion(cwd: string, mode: "staging" | "production" =
   }
 }
 
-export async function checkVersionCommand(cwd: string, mode: "staging" | "production" = "staging") {
-  await checkVersion(cwd, mode);
+type CheckVersionOptions = {
+  cwd?: string;
+  mode?: "staging" | "production";
+};
+
+async function promptForOptions(options: CheckVersionOptions) {
+  p.intro("Check Version");
+
+  const answers = await p.group(
+    {
+      cwd: () =>
+        options.cwd
+          ? Promise.resolve(options.cwd)
+          : p.text({
+              message: "Extension directory:",
+              initialValue: process.cwd(),
+            }),
+      mode: () =>
+        options.mode
+          ? Promise.resolve(options.mode)
+          : p.select({
+              message: "Mode:",
+              options: [
+                { value: "staging", label: "Staging" },
+                { value: "production", label: "Production" },
+              ],
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    }
+  );
+
+  return {
+    cwd: answers.cwd as string,
+    mode: answers.mode as "staging" | "production",
+  };
+}
+
+export async function checkVersionCommand(cwd?: string, mode?: "staging" | "production") {
+  const hasAllOptions = cwd !== undefined && mode !== undefined;
+  const isCI = process.env.CI === "true";
+
+  if (hasAllOptions) {
+    await checkVersion(cwd, mode);
+  } else if (isCI) {
+    console.error("Error: --cwd and --mode are required in CI mode");
+    process.exit(1);
+  } else {
+    const resolved = await promptForOptions({ cwd, mode });
+    await checkVersion(resolved.cwd, resolved.mode);
+  }
 }

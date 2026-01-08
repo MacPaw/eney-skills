@@ -38,6 +38,21 @@ type CreateCommandOptions = {
 } & Partial<ExtensionDetails>;
 
 export async function createCommand(options: CreateCommandOptions) {
+	const isCI = process.env.CI === 'true';
+	const requiredDetails: (keyof Omit<ExtensionDetails, 'extensionId'>)[] = [
+		'extensionTitle',
+		'toolName',
+		'toolDescription',
+		'toolTitle',
+	];
+	const hasAllDetails = requiredDetails.every((key) => options[key]);
+	const hasAllOptions = options.extensionId !== undefined && hasAllDetails;
+
+	if (!hasAllOptions && isCI) {
+		console.error('Error: --id, --extension-title, --tool-name, --tool-description, and --tool-title are required in CI mode');
+		process.exit(1);
+	}
+
 	p.intro('Create Extension');
 
 	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
@@ -52,15 +67,6 @@ export async function createCommand(options: CreateCommandOptions) {
 		p.cancel('Operation cancelled.');
 		process.exit(0);
 	}
-
-	const requiredDetails: (keyof Omit<ExtensionDetails, 'extensionId'>)[] = [
-		'extensionTitle',
-		'toolName',
-		'toolDescription',
-		'toolTitle',
-	];
-
-	const hasAllDetails = requiredDetails.every((key) => options[key]);
 
 	const extensionDetails = hasAllDetails
 		? (options as ExtensionDetails)

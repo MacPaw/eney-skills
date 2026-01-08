@@ -1,6 +1,7 @@
 import { basename, join } from "path";
 import semver from "semver";
 import fs from "fs/promises";
+import * as p from "@clack/prompts";
 
 import { ApiClient } from "../lib/api.ts";
 
@@ -8,7 +9,58 @@ import { getFileDownloadUrl, getFileHash, packExtension } from "./pack.ts";
 import { getToolsWithSchemas } from "./extract-schemas.ts";
 import { checkVersion } from "./check-version.ts";
 
-export async function publishExtensionCommand(cwd: string, mode: "staging" | "production" = "staging", dryRun = false) {
+type PublishOptions = {
+  cwd?: string;
+  mode?: "staging" | "production";
+  dryRun?: boolean;
+};
+
+async function promptForOptions(options: PublishOptions) {
+  p.intro("Publish Extension");
+
+  const answers = await p.group(
+    {
+      cwd: () =>
+        options.cwd
+          ? Promise.resolve(options.cwd)
+          : p.text({
+              message: "Extension directory:",
+              initialValue: process.cwd(),
+            }),
+      mode: () =>
+        options.mode
+          ? Promise.resolve(options.mode)
+          : p.select({
+              message: "Publish mode:",
+              options: [
+                { value: "staging", label: "Staging" },
+                { value: "production", label: "Production" },
+              ],
+            }),
+      dryRun: () =>
+        options.dryRun !== undefined
+          ? Promise.resolve(options.dryRun)
+          : p.confirm({
+              message: "Dry run (skip remote publish)?",
+              initialValue: false,
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    }
+  );
+
+  return {
+    cwd: answers.cwd as string,
+    mode: answers.mode as "staging" | "production",
+    dryRun: answers.dryRun as boolean,
+  };
+}
+
+async function publishExtension(cwd: string, mode: "staging" | "production", dryRun: boolean) {
   const api = new ApiClient(mode);
   const extensionName = basename(cwd);
   const tools = await getToolsWithSchemas(cwd);
@@ -72,5 +124,20 @@ export async function publishExtensionCommand(cwd: string, mode: "staging" | "pr
   } catch (error) {
     console.error("Error publishing extension:", error);
     throw error;
+  }
+}
+
+export async function publishExtensionCommand(cwd?: string, mode?: "staging" | "production", dryRun?: boolean) {
+  const hasAllOptions = cwd !== undefined && mode !== undefined;
+  const isCI = process.env.CI === "true";
+
+  if (hasAllOptions) {
+    await publishExtension(cwd, mode, dryRun);
+  } else if (isCI) {
+    console.error("Error: --cwd, --mode are required in CI mode");
+    process.exit(1);
+  } else {
+    const resolved = await promptForOptions({ cwd, mode, dryRun });
+    await publishExtension(resolved.cwd, resolved.mode, resolved.dryRun);
   }
 }
