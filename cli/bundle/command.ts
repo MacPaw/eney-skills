@@ -3,8 +3,7 @@ import { resolve, join, basename } from "path";
 import { readFile, stat } from "fs/promises";
 import { copy, remove } from "fs-extra";
 import { execSync } from "child_process";
-
-const defaultOutFolder = "../../../eney-jsx-runtime/extensions";
+import * as p from "@clack/prompts";
 
 export async function bundle(cwd: string, outFolder: string) {
   const extensionFolder = cwd;
@@ -28,13 +27,7 @@ export async function bundle(cwd: string, outFolder: string) {
 
     const toolsPath = resolve(extensionFolder, "tools", tool.name);
     const toolsEntry = resolve(toolsPath, "main.tsx");
-    const outfile = join(
-      outFolder,
-      extensionFolderName,
-      "tools",
-      tool.name,
-      "main.js"
-    );
+    const outfile = join(outFolder, extensionFolderName, "tools", tool.name, "main.js");
 
     try {
       await stat(toolsEntry);
@@ -82,19 +75,13 @@ export async function bundle(cwd: string, outFolder: string) {
   }
 
   const sourceNodeModules = resolve(extensionFolder, "node_modules");
-  const targetNodeModules = resolve(
-    outFolder,
-    extensionFolderName,
-    "node_modules"
-  );
+  const targetNodeModules = resolve(outFolder, extensionFolderName, "node_modules");
 
   try {
     await stat(sourceNodeModules);
     await remove(targetNodeModules);
     await copy(sourceNodeModules, targetNodeModules);
-    console.log(
-      `${sourceNodeModules} copied successfully to ${targetNodeModules}`
-    );
+    console.log(`${sourceNodeModules} copied successfully to ${targetNodeModules}`);
   } catch (error) {
     console.warn(`\nWarning: Could not copy node_modules: ${error}`);
   }
@@ -115,7 +102,68 @@ export async function bundle(cwd: string, outFolder: string) {
   return bundledPath;
 }
 
-export async function bundleCommand(outFolder: string = defaultOutFolder, cwd: string = process.cwd()) {
-  const bundledFolder = await bundle(cwd, outFolder);
+type BundleOptions = {
+  output?: string;
+  cwd?: string;
+};
+
+async function promptForOptions(options: BundleOptions) {
+  p.intro("Bundle Extension");
+
+  const answers = await p.group(
+    {
+      cwd: () =>
+        options.cwd
+          ? Promise.resolve(options.cwd)
+          : p.text({
+              message: "Extension directory:",
+              initialValue: process.cwd(),
+              validate: (value) => {
+                if (!value) {
+                  return "Extension directory is required";
+                }
+              },
+            }),
+      output: () =>
+        options.output
+          ? Promise.resolve(options.output)
+          : p.text({
+              message: "Output folder:",
+              initialValue: "./dist",
+              validate: (value) => {
+                if (!value) {
+                  return "Output folder is required";
+                }
+              },
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    }
+  );
+
+  return answers;
+}
+
+export async function bundleCommand(output?: string, cwd?: string) {
+  const hasAllOptions = output !== undefined && cwd !== undefined;
+  const isCI = process.env.CI === "true";
+
+  let resolvedCwd: string = cwd;
+  let resolvedOutput: string = output;
+
+  if (!hasAllOptions && isCI) {
+    console.error("Error: --cwd and --output are required in CI mode");
+    process.exit(1);
+  } else if (!hasAllOptions) {
+    const answers = await promptForOptions({ output, cwd });
+    resolvedCwd = answers.cwd;
+    resolvedOutput = answers.output;
+  }
+
+  const bundledFolder = await bundle(resolvedCwd, resolvedOutput);
   console.log(`Bundle complete! Output folder: ${bundledFolder}`);
 }

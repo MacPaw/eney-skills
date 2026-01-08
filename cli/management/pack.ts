@@ -1,9 +1,9 @@
 import { basename, dirname, join, resolve } from "path";
 import fs from "fs/promises";
-import { spawn } from "child_process";
-import { spawnSync } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { tmpdir } from "os";
 import { existsSync } from "fs";
+import * as p from "@clack/prompts";
 
 import { bundle } from "../bundle/command.ts";
 
@@ -95,6 +95,55 @@ export async function getFileDownloadUrl(filePath: string, mode: "staging" | "pr
     : `https://staging-cdn.eney.ai/extensions/${basename(filePath)}`;
 }
 
-export async function packExtensionCommand(cwd: string, outputDir?: string) {
-  await packExtension(cwd, outputDir);
+type PackOptions = {
+  cwd?: string;
+  output?: string;
+};
+
+async function promptForOptions(options: PackOptions) {
+  p.intro("Pack Extension");
+
+  const answers = await p.group(
+    {
+      cwd: () =>
+        options.cwd
+          ? Promise.resolve(options.cwd)
+          : p.text({
+              message: "Extension directory:",
+              initialValue: process.cwd(),
+            }),
+      output: () =>
+        options.output
+          ? Promise.resolve(options.output)
+          : p.text({
+              message: "Output directory (leave empty for temp):",
+              placeholder: "Leave empty for temp directory",
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    }
+  );
+
+  return {
+    cwd: answers.cwd as string,
+    output: (answers.output as string) || undefined,
+  };
+}
+
+export async function packExtensionCommand(cwd?: string, output?: string) {
+  const isCI = process.env.CI === "true";
+
+  if (cwd !== undefined) {
+    await packExtension(cwd, output);
+  } else if (isCI) {
+    console.error("Error: --cwd is required in CI mode");
+    process.exit(1);
+  } else {
+    const resolved = await promptForOptions({ cwd, output });
+    await packExtension(resolved.cwd, resolved.output);
+  }
 }

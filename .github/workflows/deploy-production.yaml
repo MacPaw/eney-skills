@@ -3,7 +3,7 @@ name: "Deploy to Production"
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 jobs:
   deploy:
@@ -15,7 +15,8 @@ jobs:
       id-token: write
     env:
       BACKEND_URL: https://core.internal.eney.ai
-      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     steps:
       - name: Parse tag
         id: parse

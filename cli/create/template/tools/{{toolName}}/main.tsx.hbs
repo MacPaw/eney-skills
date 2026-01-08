@@ -10,7 +10,7 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-export default function Extension(props: Props) {
+export default function BasicExtension(props: Props) {
 	const [name, setName] = useState(props.name ?? "");
 	const [result, setResult] = useState("");
 
@@ -41,4 +41,4 @@ export default function Extension(props: Props) {
 	);
 }
 
-setupTool(Extension);
+setupTool(BasicExtension);

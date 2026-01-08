@@ -1,62 +1,11 @@
 import { stat } from 'node:fs/promises';
-import { createInterface } from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
+import * as p from '@clack/prompts';
 import { isKebabCase } from './utils.ts';
 
-type ValidationResult = true | string;
-
-type AskInputOptions = {
-	message: string;
-	hint?: string;
-	validate?: (value: string) => ValidationResult;
-};
-
-async function askInput(options: AskInputOptions) {
-	const readline = createInterface({ input, output });
-
-	try {
-		while (true) {
-			const hint = options.hint ? `\n  ${options.hint}` : '';
-			const value = (await readline.question(`${options.message}${hint}\n> `)).trim();
-			const validationResult = options.validate ? options.validate(value) : true;
-
-			if (validationResult === true) {
-				return value;
-			}
-
-			console.log(validationResult);
-		}
-	} finally {
-		readline.close();
-	}
-}
-
-async function askConfirm(message: string) {
-	const readline = createInterface({ input, output });
-
-	try {
-		while (true) {
-			const value = (await readline.question(`${message} (y/N): `)).trim().toLowerCase();
-
-			if (value === 'y' || value === 'yes') {
-				return true;
-			}
-
-			if (value === 'n' || value === 'no' || value === '') {
-				return false;
-			}
-
-			console.log('Please respond with "y" or "n".');
-		}
-	} finally {
-		readline.close();
-	}
-}
-
-export function askExtensionId() {
-	return askInput({
+export async function askExtensionId(): Promise<string> {
+	const value = await p.text({
 		message: 'What is the id of the extension?',
-		hint: 'Example: security-utilities',
+		placeholder: 'security-utilities',
 		validate: (value) => {
 			if (!value) {
 				return 'Extension id is required';
@@ -65,19 +14,38 @@ export function askExtensionId() {
 			if (!isKebabCase(value)) {
 				return 'Extension id must be in kebab case, example: security-utilities';
 			}
-
-			return true;
 		},
 	});
+
+	if (p.isCancel(value)) {
+		p.cancel('Operation cancelled.');
+		process.exit(0);
+	}
+
+	return value;
 }
 
 export async function getFolderAction(outputFolder: string): Promise<'overwrite' | 'cancel' | 'create'> {
+	const isCI = process.env.CI === 'true';
+
 	try {
 		await stat(outputFolder);
 
-		console.log(`📂 Extension at "${outputFolder}" already exists`);
+		if (isCI) {
+			console.log(`Extension at "${outputFolder}" already exists, overwriting in CI mode`);
+			return 'overwrite';
+		}
 
-		const shouldOverwrite = await askConfirm('Do you want to overwrite the extension?');
+		p.log.warn(`Extension at "${outputFolder}" already exists`);
+
+		const shouldOverwrite = await p.confirm({
+			message: 'Do you want to overwrite the extension?',
+			initialValue: false,
+		});
+
+		if (p.isCancel(shouldOverwrite)) {
+			return 'cancel';
+		}
 
 		return shouldOverwrite ? 'overwrite' : 'cancel';
 	} catch (error) {
@@ -98,34 +66,53 @@ export type ExtensionDetails = {
 };
 
 export async function askExtensionDetails(): Promise<Omit<ExtensionDetails, 'extensionId'>> {
-	const extensionTitle = await askInput({
-		message: 'What is the title of the extension?',
-		hint: 'Example: Security Utilities',
-		validate: (value) => (value ? true : 'Extension title is required'),
-	});
-
-	const toolName = await askInput({
-		message: 'What is the name of the tool? It will be used as name of component file.',
-		hint: 'Example: new-password',
-		validate: (value) => (value ? true : 'Tool name is required'),
-	});
-
-	const toolDescription = await askInput({
-		message: 'What is the description of the tool? It will be used for LLM to select the tool.',
-		hint: 'Example: Generate a new random secure password',
-		validate: (value) => (value ? true : 'Tool description is required'),
-	});
-
-	const toolTitle = await askInput({
-		message: 'What is the title of the tool? It will be used as title inside Eney app.',
-		hint: 'Example: Generate Password',
-		validate: (value) => (value ? true : 'Tool title is required'),
-	});
+	const answers = await p.group(
+		{
+			extensionTitle: () =>
+				p.text({
+					message: 'What is the title of the extension?',
+					placeholder: 'Security Utilities',
+					validate: (value) => {
+						if (!value) return 'Extension title is required';
+					},
+				}),
+			toolName: () =>
+				p.text({
+					message: 'What is the name of the tool? It will be used as name of component file.',
+					placeholder: 'new-password',
+					validate: (value) => {
+						if (!value) return 'Tool name is required';
+					},
+				}),
+			toolDescription: () =>
+				p.text({
+					message: 'What is the description of the tool? It will be used for LLM to select the tool.',
+					placeholder: 'Generate a new random secure password',
+					validate: (value) => {
+						if (!value) return 'Tool description is required';
+					},
+				}),
+			toolTitle: () =>
+				p.text({
+					message: 'What is the title of the tool? It will be used as title inside Eney app.',
+					placeholder: 'Generate Password',
+					validate: (value) => {
+						if (!value) return 'Tool title is required';
+					},
+				}),
+		},
+		{
+			onCancel: () => {
+				p.cancel('Operation cancelled.');
+				process.exit(0);
+			},
+		}
+	);
 
 	return {
-		extensionTitle,
-		toolName,
-		toolDescription,
-		toolTitle,
+		extensionTitle: answers.extensionTitle,
+		toolName: answers.toolName,
+		toolDescription: answers.toolDescription,
+		toolTitle: answers.toolTitle,
 	};
 }

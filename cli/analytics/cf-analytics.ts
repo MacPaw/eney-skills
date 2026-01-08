@@ -52,12 +52,13 @@ export class CloudflareAnalyticsClient {
   async getRequestsByPath(
     host: string,
     sortOrder: "most" | "least" = "most",
-    limit: number = 50
+    limit: number = 50,
+    days: number = 7
   ): Promise<AnalyticsResult> {
     const endDate = new Date();
     const startDate = new Date();
     const orderBy = sortOrder === "most" ? "count_DESC" : "count_ASC";
-    startDate.setDate(startDate.getDate() - 7);
+    startDate.setDate(startDate.getDate() - days);
 
     const query = `
 			query GetHttpRequestsByPath($zoneTag: String!, $startDate: Time!, $endDate: Time!, $host: String!) {
