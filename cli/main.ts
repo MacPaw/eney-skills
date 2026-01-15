@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { Command } from "commander";
+import path from "path";
 import * as p from "@clack/prompts";
 import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
@@ -7,7 +8,7 @@ import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
 import { analyticsCommand } from "./analytics/command.ts";
-import path from "path";
+import { createTagsCommand } from "./management/create-tags.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -33,8 +34,12 @@ const commands = {
     action: () => packExtensionCommand(),
   },
   analytics: {
-    label: "Analyze Cloudflare HTTP traffic",
+    label: "Analyze download stats of extensions",
     action: () => analyticsCommand({}),
+  },
+  "create-tags": {
+    label: "Create tags, prepare for production deployment",
+    action: () => createTagsCommand(),
   },
 } as const;
 
@@ -111,6 +116,11 @@ program
   .option("-o, --output <path>", "Output JSON file path")
   .option("--host <hostname>", "Request host to filter")
   .action((options) => analyticsCommand(options));
+
+program
+  .command("create-tags")
+  .description("Create tags")
+  .action(() => createTagsCommand());
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
