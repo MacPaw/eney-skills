@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import color from "picocolors";
-import { execSync } from "child_process";
+import { exec, execSync } from "child_process";
 import semver from "semver";
 
 import { getExtensionsInfo } from "../lib/get-extensions.ts";
@@ -13,44 +13,36 @@ type ExtensionOption = ExtensionInfo & {
   } | null;
 };
 
-function getLatestExtensionTagFromGit(extensionName: string) {
-  let tags: string[] = [];
-  try {
-    const output = execSync("git tag -l").toString().trim();
-    const allTags = output.length > 0 ? output.split("\n") : [];
-    tags = allTags.filter((tag) => tag.startsWith(`${extensionName}@`));
-  } catch {
-    tags = [];
-  }
+async function fetchTagsFromGit(): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    exec("git ls-remote --tags origin | awk -F/ '{print $3}'", (error, stdout) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(stdout.trim().split("\n"));
+    });
+  });
+}
 
-  if (tags.length === 0) {
-    return null;
-  }
+function formatExtensionOption(extension: ExtensionInfo, remoteTags: string[]) {
+  const label = `${color.bold(color.blue(extension.name))} ${color.bold(color.yellow(`- ${extension.version}`))}`;
+  const baseOption = {
+    value: { ...extension, latestTag: null },
+    label,
+  };
 
-  const formattedTags = tags.map((tag) => {
+  const extensionsTags = remoteTags.filter((tag) => tag.startsWith(`${extension.name}@`));
+
+  if (extensionsTags.length === 0) return baseOption;
+
+  const formattedTags = extensionsTags.map((tag) => {
     return {
       version: tag.split("@")[1],
       tag: tag,
     };
   });
 
-  const latestTagVersion = formattedTags.sort((a, b) =>
-    semver.compare(semver.coerce(b.version), semver.coerce(a.version))
-  )[0];
-
-  return latestTagVersion;
-}
-
-function formatExtensionOption(extension: ExtensionInfo) {
-  const latestTag = getLatestExtensionTagFromGit(extension.name);
-  const label = `${color.bold(color.blue(extension.name))} ${color.bold(color.yellow(`- ${extension.version}`))}`;
-
-  if (!latestTag) {
-    return {
-      value: { ...extension, latestTag: null },
-      label,
-    };
-  }
+  const latestTag = formattedTags.sort((a, b) => semver.compare(semver.coerce(b.version), semver.coerce(a.version)))[0];
 
   return {
     value: { ...extension, latestTag },
@@ -61,9 +53,22 @@ function formatExtensionOption(extension: ExtensionInfo) {
 async function createTags() {
   p.intro("Create tags");
 
-  const extensions = getExtensionsInfo();
+  let remoteTags: string[] = [];
 
-  const options = extensions.map(formatExtensionOption);
+  const fetchSpinner = p.spinner();
+  fetchSpinner.start("Fetching tags from Git...");
+
+  try {
+    remoteTags = await fetchTagsFromGit();
+  } catch {
+    p.log.error("Failed to fetch tags from Git");
+    process.exit(1);
+  }
+
+  fetchSpinner.stop("Tags fetched successfully");
+
+  const extensions = getExtensionsInfo();
+  const options = extensions.map((extension) => formatExtensionOption(extension, remoteTags));
 
   const result = await p.autocompleteMultiselect<ExtensionOption>({
     message: "Select extensions (type to filter)",
@@ -130,7 +135,12 @@ async function createTags() {
   }
 
   for (const tag of tagsToPush) {
-    execSync(`git tag ${tag}`);
+    try {
+      execSync(`git tag ${tag}`);
+    } catch (error) {
+      p.log.error(`Failed to create tag ${tag}: ${error}`);
+      process.exit(1);
+    }
     p.log.message(`Created tag ${color.green(tag)}`);
   }
 
