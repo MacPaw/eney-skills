@@ -77,6 +77,7 @@ async function createTags() {
   const result = await p.autocompleteMultiselect<ExtensionOption>({
     message: "Select extensions (type to filter)",
     options,
+    required: true,
   });
 
   if (p.isCancel(result)) {
