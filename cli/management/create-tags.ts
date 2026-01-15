@@ -9,8 +9,9 @@ import type { ExtensionInfo } from "../lib/types.ts";
 function getLatestExtensionTagFromGit(extensionName: string) {
   let tags: string[] = [];
   try {
-    const output = execSync(`git tag -l | grep ${extensionName}@`).toString().trim();
-    tags = output.length > 0 ? output.split("\n") : [];
+    const output = execSync("git tag -l").toString().trim();
+    const allTags = output.length > 0 ? output.split("\n") : [];
+    tags = allTags.filter((tag) => tag.startsWith(`${extensionName}@`));
   } catch {
     tags = [];
   }
