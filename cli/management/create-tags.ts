@@ -107,18 +107,18 @@ async function createTags() {
     initialValue: false,
   });
 
-  if (p.isCancel(confirmResult)) {
+  if (p.isCancel(confirmResult) || !confirmResult) {
     p.cancel("Operation cancelled.");
     process.exit(0);
-  } else {
-    for (const tag of tagsToPush) {
-      execSync(`git tag ${tag}`);
-      p.log.message(`Created tag ${color.green(tag)}`);
-    }
-
-    p.log.message(`To push the tags, run the following command: ${color.bold(color.cyan("git push origin"))}`);
-    p.outro(`Successfully created ${color.green(tagsToPush.length)} tags.`);
   }
+
+  for (const tag of tagsToPush) {
+    execSync(`git tag ${tag}`);
+    p.log.message(`Created tag ${color.green(tag)}`);
+  }
+
+  p.log.message(`To push the tags, run the following command: ${color.bold(color.cyan("git push origin"))}`);
+  p.outro(`Successfully created ${color.green(tagsToPush.length)} tags.`);
 }
 
 export async function createTagsCommand() {
