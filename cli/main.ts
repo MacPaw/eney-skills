@@ -38,7 +38,7 @@ const commands = {
     action: () => analyticsCommand({}),
   },
   "create-tags": {
-    label: "Create tags, prepare for production deployment",
+    label: "Create Git tags for production deployment",
     action: () => createTagsCommand(),
   },
 } as const;
