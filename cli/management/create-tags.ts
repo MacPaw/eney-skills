@@ -35,14 +35,18 @@ function formatExtensionOption(extension: ExtensionInfo, remoteTags: string[]) {
 
   if (extensionsTags.length === 0) return baseOption;
 
-  const formattedTags = extensionsTags.map((tag) => {
-    return {
+  const formattedTags = extensionsTags
+    .map((tag) => ({
       version: tag.split("@")[1],
       tag: tag,
-    };
-  });
+    }))
+    .filter((t) => semver.coerce(t.version) !== null);
 
-  const latestTag = formattedTags.sort((a, b) => semver.compare(semver.coerce(b.version), semver.coerce(a.version)))[0];
+  if (formattedTags.length === 0) return baseOption;
+
+  const latestTag = formattedTags.sort((a, b) =>
+    semver.compare(semver.coerce(b.version)!, semver.coerce(a.version)!)
+  )[0];
 
   return {
     value: { ...extension, latestTag },

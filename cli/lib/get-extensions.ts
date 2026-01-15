@@ -5,14 +5,16 @@ import type { ExtensionInfo } from "./types.ts";
 const extensionsDir = join(import.meta.dirname, "../../extensions");
 
 export function getExtensionsInfo(): ExtensionInfo[] {
+  let directories;
+
   try {
-    readdirSync(extensionsDir);
+    directories = readdirSync(extensionsDir, { withFileTypes: true });
   } catch {
     console.error(`Error: Extensions directory not found: ${extensionsDir}`);
     process.exit(1);
   }
 
-  const extensions = readdirSync(extensionsDir, { withFileTypes: true })
+  const extensions = directories
     .filter((d) => d.isDirectory())
     .map((d) => {
       const manifestPath = join(extensionsDir, d.name, "manifest.json");
