@@ -6,6 +6,13 @@ import semver from "semver";
 import { getExtensionsInfo } from "../lib/get-extensions.ts";
 import type { ExtensionInfo } from "../lib/types.ts";
 
+type ExtensionOption = ExtensionInfo & {
+  latestTag: {
+    version: string;
+    tag: string;
+  } | null;
+};
+
 function getLatestExtensionTagFromGit(extensionName: string) {
   let tags: string[] = [];
   try {
@@ -34,19 +41,19 @@ function getLatestExtensionTagFromGit(extensionName: string) {
   return latestTagVersion;
 }
 
-function formatExtensionInfo(extension: ExtensionInfo) {
+function formatExtensionOption(extension: ExtensionInfo) {
   const latestTag = getLatestExtensionTagFromGit(extension.name);
   const label = `${color.bold(color.blue(extension.name))} ${color.bold(color.yellow(`- ${extension.version}`))}`;
 
   if (!latestTag) {
     return {
-      value: extension,
+      value: { ...extension, latestTag: null },
       label,
     };
   }
 
   return {
-    value: extension,
+    value: { ...extension, latestTag },
     label: `${label} ${color.bold(color.green(`(latest production tag: @${latestTag.version})`))}`,
   };
 }
@@ -56,9 +63,9 @@ async function createTags() {
 
   const extensions = getExtensionsInfo();
 
-  const options = extensions.map(formatExtensionInfo);
+  const options = extensions.map(formatExtensionOption);
 
-  const result = await p.autocompleteMultiselect<ExtensionInfo>({
+  const result = await p.autocompleteMultiselect<ExtensionOption>({
     message: "Select extensions (type to filter)",
     options,
   });
@@ -78,14 +85,24 @@ async function createTags() {
   const tagsToPush: string[] = [];
 
   for (const extension of selectedExtensions) {
-    const latestTag = getLatestExtensionTagFromGit(extension.name);
+    const { latestTag } = extension;
 
     if (!latestTag) {
       tagsToPush.push(`${extension.name}@${extension.version}`);
       continue;
     }
 
-    if (semver.gt(semver.coerce(extension.version), semver.coerce(latestTag.version))) {
+    const coercedCurrent = semver.coerce(extension.version);
+    const coercedLatest = semver.coerce(latestTag.version);
+
+    if (!coercedCurrent || !coercedLatest) {
+      p.log.warn(
+        `Unable to compare versions for ${extension.name}: "${extension.version}" vs "${latestTag.version}", skipping...`
+      );
+      continue;
+    }
+
+    if (semver.gt(coercedCurrent, coercedLatest)) {
       tagsToPush.push(`${extension.name}@${extension.version}`);
     } else {
       p.log.warn(
@@ -117,7 +134,7 @@ async function createTags() {
     p.log.message(`Created tag ${color.green(tag)}`);
   }
 
-  p.log.message(`To push the tags, run the following command: ${color.bold(color.cyan("git push origin"))}`);
+  p.log.message(`To push the tags, run the following command: ${color.bold(color.cyan("git push origin --tags"))}`);
   p.outro(`Successfully created ${color.green(tagsToPush.length)} tags.`);
 }
 

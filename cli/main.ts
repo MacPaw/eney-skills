@@ -119,7 +119,7 @@ program
 
 program
   .command("create-tags")
-  .description("Create tags")
+  .description("Create Git tags for extension versions")
   .action(() => createTagsCommand());
 
 const args = process.argv.slice(2);

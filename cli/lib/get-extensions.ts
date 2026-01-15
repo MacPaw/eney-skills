@@ -5,17 +5,35 @@ import type { ExtensionInfo } from "./types.ts";
 const extensionsDir = join(import.meta.dirname, "../../extensions");
 
 export function getExtensionsInfo(): ExtensionInfo[] {
+  try {
+    readdirSync(extensionsDir);
+  } catch {
+    console.error(`Error: Extensions directory not found: ${extensionsDir}`);
+    process.exit(1);
+  }
+
   const extensions = readdirSync(extensionsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => {
-      const manifest = JSON.parse(readFileSync(join(extensionsDir, d.name, "manifest.json"), "utf8"));
-      const version = manifest.version;
+      const manifestPath = join(extensionsDir, d.name, "manifest.json");
 
-      return {
-        name: d.name,
-        version: version,
-      };
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+
+        if (!manifest.version) {
+          console.error(`Error: Version not found in manifest at ${manifestPath}`);
+          return null;
+        }
+
+        return {
+          name: d.name,
+          version: manifest.version,
+        };
+      } catch {
+        console.error(`Error: Unable to read manifest at ${manifestPath}`);
+        return null;
+      }
     });
 
-  return extensions;
+  return extensions.filter((e) => e !== null);
 }
