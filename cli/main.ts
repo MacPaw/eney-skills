@@ -86,11 +86,11 @@ program
   .action(({ output, cwd }) => bundleCommand(output, cwd));
 
 program
-  .command("publish")
+  .command("publish") 
   .description("Publish a tool")
   .option("--cwd <path>", "Current working directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--dry-run", "Do not publish remotely, just log actions", (value) => value !== "false")
+  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
   .action(({ cwd, mode, dryRun }) => publishExtensionCommand(cwd, mode, dryRun));
 
 program
