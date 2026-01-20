@@ -1,75 +1,131 @@
 import Foundation
 import MCP
 import Logging
+import SQLite3
 
-actor NotesAppleScript {
+struct NoteSummary {
+    let id: String
+    let pk: Int
+    let title: String
+    let folder: String
+    let modifiedAt: String
+    let snippet: String
+    let account: String?
+    let uuid: String
+    let locked: Bool
+    let pinned: Bool
+    let checklist: Bool
+    let checklistInProgress: Bool
+}
+
+actor NotesSQLite {
     private let logger: Logger
+    private let databasePath: String
     
     init(logger: Logger) {
         self.logger = logger
+        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.path
+        self.databasePath = "\(homeDirectory)/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
     }
     
-    func runScript(_ script: String) async throws -> String {
-        logger.info("Executing AppleScript...")
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
-
-        let stdoutPipe = Pipe()
-
-        process.standardOutput = stdoutPipe
-
-        try process.run()
-
-        let data = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-
-        let output = String(data: data, encoding: .utf8) ?? "No data"
-        logger.info("Executed AppleScript with chars count - \(output.count)")
-
-        return output
-    }
-    
-    func getNote(identifier: String) async throws -> [String: String]? {
-        let script = """
-        tell application "Notes"
-            try
-                set targetNote to null
-                repeat with eachNote in notes
-                    if (name of eachNote as string) contains "\(identifier)" or (id of eachNote as string) = "\(identifier)" then
-                        set targetNote to eachNote
-                        exit repeat
-                    end if
-                end repeat
-                
-                if targetNote is not null then
-                    set noteName to name of targetNote
-                    set noteBody to body of targetNote
-                    return noteName & "|^|" & noteBody
-                else
-                    return ""
-                end if
-            on error errMsg
-                return "ERROR: " & errMsg
-            end try
-        end tell
-        """
+    func getNoteSummary(title: String) async throws -> NoteSummary? {
+        logger.info("Searching for note with title containing: \(title)")
         
-        let result = try await runScript(script)
+        var db: OpaquePointer?
         
-        if result.isEmpty || result.hasPrefix("ERROR:") {
+        guard sqlite3_open_v2(databasePath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            let errorMessage = String(cString: sqlite3_errmsg(db))
+            logger.error("Failed to open database: \(errorMessage)")
+            sqlite3_close(db)
             return nil
         }
         
-        let parts = result.components(separatedBy: "|^|")
-        if parts.count >= 2 {
-            return [
-                "name": parts[0].trimmingCharacters(in: .whitespacesAndNewlines),
-                "body": parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
-            ]
+        defer {
+            sqlite3_close(db)
         }
         
-        return nil
+        let query = """
+            SELECT
+                'x-coredata://' || zmd.z_uuid || '/ICNote/p' || note.z_pk AS id,
+                note.z_pk AS pk,
+                note.ztitle1 AS title,
+                folder.ztitle2 AS folder,
+                datetime(note.zmodificationdate1 + 978307200, 'unixepoch') AS modifiedAt,
+                note.zsnippet AS snippet,
+                acc.zname AS account,
+                note.zidentifier AS UUID,
+                (note.zispasswordprotected = 1) as locked,
+                (note.zispinned = 1) as pinned,
+                (note.zhaschecklist = 1) as checklist,
+                (note.zhaschecklistinprogress = 1) as checklistInProgress
+            FROM 
+                ziccloudsyncingobject AS note
+            INNER JOIN ziccloudsyncingobject AS folder 
+                ON note.zfolder = folder.z_pk
+            LEFT JOIN ziccloudsyncingobject AS acc 
+                ON note.zaccount4 = acc.z_pk
+            LEFT JOIN z_metadata AS zmd ON 1=1
+            WHERE
+                note.ztitle1 IS NOT NULL AND
+                note.zmodificationdate1 IS NOT NULL AND
+                note.z_pk IS NOT NULL AND
+                note.zmarkedfordeletion != 1 AND
+                folder.zmarkedfordeletion != 1 AND
+                LOWER(note.ztitle1) LIKE LOWER(?)
+            ORDER BY
+                note.zmodificationdate1 DESC
+            LIMIT 1
+            """
+        
+        var statement: OpaquePointer?
+        
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            let errorMessage = String(cString: sqlite3_errmsg(db))
+            logger.error("Failed to prepare statement: \(errorMessage)")
+            return nil
+        }
+        
+        defer {
+            sqlite3_finalize(statement)
+        }
+        
+        let searchPattern = "%\(title)%"
+        sqlite3_bind_text(statement, 1, searchPattern, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        
+        guard sqlite3_step(statement) == SQLITE_ROW else {
+            logger.info("No note found with title containing: \(title)")
+            return nil
+        }
+        
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let pk = Int(sqlite3_column_int(statement, 1))
+        let noteTitle = String(cString: sqlite3_column_text(statement, 2))
+        let folder = String(cString: sqlite3_column_text(statement, 3))
+        let modifiedAt = String(cString: sqlite3_column_text(statement, 4))
+        let snippet = sqlite3_column_text(statement, 5).map { String(cString: $0) } ?? ""
+        let account = sqlite3_column_text(statement, 6).map { String(cString: $0) }
+        let uuid = String(cString: sqlite3_column_text(statement, 7))
+        let locked = sqlite3_column_int(statement, 8) == 1
+        let pinned = sqlite3_column_int(statement, 9) == 1
+        let checklist = sqlite3_column_int(statement, 10) == 1
+        let checklistInProgress = sqlite3_column_int(statement, 11) == 1
+        
+        logger.info("Found note: \(noteTitle)")
+        
+        return NoteSummary(
+            id: id,
+            pk: pk,
+            title: noteTitle,
+            folder: folder,
+            modifiedAt: modifiedAt,
+            snippet: snippet,
+            account: account,
+            uuid: uuid,
+            locked: locked,
+            pinned: pinned,
+            checklist: checklist,
+            checklistInProgress: checklistInProgress
+        )
     }
 }
 
@@ -85,25 +141,28 @@ let logger = Logger(label: "com.noteBodyMCP.server")
 
 let server = Server(
     name: "NoteBodyMCP",
-    version: "1.0.0"
+    version: "1.0.0",
+    capabilities: .init(
+        tools: .init(listChanged: true)
+    )
 )
 
-let notesScript = NotesAppleScript(logger: logger)
+let notesSQLite = NotesSQLite(logger: logger)
 
 await server.withMethodHandler(ListTools.self) { _ in
     return .init(tools: [
         Tool(
-            name: "get_note",
-            description: "Get a specific note by its name or ID. Returns the note's name and body.",
+            name: "get_note_summary",
+            description: "Search for a note by its title and get a summary. Returns note metadata and snippet.",
             inputSchema: .object([
                 "type": .string("object"),
                 "properties": .object([
-                    "identifier": .object([
+                    "title": .object([
                         "type": .string("string"),
-                        "description": .string("The name or ID of the note to retrieve")
+                        "description": .string("The title (or partial title) of the note to search for")
                     ])
                 ]),
-                "required": .array([.string("identifier")])
+                "required": .array([.string("title")])
             ])
         )
     ])
@@ -112,32 +171,40 @@ await server.withMethodHandler(ListTools.self) { _ in
 await server.withMethodHandler(CallTool.self) { params in
     do {
         switch params.name {
-        case "get_note":
-            logger.info("did receive get_note tool call")
+        case "get_note_summary":
+            logger.info("did receive get_note_summary tool call")
             guard let arguments = params.arguments,
-                  let identifierValue = arguments["identifier"],
-                  let identifier = String(identifierValue) else {
+                  let titleValue = arguments["title"],
+                  let title = String(titleValue) else {
                 return .init(
-                    content: [.text("Identifier is required")],
+                    content: [.text("Title is required")],
                     isError: true
                 )
             }
 
-            logger.debug("did start get_note tool execution, identifier - \(identifier)")
-            if let note = try await notesScript.getNote(identifier: identifier) {
-                let body = note["body", default: "empty body"]
+            logger.debug("did start get_note_summary tool execution, title - \(title)")
+            if let note = try await notesSQLite.getNoteSummary(title: title) {
                 let resultString = """
-                    This is the requested note:
-                        Content: 
-                            \(body)
+                    Note Summary:
+                        Title: \(note.title)
+                        Folder: \(note.folder)
+                        Account: \(note.account ?? "N/A")
+                        Modified: \(note.modifiedAt)
+                        Pinned: \(note.pinned)
+                        Locked: \(note.locked)
+                        Has Checklist: \(note.checklist)
+                        Checklist In Progress: \(note.checklistInProgress)
+                        
+                        Snippet:
+                            \(note.snippet)
                     """
-                logger.info("did end get_note tool execution with success, identifier - \(identifier)")
+                logger.info("did end get_note_summary tool execution with success, title - \(title)")
                 return .init(
                     content: [.text(resultString)],
                     isError: false
                 )
             } else {
-                logger.info("did end get_note tool execution with error, identifier - \(identifier)")
+                logger.info("did end get_note_summary tool execution with error, title - \(title)")
                 return .init(
                     content: [.text("Note not found")],
                     isError: true
