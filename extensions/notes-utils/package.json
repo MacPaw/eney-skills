@@ -1,0 +1,23 @@
+{
+  "name": "notes-utils",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "bundle": "node ../../cli/main.ts bundle",
+    "build": "npm run typecheck && npm run bundle",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
+  },
+  "dependencies": {
+    "@macpaw/eney-api": "2.3.0-beta.1",
+    "zod": "^4.1.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.26",
+    "typescript": "^5.6.3"
+  }
+}

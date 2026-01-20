@@ -1,0 +1,13 @@
+{
+	"id": "notes-utils",
+	"type": "jsx",
+	"version": "1.0",
+	"title": "Notes Utilities",
+	"tools": [
+		{
+			"name": "append-to-note",
+			"description": "Appends text to the Apple Notes note",
+			"title": "Append to Note"
+		}
+	]
+}

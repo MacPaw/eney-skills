@@ -90,7 +90,7 @@ program
   .description("Publish a tool")
   .option("--cwd <path>", "Current working directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--dry-run", "Do not publish remotely, just log actions", (value) => value === "true")
+  .option("--dry-run", "Do not publish remotely, just log actions", (value) => value !== "false")
   .action(({ cwd, mode, dryRun }) => publishExtensionCommand(cwd, mode, dryRun));
 
 program
