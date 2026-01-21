@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
 import { z } from "zod";
+import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 const props = z.object({
 	noteName: z.string()
@@ -15,15 +17,13 @@ const props = z.object({
 type Props = z.infer<typeof props>;
 
 function escapeDoubleQuotes(value: string) {
-  return value.replace(/"/g, '\\"');
-}
-
-function convertNewlinesToBr(value: string) {
-  return value.replace(/\n/g, '<br>');
+	return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 async function appendToNote(noteName: string, content: string): Promise<string> {
-	const escapedContent = escapeDoubleQuotes(convertNewlinesToBr(content));
+	const htmlContent = await marked.parse(content);
+	const sanitizedHtml = sanitizeHtml(htmlContent);
+	const escapedContent = escapeDoubleQuotes(sanitizedHtml);
 	const script = noteName
 		? `
 tell application "Notes"
