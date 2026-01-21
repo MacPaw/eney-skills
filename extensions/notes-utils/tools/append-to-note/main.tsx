@@ -14,22 +14,27 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
-function escapeAppleScript(str: string): string {
-	return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+function escapeDoubleQuotes(value: string) {
+  return value.replace(/"/g, '\\"');
+}
+
+function convertNewlinesToBr(value: string) {
+  return value.replace(/\n/g, '<br>');
 }
 
 async function appendToNote(noteName: string, content: string): Promise<string> {
+	const escapedContent = escapeDoubleQuotes(convertNewlinesToBr(content));
 	const script = noteName
 		? `
 tell application "Notes"
-	set targetNote to first note whose name is "${escapeAppleScript(noteName)}"
-	set body of targetNote to (body of targetNote) & "<br><br>" & "${escapeAppleScript(content)}"
+	set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
+	set body of targetNote to (body of targetNote) & "<br>" & "${escapedContent}"
 end tell
 `
 		: `
 tell application "Notes"
 	set targetNote to first note
-	set body of targetNote to (body of targetNote) & "<br><br>" & "${escapeAppleScript(content)}"
+	set body of targetNote to (body of targetNote) & "<br>" & "${escapedContent}"
 end tell
 `;
 
