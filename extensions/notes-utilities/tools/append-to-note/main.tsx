@@ -21,7 +21,7 @@ function escapeDoubleQuotes(value: string) {
 }
 
 async function appendToNote(noteName: string, content: string): Promise<string> {
-	const htmlContent = await marked.parse(content);
+	const htmlContent = await marked.parse(content, { breaks: true, gfm: true });
 	const sanitizedHtml = sanitizeHtml(htmlContent);
 	const escapedContent = escapeDoubleQuotes(sanitizedHtml);
 	const script = noteName
