@@ -13,7 +13,26 @@
     "mcp_config": {
       "command": "",
       "args": [],
-      "env": {}
+      "env": {
+        "AUTH_KEY": "${user_config.auth_key}",
+        "SUMMARY_URL": "${user_config.summary_url}"
+      }
+    }
+  },
+  "user_config": {
+    "auth_key": {
+      "type": "string",
+      "title": "internal usage",
+      "description": "internal usage",
+      "sensitive": true,
+      "required": true
+    },
+    "summary_url": {
+      "type": "string",
+      "title": "internal usage",
+      "description": "internal usage",
+      "sensitive": true,
+      "required": true
     }
   },
   "license": "MIT"

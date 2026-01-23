@@ -3,6 +3,91 @@ import MCP
 import Logging
 import SQLite3
 
+// MARK: - Environment Config
+
+struct EnvConfig {
+    let authKey: String?
+    let summaryURL: String?
+    
+    init() {
+        self.authKey = ProcessInfo.processInfo.environment["AUTH_KEY"]
+        self.summaryURL = ProcessInfo.processInfo.environment["SUMMARY_URL"]
+    }
+    
+    var isConfigured: Bool {
+        authKey != nil && summaryURL != nil
+    }
+}
+
+// MARK: - Summary API Models
+
+struct SummaryRequestParam: Codable {
+    let value: String
+    let id: String
+}
+
+struct SummaryRequest: Codable {
+    let params: [SummaryRequestParam]
+    let files: [String]
+    let apiName: String
+}
+
+struct SummaryResponse: Codable {
+    let files: [String]
+    let response: String
+}
+
+// MARK: - Summary API Client
+
+actor SummaryAPIClient {
+    private let logger: Logger
+    private let config: EnvConfig
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+    
+    init(logger: Logger, config: EnvConfig) {
+        self.logger = logger
+        self.config = config
+    }
+    
+    func sendSummaryRequest(snippet: String) async throws -> String? {
+        guard let authKey = config.authKey,
+              let summaryURL = config.summaryURL,
+              let url = URL(string: summaryURL) else {
+            logger.warning("Summary API not configured - AUTH_KEY or SUMMARY_URL missing")
+            return nil
+        }
+        
+        logger.info("Sending summary request to: \(summaryURL)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(authKey)", forHTTPHeaderField: "Authorization")
+        
+        let body = SummaryRequest(
+            params: [SummaryRequestParam(value: snippet, id: "text")],
+            files: [],
+            apiName: "general_summary"
+        )
+        
+        request.httpBody = try encoder.encode(body)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            logger.info("Summary API response status: \(httpResponse.statusCode)")
+        }
+        
+        let summaryResponse = try decoder.decode(SummaryResponse.self, from: data)
+        logger.info("Summary API response received")
+        
+        return summaryResponse.response
+    }
+}
+
+// MARK: - Note Models
+
 struct NoteSummary {
     let id: String
     let pk: Int
@@ -139,6 +224,13 @@ LoggingSystem.bootstrap { label in
 
 let logger = Logger(label: "com.noteBodyMCP.server")
 
+let envConfig = EnvConfig()
+if envConfig.isConfigured {
+    logger.info("Summary API configured with URL: \(envConfig.summaryURL ?? "")")
+} else {
+    logger.warning("Summary API not configured - AUTH_KEY or SUMMARY_URL missing from environment")
+}
+
 let server = Server(
     name: "NoteBodyMCP",
     version: "1.0.0",
@@ -148,6 +240,7 @@ let server = Server(
 )
 
 let notesSQLite = NotesSQLite(logger: logger)
+let summaryClient = SummaryAPIClient(logger: logger, config: envConfig)
 
 await server.withMethodHandler(ListTools.self) { _ in
     return .init(tools: [
@@ -184,23 +277,29 @@ await server.withMethodHandler(CallTool.self) { params in
 
             logger.debug("did start get_note_summary tool execution, title - \(title)")
             if let note = try await notesSQLite.getNoteSummary(title: title) {
-                let resultString = """
-                    Note Summary:
-                        Title: \(note.title)
-                        Folder: \(note.folder)
-                        Account: \(note.account ?? "N/A")
-                        Modified: \(note.modifiedAt)
-                        Pinned: \(note.pinned)
-                        Locked: \(note.locked)
-                        Has Checklist: \(note.checklist)
-                        Checklist In Progress: \(note.checklistInProgress)
-                        
-                        Snippet:
-                            \(note.snippet)
-                    """
-                logger.info("did end get_note_summary tool execution with success, title - \(title)")
+                // Send snippet to summary API
+                if envConfig.isConfigured {
+                    do {
+                        if let apiResponse = try await summaryClient.sendSummaryRequest(snippet: note.snippet) {
+                            logger.info("did end get_note_summary tool execution with success, title - \(title)")
+                            return .init(
+                                content: [.text(apiResponse)],
+                                isError: false
+                            )
+                        }
+                    } catch {
+                        logger.error("Failed to get API summary: \(error.localizedDescription)")
+                        return .init(
+                            content: [.text("Failed to get summary: \(error.localizedDescription)")],
+                            isError: true
+                        )
+                    }
+                }
+                
+                // Fallback if API not configured
+                logger.info("did end get_note_summary tool execution with success (no API), title - \(title)")
                 return .init(
-                    content: [.text(resultString)],
+                    content: [.text(note.snippet)],
                     isError: false
                 )
             } else {
