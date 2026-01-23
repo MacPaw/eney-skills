@@ -9,6 +9,7 @@ import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
+import { devCommand } from "./dev/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -121,6 +122,11 @@ program
   .command("create-tags")
   .description("Create Git tags for extension versions")
   .action(() => createTagsCommand());
+
+program
+  .command("dev")
+  .description("Develop an extension")
+  .action(() => devCommand());
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
