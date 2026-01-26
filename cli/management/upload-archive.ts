@@ -95,8 +95,10 @@ async function uploadArchive(cwd: string, mode: "staging" | "production", dryRun
 
   // Output for GitHub Actions
   if (process.env.GITHUB_OUTPUT) {
-    const output = `extension_name=${extensionName}\nversion=${version}\nhash=${hash}\ndownload_url=${downloadUrl}\n`;
-    await fs.appendFile(process.env.GITHUB_OUTPUT, output);
+    await fs.appendFile(process.env.GITHUB_OUTPUT, `extension_name=${extensionName}\n`);
+    await fs.appendFile(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+    await fs.appendFile(process.env.GITHUB_OUTPUT, `hash=${hash}\n`);
+    await fs.appendFile(process.env.GITHUB_OUTPUT, `download_url=${downloadUrl}\n`);
     console.log("\nGitHub Actions outputs set:");
     console.log(`  extension_name: ${extensionName}`);
     console.log(`  version: ${version}`);

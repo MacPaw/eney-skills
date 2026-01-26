@@ -62,14 +62,18 @@ jobs:
             --dry-run ${{ env.IS_DRY_RUN }}
 
       - name: Save metadata for publish job
-        run: |
-          mkdir -p metadata
-          cp extensions/${{ matrix.extension }}/manifest.json metadata/manifest.json
-
-          # Extract outputs from GITHUB_OUTPUT if available
-          if [ -f "$GITHUB_OUTPUT" ] && [ -s "$GITHUB_OUTPUT" ]; then
-            grep -E "^(extension_name|version|hash|download_url)=" "$GITHUB_OUTPUT" > metadata/outputs.txt || true
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            fs.mkdirSync('metadata', { recursive: true });
+            fs.copyFileSync('extensions/${{ matrix.extension }}/manifest.json', 'metadata/manifest.json');
+            fs.writeFileSync('metadata/outputs.json', JSON.stringify({
+              extension_name: '${{ steps.upload.outputs.extension_name }}',
+              version: '${{ steps.upload.outputs.version }}',
+              hash: '${{ steps.upload.outputs.hash }}',
+              download_url: '${{ steps.upload.outputs.download_url }}'
+            }, null, 2));
 
       - name: Upload metadata artifact
         uses: actions/upload-artifact@v4
@@ -109,32 +113,31 @@ jobs:
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
+      - name: Read metadata
+        id: metadata
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const metadata = JSON.parse(fs.readFileSync('metadata/outputs.json', 'utf8'));
+            core.setOutput('version', metadata.version || '');
+            core.setOutput('hash', metadata.hash || '');
+            core.setOutput('download_url', metadata.download_url || '');
+
       - name: Publish extension to backend
         run: |
-          # Extract metadata from artifact
-          VERSION=""
-          HASH=""
-          DOWNLOAD_URL=""
-
-          if [ -f metadata/outputs.txt ]; then
-            VERSION=$(grep "^version=" metadata/outputs.txt | cut -d'=' -f2)
-            HASH=$(grep "^hash=" metadata/outputs.txt | cut -d'=' -f2)
-            DOWNLOAD_URL=$(grep "^download_url=" metadata/outputs.txt | cut -d'=' -f2)
-          fi
-
-          # Build command arguments array
           ARGS=(--cwd "extensions/${{ matrix.extension }}" --mode staging)
 
-          if [ -n "$VERSION" ]; then
-            ARGS+=(--version "$VERSION")
+          if [ -n "${{ steps.metadata.outputs.version }}" ]; then
+            ARGS+=(--version "${{ steps.metadata.outputs.version }}")
           fi
 
-          if [ -n "$HASH" ]; then
-            ARGS+=(--hash "$HASH")
+          if [ -n "${{ steps.metadata.outputs.hash }}" ]; then
+            ARGS+=(--hash "${{ steps.metadata.outputs.hash }}")
           fi
 
-          if [ -n "$DOWNLOAD_URL" ]; then
-            ARGS+=(--download-url "$DOWNLOAD_URL")
+          if [ -n "${{ steps.metadata.outputs.download_url }}" ]; then
+            ARGS+=(--download-url "${{ steps.metadata.outputs.download_url }}")
           fi
 
           node cli/main.ts publish "${ARGS[@]}"
