@@ -114,8 +114,6 @@ export default function AppendToNote(props: Props) {
 			{status?.type === "error" && (
 				<Paper markdown={`❌ ${status.message}`} />
 			)}
-			<Paper markdown={JSON.stringify(props)} />
-			<Paper markdown={props.noteName} />
 			<Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
 				<Form.Dropdown.Item key={NEW_NOTE_VALUE} title="New Note" value={NEW_NOTE_VALUE} />
 				{notes.allNotes
