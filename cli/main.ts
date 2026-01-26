@@ -4,9 +4,10 @@ import path from "path";
 import * as p from "@clack/prompts";
 import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
-import { publishExtensionCommand } from "./management/publish.ts";
 import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
+import { uploadArchiveCommand } from "./management/upload-archive.ts";
+import { publishExtensionCommand } from "./management/publish.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
 import { devCommand } from "./dev/command.ts";
@@ -22,10 +23,6 @@ const commands = {
     label: "Bundle a tool",
     action: () => bundleCommand(),
   },
-  publish: {
-    label: "Publish a tool",
-    action: () => publishExtensionCommand(),
-  },
   "check-version": {
     label: "Check version",
     action: () => checkVersionCommand(),
@@ -33,6 +30,14 @@ const commands = {
   pack: {
     label: "Create extension archive",
     action: () => packExtensionCommand(),
+  },
+  "upload-archive": {
+    label: "Pack and upload archive to cloud storage",
+    action: () => uploadArchiveCommand(),
+  },
+  publish: {
+    label: "Publish extension metadata to backend",
+    action: () => publishExtensionCommand(),
   },
   analytics: {
     label: "Analyze download stats of extensions",
@@ -76,7 +81,7 @@ program
   .option("--tool-description <description>", "Tool description")
   .option("--tool-title <title>", "Tool title", "Tool title")
   .action(({ output, id, extensionTitle, toolName, toolDescription, toolTitle }) =>
-    createCommand({ output, extensionId: id, extensionTitle, toolName, toolDescription, toolTitle })
+    createCommand({ output, extensionId: id, extensionTitle, toolName, toolDescription, toolTitle }),
   );
 
 program
@@ -85,14 +90,6 @@ program
   .option("-o, --output <path>", "Output folder")
   .option("--cwd <path>", "Current working directory")
   .action(({ output, cwd }) => bundleCommand(output, cwd));
-
-program
-  .command("publish") 
-  .description("Publish a tool")
-  .option("--cwd <path>", "Current working directory")
-  .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, dryRun }) => publishExtensionCommand(cwd, mode, dryRun));
 
 program
   .command("check-version")
@@ -127,6 +124,27 @@ program
   .command("dev")
   .description("Develop an extension")
   .action(() => devCommand());
+
+program
+  .command("upload-archive")
+  .description("Pack and upload archive to cloud storage")
+  .option("--cwd <path>", "Current working directory")
+  .option("--mode <mode>", "Upload mode (staging or production)")
+  .option("--dry-run <value>", "Do not upload remotely, just log actions", (value) => value !== "false")
+  .action(({ cwd, mode, dryRun }) => uploadArchiveCommand(cwd, mode, dryRun));
+
+program
+  .command("publish")
+  .description("Publish extension metadata to backend")
+  .option("--cwd <path>", "Current working directory")
+  .option("--mode <mode>", "Publish mode (staging or production)")
+  .option("--version <version>", "Extension version")
+  .option("--hash <hash>", "Archive hash (SHA-256)")
+  .option("--download-url <url>", "Archive download URL")
+  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
+  .action(({ cwd, mode, version, hash, downloadUrl, dryRun }) =>
+    publishExtensionCommand(cwd, mode, version, hash, downloadUrl, dryRun),
+  );
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");

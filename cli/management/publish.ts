@@ -1,17 +1,19 @@
-import { basename, join } from "path";
+import { basename, join, resolve } from "path";
 import semver from "semver";
 import fs from "fs/promises";
 import * as p from "@clack/prompts";
 
 import { ApiClient } from "../lib/api.ts";
-
-import { getFileDownloadUrl, getFileHash, packExtension } from "./pack.ts";
 import { getToolsWithSchemas } from "./extract-schemas.ts";
 import { checkVersion } from "./check-version.ts";
+import { getFileDownloadUrl } from "./pack.ts";
 
 type PublishOptions = {
   cwd?: string;
   mode?: "staging" | "production";
+  version?: string;
+  hash?: string;
+  downloadUrl?: string;
   dryRun?: boolean;
 };
 
@@ -37,6 +39,24 @@ async function promptForOptions(options: PublishOptions) {
                 { value: "production", label: "Production" },
               ],
             }),
+      version: () =>
+        options.version
+          ? Promise.resolve(options.version)
+          : p.text({
+              message: "Extension version:",
+            }),
+      hash: () =>
+        options.hash
+          ? Promise.resolve(options.hash)
+          : p.text({
+              message: "Archive hash (SHA-256):",
+            }),
+      downloadUrl: () =>
+        options.downloadUrl
+          ? Promise.resolve(options.downloadUrl)
+          : p.text({
+              message: "Archive download URL:",
+            }),
       dryRun: () =>
         options.dryRun !== undefined
           ? Promise.resolve(options.dryRun)
@@ -50,29 +70,46 @@ async function promptForOptions(options: PublishOptions) {
         p.cancel("Operation cancelled.");
         process.exit(0);
       },
-    }
+    },
   );
 
   return {
     cwd: answers.cwd as string,
     mode: answers.mode as "staging" | "production",
+    version: answers.version as string,
+    hash: answers.hash as string,
+    downloadUrl: answers.downloadUrl as string,
     dryRun: answers.dryRun as boolean,
   };
 }
 
-async function publishExtension(cwd: string, mode: "staging" | "production", dryRun: boolean) {
+async function publishExtension(
+  cwd: string,
+  mode: "staging" | "production",
+  version: string | undefined,
+  hash: string | undefined,
+  downloadUrl: string | undefined,
+  dryRun: boolean,
+) {
   const api = new ApiClient(mode);
-  const extensionName = basename(cwd);
-  const tools = await getToolsWithSchemas(cwd);
+  const extensionDir = resolve(cwd);
+  const extensionName = basename(extensionDir);
 
-  const manifest = JSON.parse(await fs.readFile(join(cwd, "manifest.json"), "utf8"));
+  const tools = await getToolsWithSchemas(extensionDir);
+  const manifest = JSON.parse(await fs.readFile(join(extensionDir, "manifest.json"), "utf8"));
   const parsedVersion = semver.coerce(manifest.version).toString();
 
-  await checkVersion(cwd, mode);
+  await checkVersion(extensionDir, mode);
 
-  const archivePath = await packExtension(cwd);
-  const hash = await getFileHash(archivePath);
-  const downloadUrl = await getFileDownloadUrl(archivePath, mode);
+  // If version/hash/downloadUrl not provided, derive from manifest
+  const finalVersion = version || parsedVersion;
+  const archiveName = `${extensionName}@v${finalVersion}.zip`;
+  const finalDownloadUrl = downloadUrl || (await getFileDownloadUrl(archiveName, mode));
+
+  // If hash not provided, we'll need to skip version publishing (only metadata)
+  const finalHash = hash || "";
+
+  console.log(`Publishing ${extensionName}@${finalVersion} to backend...`);
 
   const metadataPayload = {
     extension_id: extensionName,
@@ -80,64 +117,66 @@ async function publishExtension(cwd: string, mode: "staging" | "production", dry
     version: parsedVersion,
   };
 
+  console.log("\nExtension metadata:");
   console.dir(metadataPayload, { depth: null });
 
   const artifactPayload = {
     version: parsedVersion,
-    hash,
-    downloadUrl,
+    hash: finalHash,
+    downloadUrl: finalDownloadUrl,
   };
 
+  console.log("\nArtifact metadata:");
   console.dir(artifactPayload, { depth: null });
 
   if (dryRun) {
-    console.log("Dry run enabled: skipping remote publish calls.");
+    console.log("\nDry run enabled: skipping remote publish calls.");
     return;
   }
 
   try {
     const data = await api.publishExtension(metadataPayload);
-
-    console.log("Extension published successfully:", data);
+    console.log("\nExtension published successfully:", data);
   } catch (error) {
-    console.error("Error publishing extension:", error);
+    console.error("\nError publishing extension:", error);
     throw error;
   }
 
   try {
-    await api.uploadExtensionArchiveToCloud(archivePath);
+    const data = await api.publishExtensionVersion(extensionName, artifactPayload);
+    console.log("\nExtension version published successfully:", data);
   } catch (error) {
-    console.error("Error uploading archive to cloud:", error);
-    throw error;
-  }
-
-  await fs.rm(archivePath, { force: true });
-
-  try {
-    const data = await api.publishExtensionVersion(extensionName, {
-      version: parsedVersion,
-      hash,
-      downloadUrl,
-    });
-
-    console.log("Extension version published successfully:", data);
-  } catch (error) {
-    console.error("Error publishing extension:", error);
+    console.error("\nError publishing extension version:", error);
     throw error;
   }
 }
 
-export async function publishExtensionCommand(cwd?: string, mode?: "staging" | "production", dryRun?: boolean) {
-  const hasAllOptions = cwd !== undefined && mode !== undefined;
+export async function publishExtensionCommand(
+  cwd?: string,
+  mode?: "staging" | "production",
+  version?: string,
+  hash?: string,
+  downloadUrl?: string,
+  dryRun?: boolean,
+) {
+  const hasAllOptions =
+    cwd !== undefined && mode !== undefined && version !== undefined && hash !== undefined && downloadUrl !== undefined;
   const isCI = process.env.CI === "true";
 
   if (hasAllOptions) {
-    await publishExtension(cwd, mode, dryRun);
+    await publishExtension(cwd, mode, version, hash, downloadUrl, dryRun);
   } else if (isCI) {
-    console.error("Error: --cwd, --mode are required in CI mode");
+    console.error("Error: --cwd, --mode, --version, --hash, and --download-url are required in CI mode");
     process.exit(1);
   } else {
-    const resolved = await promptForOptions({ cwd, mode, dryRun });
-    await publishExtension(resolved.cwd, resolved.mode, resolved.dryRun);
+    const resolved = await promptForOptions({ cwd, mode, version, hash, downloadUrl, dryRun });
+    await publishExtension(
+      resolved.cwd,
+      resolved.mode,
+      resolved.version,
+      resolved.hash,
+      resolved.downloadUrl,
+      resolved.dryRun,
+    );
   }
 }

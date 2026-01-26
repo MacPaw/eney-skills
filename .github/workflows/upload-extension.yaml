@@ -15,10 +15,9 @@ jobs:
       pull-requests: read
       contents: read
 
-  uploadExtensionArchive:
-    name: Upload extension archive
-    runs-on:
-      group: gcp-k8s
+  pack-and-upload-archive:
+    name: Pack and upload extension archive
+    runs-on: ubuntu-latest
     needs: detect-changes
     permissions:
       contents: read
@@ -27,8 +26,8 @@ jobs:
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
       BACKEND_URL: https://core.eney.appflix.io
-      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
       ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
       fail-fast: false
       matrix:
@@ -58,17 +57,96 @@ jobs:
         if: github.event_name == 'push'
         run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }} --mode staging
 
-      - name: Publish extension
+      - name: Upload extension archive
+        id: upload
         run: |
-          node cli/main.ts publish \
+          node cli/main.ts upload-archive \
             --cwd extensions/${{ matrix.extension }} \
             --mode staging \
             --dry-run ${{ env.IS_DRY_RUN }}
 
+      - name: Save metadata for publish job
+        run: |
+          mkdir -p metadata
+          cp extensions/${{ matrix.extension }}/manifest.json metadata/manifest.json
+
+          # Extract outputs from GITHUB_OUTPUT if available
+          if [ -f "$GITHUB_OUTPUT" ] && [ -s "$GITHUB_OUTPUT" ]; then
+            grep -E "^(extension_name|version|hash|download_url)=" "$GITHUB_OUTPUT" > metadata/outputs.txt || true
+          fi
+
+      - name: Upload metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-metadata-${{ matrix.extension }}
+          path: metadata/
+          retention-days: 1
+
+  publish-to-backend:
+    name: Publish extension to backend
+    runs-on:
+      group: gcp-k8s
+    needs: [detect-changes, pack-and-upload-archive]
+    permissions:
+      contents: read
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]') && github.event_name == 'push'
+    env:
+      BACKEND_URL: https://core.eney.appflix.io
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+    strategy:
+      fail-fast: false
+      matrix:
+        extension: ${{ fromJson(needs.detect-changes.outputs.extensions) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Download metadata artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-metadata-${{ matrix.extension }}
+          path: metadata/
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Publish extension to backend
+        run: |
+          # Extract metadata from artifact
+          VERSION=""
+          HASH=""
+          DOWNLOAD_URL=""
+
+          if [ -f metadata/outputs.txt ]; then
+            VERSION=$(grep "^version=" metadata/outputs.txt | cut -d'=' -f2)
+            HASH=$(grep "^hash=" metadata/outputs.txt | cut -d'=' -f2)
+            DOWNLOAD_URL=$(grep "^download_url=" metadata/outputs.txt | cut -d'=' -f2)
+          fi
+
+          # Build command with optional parameters
+          CMD="node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging
+
+          if [ -n "$VERSION" ]; then
+            CMD="$CMD --version \"$VERSION\""
+          fi
+
+          if [ -n "$HASH" ]; then
+            CMD="$CMD --hash \"$HASH\""
+          fi
+
+          if [ -n "$DOWNLOAD_URL" ]; then
+            CMD="$CMD --download-url \"$DOWNLOAD_URL\""
+          fi
+
+          eval $CMD
+
   commit-version-bumps:
     name: Commit version bumps
     runs-on: ubuntu-latest
-    needs: [detect-changes, uploadExtensionArchive]
+    needs: [detect-changes, pack-and-upload-archive, publish-to-backend]
     if: github.event_name == 'push' && needs.detect-changes.outputs.has_changes == 'true'
     permissions:
       contents: write
