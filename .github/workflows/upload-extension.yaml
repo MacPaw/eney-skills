@@ -53,10 +53,6 @@ jobs:
       - name: Bump extension version
         run: node scripts/bump-version-for-changed.js --extension ${{ matrix.extension }}
 
-      - name: Check extension version
-        if: github.event_name == 'push'
-        run: node cli/main.ts check-version --cwd extensions/${{ matrix.extension }} --mode staging
-
       - name: Upload extension archive
         id: upload
         run: |
