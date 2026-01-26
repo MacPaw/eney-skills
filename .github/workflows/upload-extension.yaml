@@ -25,6 +25,9 @@ jobs:
     if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
+      BACKEND_URL: https://core.eney.appflix.io
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
       fail-fast: false
       matrix:
