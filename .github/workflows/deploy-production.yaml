@@ -9,6 +9,8 @@ jobs:
   parse-tag:
     name: Parse tag and validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       extension: ${{ steps.parse.outputs.extension }}
       version: ${{ steps.parse.outputs.version }}
