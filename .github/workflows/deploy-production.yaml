@@ -6,17 +6,12 @@ on:
       - "*"
 
 jobs:
-  deploy:
-    name: Deploy ${{ github.ref_name }} to production
-    runs-on:
-      group: gcp-k8s
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      BACKEND_URL: https://core.internal.eney.ai
-      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
-      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+  parse-tag:
+    name: Parse tag and validate
+    runs-on: ubuntu-latest
+    outputs:
+      extension: ${{ steps.parse.outputs.extension }}
+      version: ${{ steps.parse.outputs.version }}
     steps:
       - name: Parse tag
         id: parse
@@ -40,14 +35,6 @@ jobs:
             exit 1
           fi
 
-      - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
-        with:
-          token_format: access_token
-          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
-          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
-          access_token_lifetime: 300s
-
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
         with:
@@ -61,8 +48,109 @@ jobs:
             exit 1
           fi
 
-      - name: Publish to production
+  upload-archive:
+    name: Upload extension archive to GCS
+    runs-on: ubuntu-latest
+    needs: parse-tag
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
+          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
+          access_token_lifetime: 300s
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Upload extension archive
         run: |
-          node cli/main.ts publish \
-            --cwd extensions/${{ steps.parse.outputs.extension }} \
+          node cli/main.ts upload-archive \
+            --cwd extensions/${{ needs.parse-tag.outputs.extension }} \
             --mode production
+
+      - name: Save metadata for publish job
+        run: |
+          mkdir -p metadata
+          cp extensions/${{ needs.parse-tag.outputs.extension }}/manifest.json metadata/manifest.json
+
+          # Extract outputs from GITHUB_OUTPUT if available
+          if [ -f "$GITHUB_OUTPUT" ] && [ -s "$GITHUB_OUTPUT" ]; then
+            grep -E "^(extension_name|version|hash|download_url)=" "$GITHUB_OUTPUT" > metadata/outputs.txt || true
+          fi
+
+      - name: Upload metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-metadata
+          path: metadata/
+          retention-days: 1
+
+  publish-backend:
+    name: Publish extension to backend
+    runs-on:
+      group: gcp-k8s
+    needs: [parse-tag, upload-archive]
+    permissions:
+      contents: read
+    env:
+      BACKEND_URL: https://core.internal.eney.ai
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Download metadata artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-metadata
+          path: metadata/
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Publish extension to backend
+        run: |
+          # Extract metadata from artifact
+          VERSION=""
+          HASH=""
+          DOWNLOAD_URL=""
+
+          if [ -f metadata/outputs.txt ]; then
+            VERSION=$(grep "^version=" metadata/outputs.txt | cut -d'=' -f2)
+            HASH=$(grep "^hash=" metadata/outputs.txt | cut -d'=' -f2)
+            DOWNLOAD_URL=$(grep "^download_url=" metadata/outputs.txt | cut -d'=' -f2)
+          fi
+
+          # Build command with optional parameters
+          CMD="node cli/main.ts publish --cwd extensions/${{ needs.parse-tag.outputs.extension }} --mode production"
+
+          if [ -n "$VERSION" ]; then
+            CMD="$CMD --version \"$VERSION\""
+          fi
+
+          if [ -n "$HASH" ]; then
+            CMD="$CMD --hash \"$HASH\""
+          fi
+
+          if [ -n "$DOWNLOAD_URL" ]; then
+            CMD="$CMD --download-url \"$DOWNLOAD_URL\""
+          fi
+
+          eval $CMD
