@@ -122,22 +122,22 @@ jobs:
             DOWNLOAD_URL=$(grep "^download_url=" metadata/outputs.txt | cut -d'=' -f2)
           fi
 
-          # Build command with optional parameters
-          CMD="node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging
+          # Build command arguments array
+          ARGS=(--cwd "extensions/${{ matrix.extension }}" --mode staging)
 
           if [ -n "$VERSION" ]; then
-            CMD="$CMD --version \"$VERSION\""
+            ARGS+=(--version "$VERSION")
           fi
 
           if [ -n "$HASH" ]; then
-            CMD="$CMD --hash \"$HASH\""
+            ARGS+=(--hash "$HASH")
           fi
 
           if [ -n "$DOWNLOAD_URL" ]; then
-            CMD="$CMD --download-url \"$DOWNLOAD_URL\""
+            ARGS+=(--download-url "$DOWNLOAD_URL")
           fi
 
-          eval $CMD
+          node cli/main.ts publish "${ARGS[@]}"
 
   commit-version-bumps:
     name: Commit version bumps

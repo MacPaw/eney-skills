@@ -1,4 +1,4 @@
-import { basename, resolve } from "path";
+import { basename, join, resolve } from "path";
 import fs from "fs/promises";
 import * as p from "@clack/prompts";
 
@@ -46,7 +46,7 @@ async function promptForOptions(options: UploadArchiveOptions) {
         p.cancel("Operation cancelled.");
         process.exit(0);
       },
-    }
+    },
   );
 
   return {
@@ -61,7 +61,7 @@ async function uploadArchive(cwd: string, mode: "staging" | "production", dryRun
   const extensionDir = resolve(cwd);
   const extensionName = basename(extensionDir);
 
-  const manifestRaw = await fs.readFile(`${extensionDir}/manifest.json`, "utf8");
+  const manifestRaw = await fs.readFile(join(extensionDir, "manifest.json"), "utf8");
   const manifest = JSON.parse(manifestRaw);
   const version = manifest.version;
 
