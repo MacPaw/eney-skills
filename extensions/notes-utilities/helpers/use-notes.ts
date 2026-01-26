@@ -156,7 +156,7 @@ export const useNotes = () => {
         noteBacklinks.push({
           id: link.id,
           title: originalNote.title,
-          url: '',
+          url: "",
         });
       }
     });
