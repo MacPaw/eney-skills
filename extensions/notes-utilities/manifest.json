@@ -2,7 +2,7 @@
 	"id": "notes-utilities",
 	"type": "jsx",
 	"version": "1.4",
-	"title": "Notes Utilities",
+	"title": "Notes utilities",
 	"tools": [
 		{
 			"name": "append-to-note",
