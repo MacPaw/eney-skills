@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
-import { spawn } from "node:child_process";
 import { z } from "zod";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
+
+import { runScript } from "../../helpers/run-script.js";
+import { useNotes } from "../../helpers/use-notes.js";
 
 const props = z.object({
 	noteName: z.string()
@@ -16,52 +18,38 @@ const props = z.object({
 
 type Props = z.infer<typeof props>;
 
+const NEW_NOTE_VALUE = "__new_note__";
+
 function escapeDoubleQuotes(value: string) {
 	return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 async function appendToNote(noteName: string, content: string): Promise<string> {
-	const htmlContent = await marked.parse(content);
+	const htmlContent = await marked.parse(content, { breaks: true, gfm: true });
 	const sanitizedHtml = sanitizeHtml(htmlContent);
 	const escapedContent = escapeDoubleQuotes(sanitizedHtml);
-	const script = noteName
-		? `
-tell application "Notes"
-	set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
-	set body of targetNote to (body of targetNote) & "<br>" & "${escapedContent}"
-end tell
-`
-		: `
-tell application "Notes"
-	set targetNote to first note
-	set body of targetNote to (body of targetNote) & "<br>" & "${escapedContent}"
-end tell
-`;
 
-	return new Promise((resolve, reject) => {
-		const osascript = spawn("osascript", ["-e", script]);
-		let stderr = "";
-
-		osascript.stderr?.on("data", (data) => {
-			stderr += data.toString();
-		});
-
-		osascript.on("error", (error) => {
-			reject(new Error(`Failed to execute AppleScript: ${error.message}`));
-		});
-
-		osascript.on("close", (code) => {
-			if (code !== 0) {
-				reject(new Error(stderr.trim() || `osascript exited with code ${code}`));
-				return;
-			}
-			resolve("Content appended successfully");
-		});
-	});
+	if (noteName === NEW_NOTE_VALUE) {
+		return runScript(`
+			tell application "Notes"
+				set newNote to make new note
+				set body of newNote to "${escapedContent}"
+			end tell
+		`);
+	}
+	
+	return runScript(`
+		tell application "Notes"
+			set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
+			set body of targetNote to (body of targetNote) & "${escapedContent}"
+		end tell
+	`);
 }
 
 export default function AppendToNote(props: Props) {
-	const [noteName, setNoteName] = useState(props.noteName ?? "");
+	const { data: notes, isLoading: isLoadingNotes } = useNotes();
+
+	const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
 	const [content, setContent] = useState(props.content ?? "");
 	const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 	const [isAppending, setIsAppending] = useState(false);
@@ -112,17 +100,35 @@ export default function AppendToNote(props: Props) {
 		</ActionPanel>
 	);
 
+	if (isLoadingNotes) {
+		return (
+			<Form actions={actions}>
+				<Paper markdown={props.noteName} />
+				<Paper markdown="Loading notes..." />
+			</Form>
+		);
+	}
+
 	return (
 		<Form actions={actions}>
 			{status?.type === "error" && (
 				<Paper markdown={`❌ ${status.message}`} />
 			)}
-			<Form.TextField
-				name="noteName"
-				label="Note Name (leave empty for most recent note)"
-				value={noteName}
-				onChange={setNoteName}
-			/>
+			<Paper markdown={JSON.stringify(props)} />
+			<Paper markdown={props.noteName} />
+			<Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
+				<Form.Dropdown.Item key={NEW_NOTE_VALUE} title="New Note" value={NEW_NOTE_VALUE} />
+				{notes.allNotes
+					?.slice()
+					.sort((a, b) => {
+						if (a.title === noteName) return -1;
+						if (b.title === noteName) return 1;
+						return 0;
+					})
+					.map((note) => (
+						<Form.Dropdown.Item key={note.id} title={note.title} value={note.title} />
+					))}
+			</Form.Dropdown>
 			<Form.RichTextEditor
 				value={content}
 				onChange={setContent}
