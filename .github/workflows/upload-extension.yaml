@@ -89,9 +89,8 @@ jobs:
     needs: [detect-changes, pack-and-upload-archive]
     permissions:
       contents: read
-    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]') && github.event_name == 'push'
     env:
-      IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
       BACKEND_URL: https://core.eney.appflix.io
       ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
       ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
@@ -128,7 +127,7 @@ jobs:
           fi
 
           # Build command with optional parameters
-          CMD="node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging --dry-run ${{ env.IS_DRY_RUN }}"
+          CMD="node cli/main.ts publish --cwd extensions/${{ matrix.extension }} --mode staging
 
           if [ -n "$VERSION" ]; then
             CMD="$CMD --version \"$VERSION\""
