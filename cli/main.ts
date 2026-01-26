@@ -138,17 +138,17 @@ program
   .description("Publish extension metadata to backend")
   .option("--cwd <path>", "Current working directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--version <version>", "Extension version")
+  .option("--extension-version <version>", "Extension version")
   .option("--hash <hash>", "Archive hash (SHA-256)")
   .option("--download-url <url>", "Archive download URL")
   .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, version, hash, downloadUrl, dryRun }) =>
-    publishExtensionCommand(cwd, mode, version, hash, downloadUrl, dryRun),
+  .action(({ cwd, mode, extensionVersion, hash, downloadUrl, dryRun }) =>
+    publishExtensionCommand(cwd, mode, extensionVersion, hash, downloadUrl, dryRun),
   );
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
-const hasFlags = args.some((arg) => arg === "--help" || arg === "-h" || arg === "--version" || arg === "-V");
+const hasFlags = args.some((arg) => arg === "--help" || arg === "-h");
 const isCI = process.env.CI === "true";
 
 if (hasCommand || hasFlags || isCI) {

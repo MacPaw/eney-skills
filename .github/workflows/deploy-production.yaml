@@ -135,7 +135,7 @@ jobs:
           ARGS=(--cwd "extensions/${{ needs.parse-tag.outputs.extension }}" --mode production)
 
           if [ -n "${{ steps.metadata.outputs.version }}" ]; then
-            ARGS+=(--version "${{ steps.metadata.outputs.version }}")
+            ARGS+=(--extension-version "${{ steps.metadata.outputs.version }}")
           fi
 
           if [ -n "${{ steps.metadata.outputs.hash }}" ]; then
