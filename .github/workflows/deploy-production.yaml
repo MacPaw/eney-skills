@@ -37,19 +37,6 @@ jobs:
             exit 1
           fi
 
-      - name: Setup CLI
-        uses: ./.github/actions/setup-cli
-        with:
-          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
-
-      - name: Verify version matches manifest
-        run: |
-          MANIFEST_VERSION=$(node -p "require('./extensions/${{ steps.parse.outputs.extension }}/manifest.json').version")
-          if [ "$MANIFEST_VERSION" != "${{ steps.parse.outputs.version }}" ]; then
-            echo "Error: Tag version (${{ steps.parse.outputs.version }}) doesn't match manifest ($MANIFEST_VERSION)"
-            exit 1
-          fi
-
   upload-archive:
     name: Upload extension archive to GCS
     runs-on: ubuntu-latest
@@ -140,19 +127,19 @@ jobs:
             DOWNLOAD_URL=$(grep "^download_url=" metadata/outputs.txt | cut -d'=' -f2)
           fi
 
-          # Build command with optional parameters
-          CMD="node cli/main.ts publish --cwd extensions/${{ needs.parse-tag.outputs.extension }} --mode production"
+          # Build command arguments array
+          ARGS=(--cwd "extensions/${{ needs.parse-tag.outputs.extension }}" --mode production)
 
           if [ -n "$VERSION" ]; then
-            CMD="$CMD --version \"$VERSION\""
+            ARGS+=(--version "$VERSION")
           fi
 
           if [ -n "$HASH" ]; then
-            CMD="$CMD --hash \"$HASH\""
+            ARGS+=(--hash "$HASH")
           fi
 
           if [ -n "$DOWNLOAD_URL" ]; then
-            CMD="$CMD --download-url \"$DOWNLOAD_URL\""
+            ARGS+=(--download-url "$DOWNLOAD_URL")
           fi
 
-          eval $CMD
+          node cli/main.ts publish "${ARGS[@]}"

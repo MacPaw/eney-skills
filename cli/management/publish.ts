@@ -106,8 +106,9 @@ async function publishExtension(
   const archiveName = `${extensionName}@v${finalVersion}.zip`;
   const finalDownloadUrl = downloadUrl || (await getFileDownloadUrl(archiveName, mode));
 
-  // If hash not provided, we'll need to skip version publishing (only metadata)
-  const finalHash = hash || "";
+  if (!hash) {
+    throw new Error("Hash is required for publishing. Provide --hash parameter.");
+  }
 
   console.log(`Publishing ${extensionName}@${finalVersion} to backend...`);
 
@@ -122,8 +123,8 @@ async function publishExtension(
 
   const artifactPayload = {
     version: parsedVersion,
-    hash: finalHash,
     downloadUrl: finalDownloadUrl,
+    hash,
   };
 
   console.log("\nArtifact metadata:");
