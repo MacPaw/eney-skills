@@ -11,7 +11,7 @@ import { getFileDownloadUrl } from "./pack.ts";
 type PublishOptions = {
   cwd?: string;
   mode?: "staging" | "production";
-  version?: string;
+  extensionVersion?: string;
   hash?: string;
   downloadUrl?: string;
   dryRun?: boolean;
@@ -39,9 +39,9 @@ async function promptForOptions(options: PublishOptions) {
                 { value: "production", label: "Production" },
               ],
             }),
-      version: () =>
-        options.version
-          ? Promise.resolve(options.version)
+      extensionVersion: () =>
+        options.extensionVersion
+          ? Promise.resolve(options.extensionVersion)
           : p.text({
               message: "Extension version:",
             }),
@@ -76,7 +76,7 @@ async function promptForOptions(options: PublishOptions) {
   return {
     cwd: answers.cwd as string,
     mode: answers.mode as "staging" | "production",
-    version: answers.version as string,
+    extensionVersion: answers.extensionVersion as string,
     hash: answers.hash as string,
     downloadUrl: answers.downloadUrl as string,
     dryRun: answers.dryRun as boolean,
@@ -92,6 +92,7 @@ async function publishExtension(
   dryRun: boolean,
 ) {
   const api = new ApiClient(mode);
+  console.log("starting")
   const extensionDir = resolve(cwd);
   const extensionName = basename(extensionDir);
 
@@ -155,26 +156,26 @@ async function publishExtension(
 export async function publishExtensionCommand(
   cwd?: string,
   mode?: "staging" | "production",
-  version?: string,
+  extensionVersion?: string,
   hash?: string,
   downloadUrl?: string,
   dryRun?: boolean,
 ) {
   const hasAllOptions =
-    cwd !== undefined && mode !== undefined && version !== undefined && hash !== undefined && downloadUrl !== undefined;
+    cwd !== undefined && mode !== undefined && extensionVersion !== undefined && hash !== undefined && downloadUrl !== undefined;
   const isCI = process.env.CI === "true";
 
   if (hasAllOptions) {
-    await publishExtension(cwd, mode, version, hash, downloadUrl, dryRun);
+    await publishExtension(cwd, mode, extensionVersion, hash, downloadUrl, dryRun);
   } else if (isCI) {
-    console.error("Error: --cwd, --mode, --version, --hash, and --download-url are required in CI mode");
+    console.error("Error: --cwd, --mode, --extension-version, --hash, and --download-url are required in CI mode");
     process.exit(1);
   } else {
-    const resolved = await promptForOptions({ cwd, mode, version, hash, downloadUrl, dryRun });
+    const resolved = await promptForOptions({ cwd, mode, extensionVersion, hash, downloadUrl, dryRun });
     await publishExtension(
       resolved.cwd,
       resolved.mode,
-      resolved.version,
+      resolved.extensionVersion,
       resolved.hash,
       resolved.downloadUrl,
       resolved.dryRun,
