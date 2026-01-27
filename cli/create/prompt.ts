@@ -1,6 +1,7 @@
 import { stat } from 'node:fs/promises';
 import * as p from '@clack/prompts';
 import { isKebabCase } from './utils.ts';
+import { join } from 'node:path';
 
 export async function askExtensionId(): Promise<string> {
 	const value = await p.text({
@@ -64,6 +65,37 @@ export type ExtensionDetails = {
 	toolDescription: string;
 	toolTitle: string;
 };
+
+export async function askOutputDirectory(): Promise<string> {
+	const initialDirectory = join(process.cwd(), "extensions");
+
+	const value = await p.text({
+		message: 'Where do you want to create the extension? (absolute path)',
+		initialValue: initialDirectory,
+		validate: (value) => {
+			if (!value) {
+				return 'Output directory is required';
+			}
+
+			try {
+				stat(value).then((s) => {
+					if (!s.isDirectory()) {
+						return 'Output path must be a directory';
+					}
+				});
+			} catch (error) {
+				return 'Output directory does not exist';
+			}
+		},
+	});
+
+	if (p.isCancel(value)) {
+		p.cancel('Operation cancelled.');
+		process.exit(0);
+	}
+
+	return value;
+}
 
 export async function askExtensionDetails(): Promise<Omit<ExtensionDetails, 'extensionId'>> {
 	const answers = await p.group(

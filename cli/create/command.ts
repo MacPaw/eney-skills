@@ -1,12 +1,14 @@
 import { join } from 'node:path';
 import { readdir, mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { exec } from 'node:child_process';
 import { copy } from 'fs-extra';
 import handlebars from 'handlebars';
 import * as p from '@clack/prompts';
 import {
 	askExtensionDetails,
 	askExtensionId,
+	askOutputDirectory,
 	type ExtensionDetails,
 	getFolderAction,
 } from './prompt.ts';
@@ -53,13 +55,13 @@ export async function createCommand(options: CreateCommandOptions) {
 		process.exit(1);
 	}
 
+	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
+
 	p.intro('Create Extension');
 
-	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
+	const outputDirectory = options.output || (await askOutputDirectory());
 	const extensionId = options.extensionId || (await askExtensionId());
-
-	const output = options.output || process.cwd();
-	const localOutputFolder = join(output, extensionId);
+	const localOutputFolder = join(outputDirectory, extensionId);
 
 	const folderAction = await getFolderAction(localOutputFolder);
 
@@ -117,6 +119,20 @@ export async function createCommand(options: CreateCommandOptions) {
 	}
 
 	spinner.stop('Extension created');
+
+	const installSpinner = p.spinner();
+	installSpinner.start('Installing dependencies...');
+
+	await new Promise<void>((resolve, reject) => {
+		exec('npm i @macpaw/eney-api@latest', { cwd: localOutputFolder }, (error) => {
+			if (error) {
+				return reject(error);
+			}
+			resolve();
+		});
+	});
+
+	installSpinner.stop('Dependencies installed');
 
 	p.outro(`Extension created at ${localOutputFolder}`);
 }
