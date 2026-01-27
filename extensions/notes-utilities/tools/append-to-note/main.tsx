@@ -8,12 +8,16 @@ import { runScript } from "../../helpers/run-script.js";
 import { useNotes } from "../../helpers/use-notes.js";
 
 const props = z.object({
-	noteName: z.string()
-		.optional()
-		.describe("The name of the note to append to. If not provided, appends to the first note."),
-	content: z.string()
-		.optional()
-		.describe("The text content to append to the note."),
+  noteName: z
+    .string()
+    .optional()
+    .describe(
+      "The name of the note to append to. If not provided, appends to the first note.",
+    ),
+  content: z
+    .string()
+    .optional()
+    .describe("The text content to append to the note."),
 });
 
 type Props = z.infer<typeof props>;
@@ -21,24 +25,27 @@ type Props = z.infer<typeof props>;
 const NEW_NOTE_VALUE = "__new_note__";
 
 function escapeDoubleQuotes(value: string) {
-	return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-async function appendToNote(noteName: string, content: string): Promise<string> {
-	const htmlContent = await marked.parse(content, { breaks: true, gfm: true });
-	const sanitizedHtml = sanitizeHtml(htmlContent);
-	const escapedContent = escapeDoubleQuotes(sanitizedHtml);
+async function appendToNote(
+  noteName: string,
+  content: string,
+): Promise<string> {
+  const htmlContent = await marked.parse(content, { breaks: true, gfm: true });
+  const sanitizedHtml = sanitizeHtml(htmlContent);
+  const escapedContent = escapeDoubleQuotes(sanitizedHtml);
 
-	if (noteName === NEW_NOTE_VALUE) {
-		return runScript(`
+  if (noteName === NEW_NOTE_VALUE) {
+    return runScript(`
 			tell application "Notes"
 				set newNote to make new note
 				set body of newNote to "${escapedContent}"
 			end tell
 		`);
-	}
-	
-	return runScript(`
+  }
+
+  return runScript(`
 		tell application "Notes"
 			set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
 			set body of targetNote to (body of targetNote) & "${escapedContent}"
@@ -47,92 +54,102 @@ async function appendToNote(noteName: string, content: string): Promise<string> 
 }
 
 export default function AppendToNote(props: Props) {
-	const { data: notes, isLoading: isLoadingNotes } = useNotes();
+  const { data: notes, isLoading: isLoadingNotes } = useNotes();
 
-	const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
-	const [content, setContent] = useState(props.content ?? "");
-	const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-	const [isAppending, setIsAppending] = useState(false);
+  const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
+  const [content, setContent] = useState(props.content ?? "");
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isAppending, setIsAppending] = useState(false);
 
-	async function onSubmit() {
-		if (!content.trim()) return;
+  async function onSubmit() {
+    if (!content.trim()) return;
 
-		setIsAppending(true);
-		setStatus(null);
+    setIsAppending(true);
+    setStatus(null);
 
-		try {
-			const message = await appendToNote(noteName, content);
-			setStatus({ type: "success", message });
-		} catch (error) {
-			setStatus({
-				type: "error",
-				message: error instanceof Error ? error.message : "Failed to append to note",
-			});
-		} finally {
-			setIsAppending(false);
-		}
-	}
+    try {
+      const message = await appendToNote(noteName, content);
+      setStatus({ type: "success", message });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to append to note",
+      });
+    } finally {
+      setIsAppending(false);
+    }
+  }
 
-	const successActions = (
-		<ActionPanel>
-			<Action.Finalize title="Done" />
-		</ActionPanel>
-	);
+  const successActions = (
+    <ActionPanel>
+      <Action.Finalize title="Done" />
+    </ActionPanel>
+  );
 
-	if (status?.type === "success") {
-		const noteDisplay = noteName ? `"${noteName}"` : "most recent note";
-		return (
-			<Form actions={successActions}>
-				<Paper markdown={`✅ Content appended successfully to ${noteDisplay}`} $context={true} />
-			</Form>
-		);
-	}
+  if (status?.type === "success") {
+    const noteDisplay = noteName ? `"${noteName}"` : "most recent note";
+    return (
+      <Form actions={successActions}>
+        <Paper
+          markdown={`✅ Content appended successfully to ${noteDisplay}`}
+          $context={true}
+        />
+      </Form>
+    );
+  }
 
-	const actions = (
-		<ActionPanel>
-			<Action.SubmitForm
-				title={isAppending ? "Appending..." : "Append to Note"}
-				onSubmit={onSubmit}
-				style="primary"
-				isDisabled={!content.trim()}
-				isLoading={isAppending}
-			/>
-		</ActionPanel>
-	);
+  const actions = (
+    <ActionPanel>
+      <Action.SubmitForm
+        title={isAppending ? "Appending..." : "Append to Note"}
+        onSubmit={onSubmit}
+        style="primary"
+        isDisabled={!content.trim()}
+        isLoading={isAppending}
+      />
+    </ActionPanel>
+  );
 
-	if (isLoadingNotes) {
-		return (
-			<Form actions={actions}>
-				<Paper markdown={props.noteName} />
-				<Paper markdown="Loading notes..." />
-			</Form>
-		);
-	}
+  if (isLoadingNotes) {
+    return (
+      <Form actions={actions}>
+        <Paper markdown={props.noteName} />
+        <Paper markdown="Loading notes..." />
+      </Form>
+    );
+  }
 
-	return (
-		<Form actions={actions}>
-			{status?.type === "error" && (
-				<Paper markdown={`❌ ${status.message}`} />
-			)}
-			<Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
-				<Form.Dropdown.Item key={NEW_NOTE_VALUE} title="New Note" value={NEW_NOTE_VALUE} />
-				{notes.allNotes
-					?.slice()
-					.sort((a, b) => {
-						if (a.title === noteName) return -1;
-						if (b.title === noteName) return 1;
-						return 0;
-					})
-					.map((note) => (
-						<Form.Dropdown.Item key={note.id} title={note.title} value={note.title} />
-					))}
-			</Form.Dropdown>
-			<Form.RichTextEditor
-				value={content}
-				onChange={setContent}
-			/>
-		</Form>
-	);
+  return (
+    <Form actions={actions}>
+      {status?.type === "error" && <Paper markdown={`❌ ${status.message}`} />}
+      <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
+        <Form.Dropdown.Item
+          key={NEW_NOTE_VALUE}
+          title="New Note"
+          value={NEW_NOTE_VALUE}
+        />
+        {notes.allNotes
+          ?.slice()
+          .sort((a, b) => {
+            if (a.title === noteName) return -1;
+            if (b.title === noteName) return 1;
+            return 0;
+          })
+          .map((note) => (
+            <Form.Dropdown.Item
+              key={note.id}
+              title={note.title}
+              value={note.title}
+            />
+          ))}
+      </Form.Dropdown>
+      <Form.RichTextEditor value={content} onChange={setContent} />
+    </Form>
+  );
 }
 
 setupTool(AppendToNote);
