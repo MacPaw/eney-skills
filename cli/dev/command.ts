@@ -15,21 +15,25 @@ async function dev() {
 
   console.log(`${color.bold(color.green(`Watching ${currentFolder} for changes...`))}`);
 
-  const build = async (_event: unknown, filename: string) => {
-    console.log(`${color.bold(color.green(`File ${filename} changed`))}`);
-    console.log(`${color.bold(color.green(`Bundling...`))}`);
+  const build = async (filename?: string) => {
+    if (filename) {
+      console.log(`${color.bold(color.green(`File ${filename} changed`))}`);
+      console.log(`${color.bold(color.green(`Bundling...`))}`);
+    }
     await bundle(currentFolder, EXTENSIONS_FOLDER);
     console.log(`${color.bold(color.green(`Bundle complete! Output folder: ${EXTENSIONS_FOLDER}`))}`);
   };
 
   const debouncedBuild = debounce(build, 1000);
 
-  watch(currentFolder, { recursive: true }, async (event, filename) => {
+  await build();
+
+  watch(currentFolder, { recursive: true }, async (_event, filename) => {
     if (filename === "package-lock.json" || filename.startsWith("node_modules/")) {
       return;
     }
 
-    await debouncedBuild(event, filename);
+    debouncedBuild(filename);
   });
 }
 
