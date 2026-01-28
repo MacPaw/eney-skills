@@ -126,4 +126,49 @@ export class ApiClient {
 
     console.log(`Uploaded to gs://${bucketName}/${destination}`);
   }
+
+  async deleteExtensionArtifactFromCloud(fileName: string) {
+    if (!fileName?.trim()) {
+      throw new Error("fileName is required");
+    }
+
+    if (fileName.includes("..") || fileName.startsWith("/")) {
+      throw new Error("Invalid fileName: path traversal not allowed");
+    }
+
+    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
+    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
+    const destination = `extensions/${fileName}`;
+
+    const storage = new Storage({ projectId });
+    const file = storage.bucket(bucketName).file(destination);
+
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new Error(`File not found: gs://${bucketName}/${destination}`);
+    }
+
+    console.log(`Deleting gs://${bucketName}/${destination}...`);
+
+    await file.delete();
+
+    console.log(`Deleted gs://${bucketName}/${destination}`);
+  }
+
+  async listExtensionArchivesInCloud(prefix?: string) {
+    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
+    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
+    const fullPrefix = prefix ? `extensions/${prefix}` : "extensions/";
+
+    const storage = new Storage({ projectId });
+
+    const [files] = await storage.bucket(bucketName).getFiles({ prefix: fullPrefix });
+
+    return files.map((file) => ({
+      name: file.name,
+      size: file.metadata.size ? Number(file.metadata.size) : 0,
+      created: file.metadata.timeCreated ? new Date(file.metadata.timeCreated) : null,
+      updated: file.metadata.updated ? new Date(file.metadata.updated) : null,
+    }));
+  }
 }
