@@ -5,7 +5,7 @@ import { CloudflareAnalyticsClient } from "./cf-analytics.ts";
 type AnalyticsOptions = {
   sort?: "most" | "least";
   limit?: string;
-  host?: string;
+  mode?: "staging" | "production";
   days?: string;
   output?: string;
 };
@@ -13,7 +13,7 @@ type AnalyticsOptions = {
 type ResolvedOptions = {
   sort: "most" | "least";
   limit: number;
-  host: string;
+  mode: "staging" | "production";
   days: number;
   output?: string;
 };
@@ -26,7 +26,7 @@ function checkAllRequiredOptions(options: AnalyticsOptions): boolean {
   return (
     options.sort !== undefined &&
     options.limit !== undefined &&
-    options.host !== undefined &&
+    options.mode !== undefined &&
     options.days !== undefined
   );
 }
@@ -36,14 +36,14 @@ async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOpti
 
   const answers = await p.group(
     {
-      host: () =>
-        options.host
-          ? Promise.resolve(options.host)
+      mode: () =>
+        options.mode
+          ? Promise.resolve(options.mode)
           : p.select({
-              message: "Select the host to analyze:",
+              message: "Select environment:",
               options: [
-                { value: "cdn.eney.ai", label: "Production (cdn.eney.ai)" },
-                { value: "staging-cdn.eney.ai", label: "Staging (staging-cdn.eney.ai)" },
+                { value: "production", label: "Production" },
+                { value: "staging", label: "Staging" },
               ],
             }),
       sort: () =>
@@ -93,11 +93,11 @@ async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOpti
         p.cancel("Operation cancelled.");
         process.exit(0);
       },
-    }
+    },
   );
 
   return {
-    host: answers.host as string,
+    mode: answers.mode as "staging" | "production",
     sort: answers.sort as "most" | "least",
     limit: parseInt(answers.limit as string, 10),
     days: parseInt(answers.days as string, 10),
@@ -107,11 +107,12 @@ async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOpti
 
 async function runAnalytics(resolved: ResolvedOptions): Promise<void> {
   const spinner = p.spinner();
-  spinner.start(`Fetching analytics for ${resolved.host}...`);
+  const host = CloudflareAnalyticsClient.getHostForMode(resolved.mode);
+  spinner.start(`Fetching analytics for ${host}...`);
 
   try {
     const client = new CloudflareAnalyticsClient();
-    const result = await client.getRequestsByPath(resolved.host, resolved.sort, resolved.limit, resolved.days);
+    const result = await client.getRequestsByPath(host, resolved.sort, resolved.limit, resolved.days);
 
     spinner.stop("Analytics fetched successfully");
 
@@ -140,7 +141,7 @@ export async function analyticsCommand(options: AnalyticsOptions) {
   const isCI = process.env.CI === "true";
 
   if (!hasAllRequiredOptions && isCI) {
-    console.error("Error: --sort, --limit, --days, and --host are required in CI mode");
+    console.error("Error: --sort, --limit, --days, and --mode are required in CI mode");
     process.exit(1);
   } else if (!hasAllRequiredOptions) {
     const resolved = await promptForOptions(options);
@@ -165,11 +166,16 @@ export async function analyticsCommand(options: AnalyticsOptions) {
     process.exit(1);
   }
 
+  if (options.mode !== "staging" && options.mode !== "production") {
+    console.error("Error: --mode must be either 'staging' or 'production'");
+    process.exit(1);
+  }
+
   await runAnalytics({
     limit,
     days,
     sort: options.sort,
-    host: options.host!,
+    mode: options.mode!,
     output: options.output,
   });
 }

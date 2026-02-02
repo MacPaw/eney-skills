@@ -10,6 +10,8 @@ import { uploadArchiveCommand } from "./management/upload-archive.ts";
 import { publishExtensionCommand } from "./management/publish.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
+import { listArtifactsCommand } from "./management/list-artifacts.ts";
+import { deleteArtifactsCommand } from "./management/delete-artifacts.ts";
 import { devCommand } from "./dev/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
@@ -46,6 +48,14 @@ const commands = {
   "create-tags": {
     label: "Create Git tags for production deployment",
     action: () => createTagsCommand(),
+  },
+  "list-artifacts": {
+    label: "List artifacts in cloud storage",
+    action: () => listArtifactsCommand(),
+  },
+  "delete-artifacts": {
+    label: "Delete artifacts from cloud storage",
+    action: () => deleteArtifactsCommand(),
   },
 } as const;
 
@@ -112,7 +122,7 @@ program
   .option("--limit <n>", "Number of results to show")
   .option("--days <n>", "Number of days to analyze")
   .option("-o, --output <path>", "Output JSON file path")
-  .option("--host <hostname>", "Request host to filter")
+  .option("--mode <mode>", "Environment mode (staging or production)")
   .action((options) => analyticsCommand(options));
 
 program
@@ -132,6 +142,20 @@ program
   .option("--mode <mode>", "Upload mode (staging or production)")
   .option("--dry-run <value>", "Do not upload remotely, just log actions", (value) => value !== "false")
   .action(({ cwd, mode, dryRun }) => uploadArchiveCommand(cwd, mode, dryRun));
+
+program
+  .command("list-artifacts")
+  .description("List artifacts in cloud storage")
+  .option("--mode <mode>", "Environment mode (staging or production)")
+  .option("--prefix <prefix>", "Filter by prefix")
+  .action(({ mode, prefix }) => listArtifactsCommand(mode, prefix));
+
+program
+  .command("delete-artifacts")
+  .description("Delete artifacts from cloud storage")
+  .option("--mode <mode>", "Environment mode (staging or production)")
+  .option("--prefix <prefix>", "Filter by prefix")
+  .action(({ mode, prefix }) => deleteArtifactsCommand(mode, prefix));
 
 program
   .command("publish")

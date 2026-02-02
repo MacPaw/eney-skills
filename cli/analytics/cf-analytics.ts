@@ -29,6 +29,8 @@ type GraphQLResponse = {
   errors?: Array<{ message: string }>;
 };
 
+type Mode = "staging" | "production";
+
 export class CloudflareAnalyticsClient {
   private apiToken: string;
   private zoneId: string;
@@ -47,6 +49,23 @@ export class CloudflareAnalyticsClient {
 
     this.apiToken = token;
     this.zoneId = zoneId;
+  }
+
+  static getHostForMode(mode: Mode): string {
+    return mode === "production" ? "cdn.eney.ai" : "staging-cdn.eney.ai";
+  }
+
+  async getExtensionDownloads(mode: Mode, days: number = 30): Promise<Map<string, number>> {
+    const host = CloudflareAnalyticsClient.getHostForMode(mode);
+    const result = await this.getRequestsByPath(host, "least", 1000, days);
+
+    const downloadMap = new Map<string, number>();
+    for (const item of result.paths) {
+      const fileName = item.path.replace("/extensions/", "");
+      downloadMap.set(fileName, item.requests);
+    }
+
+    return downloadMap;
   }
 
   async getRequestsByPath(
