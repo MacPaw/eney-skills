@@ -160,6 +160,10 @@ export class ApiClient {
     const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
     const fullPrefix = prefix ? `extensions/${prefix}` : "extensions/";
 
+    if (fullPrefix.includes("..") || fullPrefix.startsWith("/")) {
+      throw new Error("Invalid prefix: path traversal not allowed");
+    }
+
     const storage = new Storage({ projectId });
 
     const [files] = await storage.bucket(bucketName).getFiles({ prefix: fullPrefix });
