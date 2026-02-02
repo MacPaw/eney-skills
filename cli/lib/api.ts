@@ -77,7 +77,7 @@ export class ApiClient {
 
       if (!response.ok) {
         throw new Error(
-          `Failed to publish extension: ${response.status} ${response.statusText} ${await response.text()}`
+          `Failed to publish extension: ${response.status} ${response.statusText} ${await response.text()}`,
         );
       }
 
@@ -158,11 +158,12 @@ export class ApiClient {
   async listExtensionArchivesInCloud(prefix?: string) {
     const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
     const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
-    const fullPrefix = prefix ? `extensions/${prefix}` : "extensions/";
 
-    if (fullPrefix.includes("..") || fullPrefix.startsWith("/")) {
+    if (prefix?.includes("..") || prefix?.startsWith("/")) {
       throw new Error("Invalid prefix: path traversal not allowed");
     }
+
+    const fullPrefix = prefix ? `extensions/${prefix}` : "extensions/";
 
     const storage = new Storage({ projectId });
 

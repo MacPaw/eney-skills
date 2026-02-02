@@ -8,6 +8,8 @@ type DeleteArtifactsOptions = {
   prefix?: string;
 };
 
+const EXTENSION_PREFIX = "extensions/";
+
 async function promptForOptions(options: DeleteArtifactsOptions) {
   p.intro("Delete Artifacts");
 
@@ -57,7 +59,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   }
 
   const artifactsWithDownloads = artifacts.map((artifact) => {
-    const fileName = artifact.name.replace("extensions/", "");
+    const fileName = artifact.name.replace(EXTENSION_PREFIX, "");
     return {
       ...artifact,
       downloads: downloadCounts.get(fileName) ?? 0,
@@ -69,7 +71,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   const selected = await p.autocompleteMultiselect({
     message: `Select artifacts to delete (${mode}):`,
     options: sortedArtifacts.map((artifact) => {
-      const name = artifact.name.replace("extensions/", "");
+      const name = artifact.name.replace(EXTENSION_PREFIX, "");
       const size = formatSize(artifact.size);
       const age = formatAge(artifact.created);
       const downloads = artifact.downloads.toLocaleString();
@@ -93,7 +95,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
 
   console.log(`\n${color.yellow("The following artifacts will be deleted:")}\n`);
   for (const name of selected) {
-    console.log(`  ${color.red("×")} ${(name as string).replace("extensions/", "")}`);
+    console.log(`  ${color.red("×")} ${(name as string).replace(EXTENSION_PREFIX, "")}`);
   }
   console.log();
 
@@ -111,7 +113,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   const errors: string[] = [];
 
   for (const name of selected) {
-    const fileName = (name as string).replace("extensions/", "");
+    const fileName = (name as string).replace(EXTENSION_PREFIX, "");
     try {
       await api.deleteExtensionArtifactFromCloud(fileName);
       deleted++;
@@ -136,11 +138,13 @@ export async function deleteArtifactsCommand(mode?: "staging" | "production", pr
   const hasAllOptions = mode !== undefined;
   const isCI = process.env.CI === "true";
 
+  if (isCI) {
+    console.error("Error: delete-artifacts command cannot be run in CI because it requires interactive prompts.");
+    process.exit(1);
+  }
+
   if (hasAllOptions) {
     await deleteArtifacts(mode, prefix);
-  } else if (isCI) {
-    console.error("Error: --mode is required in CI mode");
-    process.exit(1);
   } else {
     const resolved = await promptForOptions({ mode, prefix });
     await deleteArtifacts(resolved.mode, resolved.prefix);

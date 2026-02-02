@@ -8,6 +8,8 @@ type ListArtifactsOptions = {
   prefix?: string;
 };
 
+const EXTENSION_PREFIX = "extensions/";
+
 async function promptForOptions(options: ListArtifactsOptions) {
   p.intro("List Artifacts");
 
@@ -56,7 +58,7 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   console.log(`\nFound ${artifacts.length} artifact(s):\n`);
 
   const artifactsWithDownloads = artifacts.map((artifact) => {
-    const fileName = artifact.name.replace("extensions/", "");
+    const fileName = artifact.name.replace(EXTENSION_PREFIX, "");
     return {
       ...artifact,
       downloads: downloadCounts.get(fileName) ?? 0,
@@ -70,13 +72,15 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   });
 
   for (const artifact of sortedArtifacts) {
-    const name = artifact.name.replace("extensions/", "");
+    const name = artifact.name.replace(EXTENSION_PREFIX, "");
     const size = formatSize(artifact.size);
     const age = formatAge(artifact.created);
     const downloads = artifact.downloads.toLocaleString();
 
     console.log(`  ${color.bold(name)}`);
-    console.log(`    Uploaded: ${age}  |  Downloads in last 30 days: ${color.magenta(downloads)} | Size: ${color.yellow(size)}`);
+    console.log(
+      `    Uploaded: ${age}  |  Downloads in last 30 days: ${color.magenta(downloads)} | Size: ${color.yellow(size)}`,
+    );
   }
 
   console.log();

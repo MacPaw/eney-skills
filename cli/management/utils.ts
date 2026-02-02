@@ -48,7 +48,12 @@ export async function fetchAnalytics(mode: "staging" | "production"): Promise<Ma
   try {
     const cfClient = new CloudflareAnalyticsClient();
     return await cfClient.getExtensionDownloads(mode);
-  } catch {
+  } catch (error) {
+    console.warn(
+      `Warning: failed to fetch Cloudflare analytics in ${mode} mode. ` +
+        `Download counts will be unavailable. Underlying error:`,
+      error,
+    );
     return new Map();
   }
 }

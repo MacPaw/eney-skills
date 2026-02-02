@@ -93,7 +93,7 @@ async function promptForOptions(options: AnalyticsOptions): Promise<ResolvedOpti
         p.cancel("Operation cancelled.");
         process.exit(0);
       },
-    }
+    },
   );
 
   return {
@@ -163,6 +163,11 @@ export async function analyticsCommand(options: AnalyticsOptions) {
 
   if (options.sort !== "most" && options.sort !== "least") {
     console.error("Error: --sort must be either 'most' or 'least'");
+    process.exit(1);
+  }
+
+  if (options.mode !== "staging" && options.mode !== "production") {
+    console.error("Error: --mode must be either 'staging' or 'production'");
     process.exit(1);
   }
 
