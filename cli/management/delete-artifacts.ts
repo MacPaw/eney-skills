@@ -3,6 +3,41 @@ import color from "picocolors";
 import { ApiClient } from "../lib/api.ts";
 import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
+type DeleteArtifactsOptions = {
+  mode?: "staging" | "production";
+  prefix?: string;
+};
+
+async function promptForOptions(options: DeleteArtifactsOptions) {
+  p.intro("Delete Artifacts");
+
+  const answers = await p.group(
+    {
+      mode: () =>
+        options.mode
+          ? Promise.resolve(options.mode)
+          : p.select({
+              message: "Select environment:",
+              options: [
+                { value: "staging", label: "Staging" },
+                { value: "production", label: "Production" },
+              ],
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Operation cancelled.");
+        process.exit(0);
+      },
+    },
+  );
+
+  return {
+    mode: answers.mode as "staging" | "production",
+    prefix: options.prefix,
+  };
+}
+
 async function deleteArtifacts(mode: "staging" | "production", prefix?: string) {
   const api = new ApiClient(mode);
 
@@ -98,22 +133,16 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
 }
 
 export async function deleteArtifactsCommand(mode?: "staging" | "production", prefix?: string) {
-  p.intro("Delete Artifacts");
+  const hasAllOptions = mode !== undefined;
+  const isCI = process.env.CI === "true";
 
-  const resolvedMode =
-    mode ??
-    ((await p.select({
-      message: "Select environment:",
-      options: [
-        { value: "staging", label: "Staging" },
-        { value: "production", label: "Production" },
-      ],
-    })) as "staging" | "production");
-
-  if (p.isCancel(resolvedMode)) {
-    p.cancel("Operation cancelled.");
-    process.exit(0);
+  if (hasAllOptions) {
+    await deleteArtifacts(mode, prefix);
+  } else if (isCI) {
+    console.error("Error: --mode is required in CI mode");
+    process.exit(1);
+  } else {
+    const resolved = await promptForOptions({ mode, prefix });
+    await deleteArtifacts(resolved.mode, resolved.prefix);
   }
-
-  await deleteArtifacts(resolvedMode, prefix);
 }
