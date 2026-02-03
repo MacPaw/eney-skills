@@ -5,6 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "bundle": "node ../../cli/main.ts bundle -o ../../dist",
+    "dev": "node ../../cli/main.ts dev",
     "build": "npm run typecheck && npm run bundle",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run bundle"
