@@ -104,7 +104,8 @@ export default function AppendToNote(props: Props) {
   );
 
   if (status?.type === "success") {
-    const noteDisplay = noteName ? `"${noteName}"` : "the new note";
+    const noteDisplay =
+      noteName !== NEW_NOTE_VALUE ? `"${noteName}"` : "the new note";
     return (
       <Form actions={successActions}>
         <Paper
