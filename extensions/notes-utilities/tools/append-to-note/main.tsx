@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
 import { z } from "zod";
-import { marked } from "marked";
+import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 
 import { runScript } from "../../helpers/run-script.js";
@@ -32,7 +32,10 @@ async function appendToNote(
   noteName: string,
   content: string,
 ): Promise<string> {
-  const htmlContent = await marked.parse(content, { breaks: true, gfm: true });
+  const md = markdownit({
+    breaks: true,
+  });
+  const htmlContent = md.render(content);
   const sanitizedHtml = sanitizeHtml(htmlContent);
   const escapedContent = escapeDoubleQuotes(sanitizedHtml);
 
@@ -64,6 +67,16 @@ export default function AppendToNote(props: Props) {
   } | null>(null);
   const [isAppending, setIsAppending] = useState(false);
 
+  useEffect(() => {
+    if (
+      notes.allNotes.length !== 0 &&
+      props.noteName &&
+      !notes.allNotes.find((n) => n.title === props.noteName)
+    ) {
+      setNoteName(NEW_NOTE_VALUE);
+    }
+  }, [notes.allNotes.length, isLoadingNotes, props.noteName]);
+
   async function onSubmit() {
     if (!content.trim()) return;
 
@@ -91,11 +104,12 @@ export default function AppendToNote(props: Props) {
   );
 
   if (status?.type === "success") {
-    const noteDisplay = noteName ? `"${noteName}"` : "most recent note";
+    const noteDisplay =
+      noteName !== NEW_NOTE_VALUE ? `"${noteName}"` : "the new note";
     return (
       <Form actions={successActions}>
         <Paper
-          markdown={`✅ Content appended successfully to ${noteDisplay}`}
+          markdown={`Content appended successfully to ${noteDisplay}`}
           $context={true}
         />
       </Form>
