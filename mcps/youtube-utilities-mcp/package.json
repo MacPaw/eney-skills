@@ -1,8 +1,8 @@
 {
-  "name": "security-utilities-mcp",
+  "name": "youtube-utilities-mcp",
   "version": "1.0.0",
   "type": "module",
-  "description": "A MCP server for the password and other utilities.",
+  "description": "Youtube Utilities MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
@@ -19,6 +19,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/node": "^20.14.10",
     "@types/react": "^18.3.27",
     "typescript": "^5.9.3"
   }

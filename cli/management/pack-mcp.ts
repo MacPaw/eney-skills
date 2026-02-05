@@ -1,36 +1,38 @@
-import { basename, dirname, join, resolve } from "path";
+import { join, resolve } from "path";
 import fs from "fs/promises";
 import { spawn, spawnSync } from "child_process";
 import { tmpdir } from "os";
 import { existsSync } from "fs";
 import * as p from "@clack/prompts";
 
-import { bundle } from "../bundle/command.ts";
-
-export async function packExtension(cwd: string, out?: string) {
-  const extensionDir = resolve(cwd);
-  const extensionName = basename(extensionDir);
-  const manifestPath = join(extensionDir, "manifest.json");
-  const packageJsonPath = join(extensionDir, "package.json");
+export async function packMcp(cwd: string, out?: string): Promise<string> {
+  const mcpDir = resolve(cwd);
+  const manifestPath = join(mcpDir, "manifest.json");
 
   try {
-    await fs.stat(extensionDir);
+    await fs.stat(mcpDir);
   } catch {
-    throw new Error(`Directory not found: ${extensionDir}`);
+    throw new Error(`Directory not found: ${mcpDir}`);
   }
 
   let manifestVersion: string | undefined;
+  let manifestName: string | undefined;
 
   try {
     const manifestRaw = await fs.readFile(manifestPath, "utf8");
     const manifest = JSON.parse(manifestRaw);
     manifestVersion = manifest.version;
+    manifestName = manifest.name;
   } catch (error: any) {
     throw new Error(`Unable to read manifest at ${manifestPath}: ${error.message}`);
   }
 
   if (!manifestVersion) {
     throw new Error(`Missing "version" field in manifest at ${manifestPath}`);
+  }
+
+  if (!manifestName) {
+    throw new Error(`Missing "name" field in manifest at ${manifestPath}`);
   }
 
   let outputDir = tmpdir();
@@ -43,43 +45,68 @@ export async function packExtension(cwd: string, out?: string) {
     }
   }
 
-  const archiveName = `${extensionName}@v${manifestVersion}.zip`;
+  const archiveName = `${manifestName}@v${manifestVersion}.mcpb`;
   const archiveResultPath = join(outputDir, archiveName);
 
-  const folderWithBundle = await bundle(cwd, "./dist");
-  const parentFolderOfBundle = dirname(folderWithBundle);
+  // Check if package.json has a pack script
+  const packageJsonPath = join(mcpDir, "package.json");
+  try {
+    const packageJsonRaw = await fs.readFile(packageJsonPath, "utf8");
+    const packageJson = JSON.parse(packageJsonRaw);
 
-  await fs.cp(packageJsonPath, join(folderWithBundle, "package.json"));
+    if (!packageJson.scripts?.pack) {
+      throw new Error(`Missing "pack" script in package.json at ${packageJsonPath}`);
+    }
+  } catch (error: any) {
+    throw new Error(`Unable to read package.json at ${packageJsonPath}: ${error.message}`);
+  }
 
+  // Remove old archive if exists
   await fs.rm(archiveResultPath, { force: true }).catch(() => undefined);
 
-  console.log(`Creating archive ${archiveName} in ${outputDir}...`);
+  console.log(`Creating MCP archive ${archiveName} in ${outputDir}...`);
 
+  // Execute npm run pack
   await new Promise<void>((resolve, reject) => {
-    const tarProcess = spawn("tar", ["-czf", archiveResultPath, extensionName], {
-      cwd: parentFolderOfBundle,
+    const npmProcess = spawn("npm", ["run", "pack", "--", archiveName], {
+      cwd: mcpDir,
       stdio: "inherit",
+      shell: true,
     });
 
-    tarProcess.on("close", (code) => {
+    npmProcess.on("close", (code) => {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`tar exited with code ${code}`));
+        reject(new Error(`npm run pack exited with code ${code}`));
       }
     });
 
-    tarProcess.on("error", (error) => {
+    npmProcess.on("error", (error) => {
       reject(error);
     });
   });
+
+  // Find the created .mcpb file in the MCP directory
+  const expectedArchivePath = join(mcpDir, archiveName);
+
+  try {
+    await fs.stat(expectedArchivePath);
+  } catch {
+    throw new Error(`Archive not found at ${expectedArchivePath} after running pack command`);
+  }
+
+  // Move archive to output directory if different from MCP directory
+  if (outputDir !== mcpDir) {
+    await fs.rename(expectedArchivePath, archiveResultPath);
+  }
 
   console.log(`Archive created at ${archiveResultPath}`);
 
   return archiveResultPath;
 }
 
-export async function getFileHash(filePath: string) {
+export async function getFileHash(filePath: string): Promise<string> {
   const result = spawnSync("shasum", ["-a", "256", filePath], { encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(`Failed to calculate sha256 hash: ${result.stderr}`);
@@ -89,19 +116,13 @@ export async function getFileHash(filePath: string) {
   return hash;
 }
 
-export async function getFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging") {
-  return mode === "production"
-    ? `https://cdn.eney.ai/extensions/${basename(filePath)}`
-    : `https://staging-cdn.eney.ai/extensions/${basename(filePath)}`;
-}
-
 type PackOptions = {
   cwd?: string;
   output?: string;
 };
 
 async function promptForOptions(options: PackOptions) {
-  p.intro("Pack Extension");
+  p.intro("Pack MCP Server");
 
   const answers = await p.group(
     {
@@ -109,7 +130,7 @@ async function promptForOptions(options: PackOptions) {
         options.cwd
           ? Promise.resolve(options.cwd)
           : p.text({
-              message: "Extension directory:",
+              message: "MCP server directory:",
               initialValue: process.cwd(),
             }),
       output: () =>
@@ -134,16 +155,16 @@ async function promptForOptions(options: PackOptions) {
   };
 }
 
-export async function packExtensionCommand(cwd?: string, output?: string) {
+export async function packMcpCommand(cwd?: string, output?: string) {
   const isCI = process.env.CI === "true";
 
   if (cwd !== undefined) {
-    await packExtension(cwd, output);
+    await packMcp(cwd, output);
   } else if (isCI) {
     console.error("Error: --cwd is required in CI mode");
     process.exit(1);
   } else {
     const resolved = await promptForOptions({ cwd, output });
-    await packExtension(resolved.cwd, resolved.output);
+    await packMcp(resolved.cwd, resolved.output);
   }
 }

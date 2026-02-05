@@ -1,8 +1,8 @@
 {
-  "name": "security-utilities-mcp",
+  "name": "image-utilities-mcp",
   "version": "1.0.0",
   "type": "module",
-  "description": "A MCP server for the password and other utilities.",
+  "description": "Image Utilities MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
@@ -16,10 +16,14 @@
     "@macpaw/eney-api": "^2.4.0-beta.3",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "react": "^18.3.1",
-    "zod": "^4.1.13"
+    "zod": "^4.1.13",
+    "sharp": "^0.33.5",
+    "heic-convert": "^2.1.0"
   },
   "devDependencies": {
+    "@types/node": "^20.14.10",
     "@types/react": "^18.3.27",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@types/heic-convert": "^2.1.0"
   }
 }

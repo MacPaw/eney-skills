@@ -8,6 +8,10 @@ import { checkVersionCommand } from "./management/check-version.ts";
 import { packExtensionCommand } from "./management/pack.ts";
 import { uploadArchiveCommand } from "./management/upload-archive.ts";
 import { publishExtensionCommand } from "./management/publish.ts";
+import { checkMcpVersionCommand } from "./management/check-mcp-version.ts";
+import { packMcpCommand } from "./management/pack-mcp.ts";
+import { uploadMcpArchiveCommand } from "./management/upload-mcp-archive.ts";
+import { publishMcpCommand } from "./management/publish-mcp.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
 import { listArtifactsCommand } from "./management/list-artifacts.ts";
@@ -40,6 +44,22 @@ const commands = {
   publish: {
     label: "Publish extension metadata to backend",
     action: () => publishExtensionCommand(),
+  },
+  "check-mcp-version": {
+    label: "Check MCP version",
+    action: () => checkMcpVersionCommand(),
+  },
+  "pack-mcp": {
+    label: "Create MCP archive",
+    action: () => packMcpCommand(),
+  },
+  "upload-mcp-archive": {
+    label: "Pack and upload MCP archive to cloud storage",
+    action: () => uploadMcpArchiveCommand(),
+  },
+  "publish-mcp": {
+    label: "Publish MCP metadata to backend",
+    action: () => publishMcpCommand(),
   },
   analytics: {
     label: "Analyze download stats of extensions",
@@ -169,6 +189,36 @@ program
   .action(({ cwd, mode, extensionVersion, hash, downloadUrl, dryRun }) =>
     publishExtensionCommand(cwd, mode, extensionVersion, hash, downloadUrl, dryRun),
   );
+
+program
+  .command("check-mcp-version")
+  .description("Check MCP version")
+  .option("--cwd <path>", "Current working directory")
+  .option("--mode <mode>", "Mode (staging or production)")
+  .action(({ cwd, mode }) => checkMcpVersionCommand(cwd, mode));
+
+program
+  .command("pack-mcp")
+  .description("Create MCP archive")
+  .option("--cwd <path>", "Current working directory")
+  .option("-o, --output <path>", "Directory to place the archive")
+  .action(({ cwd, output }) => packMcpCommand(cwd, output));
+
+program
+  .command("upload-mcp-archive")
+  .description("Pack and upload MCP archive to cloud storage")
+  .option("--cwd <path>", "Current working directory")
+  .option("--mode <mode>", "Upload mode (staging or production)")
+  .option("--dry-run <value>", "Do not upload remotely, just log actions", (value) => value !== "false")
+  .action(({ cwd, mode, dryRun }) => uploadMcpArchiveCommand(cwd, mode, dryRun));
+
+program
+  .command("publish-mcp")
+  .description("Pack, upload to GCS, and publish MCP to backend")
+  .option("--cwd <path>", "Current working directory")
+  .option("--mode <mode>", "Publish mode (staging or production)")
+  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
+  .action(({ cwd, mode, dryRun }) => publishMcpCommand(cwd, mode, dryRun));
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
