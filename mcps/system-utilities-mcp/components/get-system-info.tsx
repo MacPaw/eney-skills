@@ -40,7 +40,7 @@ async function runCommand(command: string, args: string[]): Promise<string> {
 }
 
 function extractValue(output: string, key: string): string {
-  const regex = new RegExp(`${key}:\s*(.+)`, "i");
+  const regex = new RegExp(`${key}:\\s*(.+)`, "i");
   const match = output.match(regex);
   return match?.[1]?.trim() ?? "Unknown";
 }
