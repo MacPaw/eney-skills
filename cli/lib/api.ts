@@ -23,6 +23,28 @@ type PublishExtensionVersionPayload = {
   downloadUrl: string;
 };
 
+type McpVersion = {
+  artifactType: "mcp";
+  artifactId: string;
+  version: string;
+  hash: string;
+  downloadUrl: string;
+  createdAt: string;
+};
+
+type PublishMcpPayload = {
+  mode: "local";
+  artifact_id: string;
+  tools: Record<string, any>[];
+  version: string;
+};
+
+type PublishMcpVersionPayload = {
+  version: string;
+  hash: string;
+  downloadUrl: string;
+};
+
 export class ApiClient {
   private mode: "staging" | "production";
   private backendUrl: string;
@@ -176,4 +198,86 @@ export class ApiClient {
       updated: file.metadata.updated ? new Date(file.metadata.updated) : null,
     }));
   }
+
+  async getMcpVersions(mcpName: string): Promise<McpVersion[]> {
+    try {
+      const response = await this.fetch(`/admin/v3/artifacts/mcp/${mcpName}/versions`, { method: "GET" });
+
+      if (response.status === 404) {
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to get MCP versions: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error(`\nError getting MCP versions!\n${error.message}`);
+      throw error;
+    }
+  }
+
+  async publishMcp(payload: PublishMcpPayload) {
+    try {
+      const response = await this.fetch(`/admin/v3/extensions/tools`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to publish MCP: ${response.status} ${response.statusText} ${await response.text()}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error(`\nError publishing MCP!\n${error}`);
+      throw error;
+    }
+  }
+
+  async publishMcpVersion(mcpName: string, payload: PublishMcpVersionPayload) {
+    try {
+      const response = await this.fetch(`/admin/v3/artifacts/mcp/${mcpName}/versions`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to publish MCP version: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error(`\nError publishing MCP version!\n${error.message}`);
+      throw error;
+    }
+  }
+
+  async uploadMcpArchiveToCloud(filePath: string) {
+    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
+    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
+    const fileName = basename(filePath);
+    const destination = `mcps/${fileName}`;
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+
+    const storage = new Storage({ projectId });
+
+    console.log(`Uploading ${fileName} to gs://${bucketName}/${destination}...`);
+
+    await storage.bucket(bucketName).upload(filePath, {
+      destination,
+    });
+
+    console.log(`Uploaded to gs://${bucketName}/${destination}`);
+  }
+}
+
+export function getMcpFileDownloadUrl(filePath: string, mode: "staging" | "production" = "staging"): string {
+  return mode === "production"
+    ? `https://cdn.eney.ai/mcps/${basename(filePath)}`
+    : `https://staging-cdn.eney.ai/mcps/${basename(filePath)}`;
 }
