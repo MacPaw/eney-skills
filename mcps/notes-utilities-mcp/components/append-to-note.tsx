@@ -6,6 +6,7 @@ import {
   Form,
   Paper,
   CardHeader,
+  finalizeInteraction,
 } from "@macpaw/eney-api";
 import { z } from "zod";
 import markdownit from "markdown-it";
@@ -68,10 +69,6 @@ function AppendToNote(props: Props) {
 
   const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
   const [content, setContent] = useState(props.content ?? "");
-  const [status, setStatus] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
   const [isAppending, setIsAppending] = useState(false);
 
   useEffect(() => {
@@ -88,39 +85,23 @@ function AppendToNote(props: Props) {
     if (!content.trim()) return;
 
     setIsAppending(true);
-    setStatus(null);
+
+    let finalContext = "";
 
     try {
-      const message = await appendToNote(noteName, content);
-      setStatus({ type: "success", message });
+      await appendToNote(noteName, content);
+
+      const noteDisplay =
+        noteName === NEW_NOTE_VALUE ? "a new note" : `the note "${noteName}"`;
+
+      finalContext = `Content appended successfully to ${noteDisplay}`;
     } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "Failed to append to note",
-      });
+      finalContext =
+        error instanceof Error ? error.message : "Failed to append to note";
     } finally {
       setIsAppending(false);
+      finalizeInteraction(finalContext);
     }
-  }
-
-  const successActions = (
-    <ActionPanel>
-      <Action.Finalize title="Done" />
-    </ActionPanel>
-  );
-
-  if (status?.type === "success") {
-    const noteDisplay =
-      noteName !== NEW_NOTE_VALUE ? `"${noteName}"` : "the new note";
-    return (
-      <Form actions={successActions}>
-        <Paper
-          markdown={`Content appended successfully to ${noteDisplay}`}
-          $context={true}
-        />
-      </Form>
-    );
   }
 
   const actions = (
@@ -148,7 +129,6 @@ function AppendToNote(props: Props) {
 
   return (
     <Form actions={actions} header={header}>
-      {status?.type === "error" && <Paper markdown={`❌ ${status.message}`} />}
       <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
         <Form.Dropdown.Item
           key={NEW_NOTE_VALUE}
