@@ -5,6 +5,7 @@ import {
   defineWidget,
   Form,
   Paper,
+  CardHeader,
 } from "@macpaw/eney-api";
 import { z } from "zod";
 import markdownit from "markdown-it";
@@ -134,6 +135,8 @@ function AppendToNote(props: Props) {
     </ActionPanel>
   );
 
+  const header = <CardHeader title="Notes" iconBundleId="com.apple.Notes" />;
+
   if (isLoadingNotes) {
     return (
       <Form actions={actions}>
@@ -144,7 +147,7 @@ function AppendToNote(props: Props) {
   }
 
   return (
-    <Form actions={actions}>
+    <Form actions={actions} header={header}>
       {status?.type === "error" && <Paper markdown={`❌ ${status.message}`} />}
       <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
         <Form.Dropdown.Item
