@@ -132,7 +132,6 @@ function GetSystemInfo() {
 const GetSystemInfoWidget = defineWidget({
   name: "get-system-info",
   description: "Display detailed information about the system.",
-  schema: zod.object({}),
   component: GetSystemInfo,
 });
 
