@@ -151,7 +151,11 @@ function AppendToNote(props: Props) {
             />
           ))}
       </Form.Dropdown>
-      <Form.RichTextEditor value={content} onChange={setContent} />
+      <Form.RichTextEditor
+        value={content}
+        onChange={setContent}
+        isInitiallyFocused
+      />
     </Form>
   );
 }
