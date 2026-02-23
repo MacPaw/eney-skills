@@ -1,0 +1,58 @@
+name: "Publish MCP"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/detect-mcps-changes.yaml
+    permissions:
+      pull-requests: read
+      contents: read
+
+  publish-mcp:
+    name: Publish MCP
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    permissions:
+      contents: read
+      id-token: write
+    if: needs.detect-changes.outputs.has_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    env:
+      IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
+      BACKEND_URL: https://core.eney.appflix.io
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+    strategy:
+      fail-fast: false
+      matrix:
+        mcp: ${{ fromJson(needs.detect-changes.outputs.mcps) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        if: env.IS_DRY_RUN != 'true'
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
+          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
+          access_token_lifetime: 300s
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Publish MCP
+        run: |
+          node cli/main.ts publish-mcp \
+            --cwd mcps/${{ matrix.mcp }} \
+            --mode staging \
+            --dry-run ${{ env.IS_DRY_RUN }}
