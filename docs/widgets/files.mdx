@@ -1,0 +1,59 @@
+---
+title: Files
+description: Display a list of file paths
+---
+
+![Files widget](https://placeholder.com/widgets/files.png)
+
+Displays a list of file paths. Useful for showing operation results or file selections.
+
+## Import
+
+```tsx
+import { Files } from "@macpaw/eney-api";
+```
+
+## Usage
+
+### Basic
+
+```tsx
+<Files>
+  <Files.Item path="/Users/me/Documents/report.pdf" />
+  <Files.Item path="/Users/me/Documents/data.csv" />
+</Files>
+```
+
+### Dynamic List
+
+```tsx
+<Files>
+  {processedFiles.map((file) => (
+    <Files.Item key={file} path={file} />
+  ))}
+</Files>
+```
+
+### With Context
+
+```tsx
+<Files $context>
+  <Files.Item path="/Users/me/export/output.json" $context />
+</Files>
+```
+
+## Props
+
+### Files
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `Files.Item[]` | — | File items to display |
+| `$context` | `boolean` | — | Expose file list as context to the AI |
+
+### Files.Item
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `path` | `string` | **required** | File path to display |
+| `$context` | `boolean` | — | Expose this item as context |

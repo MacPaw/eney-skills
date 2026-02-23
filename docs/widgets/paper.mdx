@@ -1,0 +1,67 @@
+---
+title: Paper
+description: Display markdown content with optional scrolling and actions
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+![Paper widget](https://placeholder.com/widgets/paper.png)
+
+Displays rendered markdown content. Supports scrollable containers and embedded action buttons.
+
+## Import
+
+```tsx
+import { Paper } from "@macpaw/eney-api";
+```
+
+## Usage
+
+### Basic
+
+```tsx
+<Paper markdown="Hello **world**" />
+```
+
+### Scrollable Content
+
+```tsx
+<Paper markdown={longContent} isScrollable />
+```
+
+### With Actions
+
+```tsx
+<Paper
+  markdown="File processed successfully."
+  actions={
+    <ActionPanel>
+      <Action.CopyToClipboard content={result} />
+    </ActionPanel>
+  }
+/>
+```
+
+### As Status Message
+
+A common pattern is using Paper inside a Form to show status feedback:
+
+```tsx
+<Form actions={actions}>
+  {error && <Paper markdown={`❌ ${error}`} />}
+  <Form.TextField name="input" value={input} onChange={setInput} />
+</Form>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `markdown` | `string` | — | Markdown content to render |
+| `isScrollable` | `boolean` | — | Enable scrolling for long content |
+| `actions` | `ReactNode` | — | Action components rendered below content |
+| `$context` | `boolean` | — | Expose content as context to the AI |
+
+<Callout type="info">
+When `$context` is `true`, the markdown content becomes visible to the AI model in conversation context.
+</Callout>

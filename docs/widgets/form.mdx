@@ -1,0 +1,108 @@
+---
+title: Form
+description: Container for interactive form fields with header and actions
+---
+
+![Form widget](https://placeholder.com/widgets/form.png)
+
+Container for interactive form fields. Accepts an optional header, form field children, and an actions panel.
+
+## Import
+
+```tsx
+import { Form } from "@macpaw/eney-api";
+```
+
+## Usage
+
+### Basic
+
+```tsx
+<Form>
+  <Form.TextField name="name" value={name} onChange={setName} label="Name" />
+</Form>
+```
+
+### With Header and Actions
+
+```tsx
+<Form
+  header={<CardHeader title="Settings" iconBundleId="gear" />}
+  actions={
+    <ActionPanel>
+      <Action.SubmitForm title="Save" onSubmit={handleSave} style="primary" />
+    </ActionPanel>
+  }
+>
+  <Form.TextField name="name" value={name} onChange={setName} label="Name" />
+  <Form.Checkbox name="enabled" checked={enabled} onChange={setEnabled} label="Enabled" />
+</Form>
+```
+
+### With Loading and Error States
+
+```tsx
+<Form
+  actions={
+    <ActionPanel>
+      <Action.SubmitForm
+        title={isLoading ? "Saving..." : "Save"}
+        onSubmit={onSubmit}
+        style="primary"
+        isLoading={isLoading}
+        isDisabled={!isValid}
+      />
+    </ActionPanel>
+  }
+>
+  {error && <Paper markdown={`❌ ${error}`} />}
+  <Form.TextField name="email" value={email} onChange={setEmail} label="Email" />
+</Form>
+```
+
+### Success State Pattern
+
+A common pattern is swapping the form content after successful submission:
+
+```tsx
+if (status === "success") {
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.Finalize title="Done" />
+        </ActionPanel>
+      }
+    >
+      <Paper markdown="Saved successfully!" $context />
+    </Form>
+  );
+}
+
+return (
+  <Form actions={actions}>
+    {/* form fields */}
+  </Form>
+);
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | — | Form field components |
+| `actions` | `ReactNode` | — | ActionPanel with submit/cancel buttons |
+| `header` | `ReactNode` | — | Header element (typically `CardHeader`) |
+
+## Available Fields
+
+Form exposes all field components as static properties:
+
+- [`Form.TextField`](/docs/widgets/form-fields#textfield)
+- [`Form.PasswordField`](/docs/widgets/form-fields#passwordfield)
+- [`Form.NumberField`](/docs/widgets/form-fields#numberfield)
+- [`Form.Checkbox`](/docs/widgets/form-fields#checkbox)
+- [`Form.Dropdown`](/docs/widgets/form-fields#dropdown)
+- [`Form.DatePicker`](/docs/widgets/form-fields#datepicker)
+- [`Form.FilePicker`](/docs/widgets/form-fields#filepicker)
+- [`Form.RichTextEditor`](/docs/widgets/form-fields#richtexteditor)

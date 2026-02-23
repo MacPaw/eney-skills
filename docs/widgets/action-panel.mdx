@@ -1,0 +1,71 @@
+---
+title: ActionPanel
+description: Layout container for grouping action buttons
+---
+
+![ActionPanel widget](https://placeholder.com/widgets/action-panel.png)
+
+Container for grouping action buttons. Supports horizontal or vertical layout.
+
+## Import
+
+```tsx
+import { ActionPanel } from "@macpaw/eney-api";
+```
+
+## Usage
+
+### Vertical Layout (default)
+
+```tsx
+<ActionPanel>
+  <Action.SubmitForm title="Save" onSubmit={handleSave} style="primary" />
+  <Action.Finalize title="Cancel" />
+</ActionPanel>
+```
+
+### Horizontal Layout
+
+```tsx
+<ActionPanel layout="row">
+  <Action.SubmitForm title="Save" onSubmit={handleSave} style="primary" />
+  <Action.Finalize title="Cancel" />
+</ActionPanel>
+```
+
+### Inside a Form
+
+ActionPanel is commonly passed to a Form via the `actions` prop:
+
+```tsx
+<Form
+  actions={
+    <ActionPanel>
+      <Action.SubmitForm title="Submit" onSubmit={onSubmit} style="primary" />
+    </ActionPanel>
+  }
+>
+  {/* form fields */}
+</Form>
+```
+
+### Inside Paper
+
+```tsx
+<Paper
+  markdown="Operation complete."
+  actions={
+    <ActionPanel layout="row">
+      <Action.CopyToClipboard content={output} />
+      <Action.ShowInFinder path={filePath} />
+    </ActionPanel>
+  }
+/>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | — | Action components |
+| `layout` | `"row" \| "column"` | `"column"` | Button arrangement direction |

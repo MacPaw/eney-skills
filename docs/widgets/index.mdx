@@ -1,0 +1,198 @@
+---
+title: Overview
+description: JSX-based widget system for rendering native Swift UI
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+Eney widgets provide a JSX-based interface for building native UI. You write standard React components using the widget library — the JSX renders into a JSON tree that the native Swift app interprets and displays as fully native UI elements.
+
+Your code never touches UIKit or SwiftUI directly. The runtime serializes your component tree into JSON messages, and the host app renders corresponding native views.
+
+```
+JSX Component → JSON tree → Native Swift UI
+```
+
+## Import
+
+All widgets are exported from `@macpaw/eney-api`:
+
+```tsx
+import {
+  Form,
+  Paper,
+  Action,
+  ActionPanel,
+  Files,
+  CardHeader,
+  setupTool,
+} from "@macpaw/eney-api";
+```
+
+## Available Widgets
+
+<Cards>
+  <Card title="Paper" href="/docs/widgets/paper">
+    Display markdown content with optional scrolling and actions.
+  </Card>
+  <Card title="Form" href="/docs/widgets/form">
+    Container for interactive form fields with header and actions.
+  </Card>
+  <Card title="Form Fields" href="/docs/widgets/form-fields">
+    TextField, Checkbox, Dropdown, DatePicker, FilePicker and more.
+  </Card>
+  <Card title="Actions" href="/docs/widgets/actions">
+    Buttons for submission, clipboard, Finder, and finalization.
+  </Card>
+  <Card title="ActionPanel" href="/docs/widgets/action-panel">
+    Layout container for grouping action buttons.
+  </Card>
+  <Card title="CardHeader" href="/docs/widgets/card-header">
+    Header with title and icon for forms.
+  </Card>
+  <Card title="Files" href="/docs/widgets/files">
+    Display a list of file paths.
+  </Card>
+</Cards>
+
+## How It Works
+
+<Steps>
+<Step>
+
+### Write JSX
+
+Define your tool UI using React components and the widget primitives. Register it with `setupTool`.
+
+```tsx
+function MyTool() {
+  const [value, setValue] = useState("");
+  return (
+    <Form>
+      <Form.TextField name="input" value={value} onChange={setValue} label="Input" />
+    </Form>
+  );
+}
+
+setupTool(MyTool);
+```
+
+</Step>
+<Step>
+
+### Runtime Serializes to JSON
+
+The Eney runtime converts the JSX tree into a JSON structure:
+
+```json
+{
+  "type": "widget:form",
+  "$id": "a1b2c3",
+  "children": [
+    {
+      "type": "widget:text-field",
+      "$id": "d4e5f6",
+      "name": "input",
+      "value": "",
+      "label": "Input"
+    }
+  ]
+}
+```
+
+</Step>
+<Step>
+
+### Native Swift Renders UI
+
+The host app receives the JSON and renders corresponding native views. When the user interacts with a widget, the app sends an IPC event back:
+
+```json
+{ "type": "tools/event", "widget": "d4e5f6", "properties": { "value": "Hello" } }
+```
+
+The runtime dispatches the event to the matching widget, which calls its `onChange` handler — triggering a React re-render and a new JSON tree.
+
+</Step>
+</Steps>
+
+## The `$context` Prop
+
+<Callout type="info">
+Several widgets accept a `$context` boolean prop. When set to `true`, the widget's content is exposed to the AI as part of the current conversation context — allowing the model to read and reference the displayed values.
+</Callout>
+
+```tsx
+<Paper markdown={summary} $context={true} />
+<Form.TextField name="url" value={url} onChange={setUrl} $context={true} />
+```
+
+## Full Example
+
+A complete tool that appends text to an Apple Notes note — from the [notes-utilities](https://github.com) extension:
+
+```tsx title="tools/append-to-note/main.tsx"
+import { useState } from "react";
+import { Action, ActionPanel, Form, Paper, setupTool } from "@macpaw/eney-api";
+import { z } from "zod";
+
+const props = z.object({
+  noteName: z.string().optional().describe("The note to append to."),
+  content: z.string().optional().describe("The text to append."),
+});
+
+type Props = z.infer<typeof props>;
+
+function AppendToNote(props: Props) {
+  const [noteName, setNoteName] = useState(props.noteName ?? "");
+  const [content, setContent] = useState(props.content ?? "");
+  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+
+  async function onSubmit() {
+    setStatus("loading");
+    await appendToNote(noteName, content);
+    setStatus("success");
+  }
+
+  if (status === "success") {
+    return (
+      <Form
+        actions={
+          <ActionPanel>
+            <Action.Finalize title="Done" />
+          </ActionPanel>
+        }
+      >
+        <Paper markdown={`Appended to "${noteName}"`} $context={true} />
+      </Form>
+    );
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title={status === "loading" ? "Appending..." : "Append to Note"}
+            onSubmit={onSubmit}
+            style="primary"
+            isDisabled={!content.trim()}
+            isLoading={status === "loading"}
+          />
+        </ActionPanel>
+      }
+    >
+      <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
+        <Form.Dropdown.Item value="__new__" title="New Note" />
+        <Form.Dropdown.Item value="Ideas" title="Ideas" />
+        <Form.Dropdown.Item value="Todo" title="Todo" />
+      </Form.Dropdown>
+      <Form.RichTextEditor value={content} onChange={setContent} />
+    </Form>
+  );
+}
+
+setupTool(AppendToNote);
+```

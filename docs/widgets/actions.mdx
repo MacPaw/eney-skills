@@ -1,0 +1,206 @@
+---
+title: Actions
+description: Buttons for submission, clipboard, Finder reveal, and finalization
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Action components represent interactive buttons. They are typically placed inside an [ActionPanel](/docs/widgets/action-panel).
+
+## Import
+
+```tsx
+import { Action } from "@macpaw/eney-api";
+
+// Action, Action.SubmitForm, Action.CopyToClipboard,
+// Action.ShowInFinder, Action.Finalize
+```
+
+---
+
+## Action
+
+Generic action button with a callback.
+
+![Action widget](https://placeholder.com/widgets/action.png)
+
+```tsx
+<Action title="Refresh" onAction={handleRefresh} style="primary" />
+```
+
+```tsx
+<Action
+  title="Delete"
+  onAction={handleDelete}
+  isLoading={isDeleting}
+  isDisabled={!canDelete}
+/>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | **required** | Button text |
+| `onAction` | `() => void` | **required** | Click handler |
+| `style` | `"primary" \| "secondary"` | `"secondary"` | Visual emphasis |
+| `isLoading` | `boolean` | — | Show loading spinner |
+| `isDisabled` | `boolean` | — | Disable interaction |
+
+---
+
+## Action.SubmitForm
+
+Form submission button. Renders identically to `Action` but semantically intended for form contexts.
+
+![SubmitForm widget](https://placeholder.com/widgets/submit-form.png)
+
+```tsx
+<Action.SubmitForm
+  title="Create"
+  onSubmit={handleCreate}
+  style="primary"
+  isDisabled={!isValid}
+  isLoading={isSubmitting}
+/>
+```
+
+A common pattern is dynamically updating the title during submission:
+
+```tsx
+<Action.SubmitForm
+  title={isAppending ? "Appending..." : "Append to Note"}
+  onSubmit={onSubmit}
+  style="primary"
+  isDisabled={!content.trim()}
+  isLoading={isAppending}
+/>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | **required** | Button text |
+| `onSubmit` | `() => void` | **required** | Submit handler |
+| `style` | `"primary" \| "secondary"` | `"secondary"` | Visual emphasis |
+| `isLoading` | `boolean` | — | Show loading spinner |
+| `isDisabled` | `boolean` | — | Disable interaction |
+
+---
+
+## Action.CopyToClipboard
+
+Copies text to the system clipboard when clicked.
+
+![CopyToClipboard widget](https://placeholder.com/widgets/copy-to-clipboard.png)
+
+```tsx
+<Action.CopyToClipboard content={generatedCode} title="Copy Code" />
+```
+
+```tsx
+<Action.CopyToClipboard content={url} />
+```
+
+<Callout type="info">
+When `title` is omitted, the button displays "Copy".
+</Callout>
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `content` | `string` | **required** | Text to copy |
+| `title` | `string` | `"Copy"` | Button text |
+| `style` | `"primary" \| "secondary"` | `"secondary"` | Visual emphasis |
+| `isDisabled` | `boolean` | — | Disable interaction |
+
+---
+
+## Action.ShowInFinder
+
+Opens Finder and reveals a file or folder.
+
+![ShowInFinder widget](https://placeholder.com/widgets/show-in-finder.png)
+
+```tsx
+<Action.ShowInFinder path="/Users/me/Downloads/export.zip" />
+```
+
+```tsx
+<Action.ShowInFinder path={outputDir} title="Open Output Folder" />
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `path` | `string` | **required** | File/folder path to reveal |
+| `title` | `string` | `"Show in Finder"` | Button text |
+| `style` | `"primary" \| "secondary"` | `"secondary"` | Visual emphasis |
+| `isDisabled` | `boolean` | — | Disable interaction |
+
+---
+
+## Action.Finalize
+
+Marks the interaction as complete and closes the widget. Used as the final step after a successful operation.
+
+![Finalize widget](https://placeholder.com/widgets/finalize.png)
+
+```tsx
+<Action.Finalize title="Done" />
+```
+
+```tsx
+<Action.Finalize />
+```
+
+<Callout type="warn">
+`Finalize` has no callback — it signals completion to the native host, which closes the widget view.
+</Callout>
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | `"Done"` | Button text |
+
+---
+
+## Composition Example
+
+Actions are typically composed inside an `ActionPanel`:
+
+<Tabs items={['Form Actions', 'Paper Actions', 'Success Actions']}>
+<Tab value="Form Actions">
+```tsx
+<ActionPanel>
+  <Action.SubmitForm
+    title="Save"
+    onSubmit={handleSave}
+    style="primary"
+    isLoading={isSaving}
+    isDisabled={!isValid}
+  />
+</ActionPanel>
+```
+</Tab>
+<Tab value="Paper Actions">
+```tsx
+<ActionPanel layout="row">
+  <Action.CopyToClipboard content={output} title="Copy Result" />
+  <Action.ShowInFinder path={filePath} />
+</ActionPanel>
+```
+</Tab>
+<Tab value="Success Actions">
+```tsx
+<ActionPanel>
+  <Action.Finalize title="Done" />
+</ActionPanel>
+```
+</Tab>
+</Tabs>

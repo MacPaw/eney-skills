@@ -1,0 +1,43 @@
+---
+title: CardHeader
+description: Header component with title and optional icon
+---
+
+![CardHeader widget](https://placeholder.com/widgets/card-header.png)
+
+Header component typically used inside a `Form` to provide a title and optional icon.
+
+## Import
+
+```tsx
+import { CardHeader } from "@macpaw/eney-api";
+```
+
+## Usage
+
+### Basic
+
+```tsx
+<CardHeader title="New Document" />
+```
+
+### With Icon
+
+```tsx
+<CardHeader title="Settings" iconBundleId="gear" />
+```
+
+### Inside a Form
+
+```tsx
+<Form header={<CardHeader title="Create Task" iconBundleId="checklist" />}>
+  <Form.TextField name="title" value={title} onChange={setTitle} label="Title" />
+</Form>
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | **required** | Header text |
+| `iconBundleId` | `string` | — | SF Symbol or bundle icon identifier |
