@@ -6,7 +6,7 @@ import {
   Form,
   Paper,
   CardHeader,
-  finalizeInteraction,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { z } from "zod";
 import markdownit from "markdown-it";
@@ -65,6 +65,7 @@ async function appendToNote(
 }
 
 function AppendToNote(props: Props) {
+  const closeWidget = useCloseWidget();
   const { data: notes, isLoading: isLoadingNotes } = useNotes();
 
   const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
@@ -100,7 +101,7 @@ function AppendToNote(props: Props) {
         error instanceof Error ? error.message : "Failed to append to note";
     } finally {
       setIsAppending(false);
-      finalizeInteraction(finalContext);
+      closeWidget(finalContext);
     }
   }
 
@@ -150,7 +151,11 @@ function AppendToNote(props: Props) {
             />
           ))}
       </Form.Dropdown>
-      <Form.RichTextEditor value={content} onChange={setContent} />
+      <Form.RichTextEditor
+        value={content}
+        onChange={setContent}
+        isInitiallyFocused
+      />
     </Form>
   );
 }

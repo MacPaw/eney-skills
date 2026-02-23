@@ -196,7 +196,6 @@ function GetRunningProcessesList() {
 const GetRunningProcessesListWidget = defineWidget({
   name: "get-running-processes-list",
   description: "Get a list of running processes",
-  schema: zod.object({}),
   component: GetRunningProcessesList,
 });
 
