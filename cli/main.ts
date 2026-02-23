@@ -22,7 +22,7 @@ dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const commands = {
   create: {
-    label: "Create a new extension",
+    label: "Create a new MCP server",
     action: () => createCommand({}),
   },
   bundle: {
@@ -103,15 +103,15 @@ program.name("eney-extension-helper").description("CLI for Eney Extension Helper
 
 program
   .command("create")
-  .description("Create a new extension")
+  .description("Create a new MCP server")
   .option("-o, --output <path>", "Output directory (defaults to current directory)")
-  .option("--id <id>", "Extension ID")
-  .option("--extension-title <title>", "Extension title")
+  .option("--id <id>", "MCP server ID")
+  .option("--mcp-title <title>", "MCP server title")
   .option("--tool-name <name>", "Tool name")
   .option("--tool-description <description>", "Tool description")
-  .option("--tool-title <title>", "Tool title", "Tool title")
-  .action(({ output, id, extensionTitle, toolName, toolDescription, toolTitle }) =>
-    createCommand({ output, extensionId: id, extensionTitle, toolName, toolDescription, toolTitle }),
+  .option("--tool-title <title>", "Tool title")
+  .action(({ output, id, mcpTitle, toolName, toolDescription, toolTitle }) =>
+    createCommand({ output, mcpId: id, mcpTitle, toolName, toolDescription, toolTitle }),
   );
 
 program
