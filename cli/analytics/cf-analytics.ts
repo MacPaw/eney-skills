@@ -55,13 +55,13 @@ export class CloudflareAnalyticsClient {
     return mode === "production" ? "cdn.eney.ai" : "staging-cdn.eney.ai";
   }
 
-  async getExtensionDownloads(mode: Mode, days: number = 30): Promise<Map<string, number>> {
+  async getMcpsDownloads(mode: Mode, days: number = 30): Promise<Map<string, number>> {
     const host = CloudflareAnalyticsClient.getHostForMode(mode);
     const result = await this.getRequestsByPath(host, "least", 1000, days);
 
     const downloadMap = new Map<string, number>();
     for (const item of result.paths) {
-      const fileName = item.path.replace("/extensions/", "");
+      const fileName = item.path.replace("/mcps/", "");
       downloadMap.set(fileName, item.requests);
     }
 
@@ -72,7 +72,7 @@ export class CloudflareAnalyticsClient {
     host: string,
     sortOrder: "most" | "least" = "most",
     limit: number = 50,
-    days: number = 7
+    days: number = 7,
   ): Promise<AnalyticsResult> {
     const endDate = new Date();
     const startDate = new Date();
@@ -88,7 +88,7 @@ export class CloudflareAnalyticsClient {
 								datetime_geq: $startDate
 								datetime_leq: $endDate
 								clientRequestHTTPHost: $host
-								clientRequestPath_like: "%/extensions%"
+								clientRequestPath_like: "%/mcps%"
 							}
 							limit: ${limit}
 							orderBy: [${orderBy}]

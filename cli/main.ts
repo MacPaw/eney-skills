@@ -62,7 +62,7 @@ const commands = {
     action: () => publishMcpCommand(),
   },
   analytics: {
-    label: "Analyze download stats of extensions",
+    label: "Analyze download statistics from Cloudflare by path",
     action: () => analyticsCommand({}),
   },
   "create-tags": {

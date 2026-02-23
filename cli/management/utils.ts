@@ -47,7 +47,7 @@ export function formatAge(date: Date | null): string {
 export async function fetchAnalytics(mode: "staging" | "production"): Promise<Map<string, number>> {
   try {
     const cfClient = new CloudflareAnalyticsClient();
-    return await cfClient.getExtensionDownloads(mode);
+    return await cfClient.getMcpsDownloads(mode);
   } catch (error) {
     console.warn(
       `Warning: failed to fetch Cloudflare analytics in ${mode} mode. ` +
