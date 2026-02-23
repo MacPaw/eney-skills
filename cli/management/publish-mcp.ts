@@ -1,13 +1,13 @@
 import { join, resolve } from "path";
 import semver from "semver";
+import { spawn } from "child_process";
 import fs from "fs/promises";
 import * as p from "@clack/prompts";
 
 import { ApiClient, getMcpFileDownloadUrl } from "../lib/api.ts";
 import { extractMcpTools } from "./extract-mcp-tools.ts";
 import { checkMcpVersion } from "./check-mcp-version.ts";
-import { packMcp, getFileHash } from "./pack-mcp.ts";
-import { spawn } from "child_process";
+import { getFileHash } from "./utils.ts";
 
 type PublishMcpOptions = {
   cwd?: string;
@@ -68,10 +68,13 @@ async function publishMcp(cwd: string, mode: "staging" | "production", dryRun: b
   const mcpName = manifest.name;
   const parsedVersion = semver.coerce(manifest.version).toString();
 
+  const archiveName = `${mcpName}@v${parsedVersion}.mcpb`;
+  const archivePath = join(mcpDir, archiveName);
+
   await checkMcpVersion(mcpDir, mode);
 
   await new Promise<void>((resolve, reject) => {
-    const npmProcess = spawn("npm", ["run", "build"], {
+    const npmProcess = spawn("npm", ["run", "pack", "--", archiveName], {
       cwd: mcpDir,
       stdio: "inherit",
       shell: true,
@@ -90,19 +93,12 @@ async function publishMcp(cwd: string, mode: "staging" | "production", dryRun: b
     });
   });
 
-  console.log("Extracting tools from MCP server...");
+  console.log("\nStep 1/3: Extracting tools from MCP server...");
   const tools = await extractMcpTools(mcpDir);
 
-  // Derive version from manifest if not provided
-  const finalVersion = parsedVersion;
-  const archiveName = `${mcpName}@v${finalVersion}.mcpb`;
-
   // Pack, upload, and calculate hash/URL
-  console.log("\nStep 1/3: Packing MCP archive...");
-  const tempArchivePath = await packMcp(mcpDir);
-
   console.log("\nStep 2/3: Uploading to Google Cloud Storage...");
-  const finalHash = await getFileHash(tempArchivePath);
+  const finalHash = await getFileHash(archivePath);
   const finalDownloadUrl = getMcpFileDownloadUrl(archiveName, mode);
 
   console.log(`  Hash: ${finalHash}`);
@@ -110,11 +106,11 @@ async function publishMcp(cwd: string, mode: "staging" | "production", dryRun: b
 
   if (!dryRun) {
     try {
-      await api.uploadMcpArchiveToCloud(tempArchivePath);
+      await api.uploadMcpArchiveToCloud(archivePath);
       console.log("Archive uploaded successfully to cloud storage.");
     } catch (error) {
       console.error("Error uploading archive to cloud:", error);
-      await fs.rm(tempArchivePath, { force: true });
+      await fs.rm(archivePath, { force: true });
       throw error;
     }
   } else {
@@ -144,11 +140,8 @@ async function publishMcp(cwd: string, mode: "staging" | "production", dryRun: b
 
   if (dryRun) {
     console.log("Dry run: skipping backend publish calls.");
-    // Clean up temp archive if created
-    if (tempArchivePath) {
-      await fs.rm(tempArchivePath, { force: true });
-    }
-    console.log("\n✓ Dry run completed successfully!");
+    await fs.rm(archivePath, { force: true });
+    console.log("\nDry run completed successfully!");
     return;
   }
 
@@ -159,15 +152,13 @@ async function publishMcp(cwd: string, mode: "staging" | "production", dryRun: b
     const versionData = await api.publishMcpVersion(mcpName, artifactPayload);
     console.log("MCP version published successfully:", versionData);
 
-    console.log(`\n✓ Successfully published ${mcpName}@${parsedVersion}!`);
+    console.log(`\nSuccessfully published ${mcpName}@${parsedVersion}!`);
   } catch (error) {
     console.error("\nError publishing MCP:", error);
     throw error;
   } finally {
-    // Clean up temp archive if created
-    if (tempArchivePath) {
-      await fs.rm(tempArchivePath, { force: true });
-    }
+    // Clean up temp archive
+    await fs.rm(archivePath, { force: true });
   }
 }
 

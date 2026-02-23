@@ -8,7 +8,7 @@ type ListArtifactsOptions = {
   prefix?: string;
 };
 
-const EXTENSION_PREFIX = "extensions/";
+const MCP_PREFIX = "mcps/";
 
 async function promptForOptions(options: ListArtifactsOptions) {
   p.intro("List Artifacts");
@@ -46,7 +46,7 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   console.log(`\nFetching artifacts and analytics from ${mode}...`);
 
   const [artifacts, downloadCounts] = await Promise.all([
-    api.listExtensionArchivesInCloud(prefix),
+    api.listMcpArchivesInCloud(prefix),
     fetchAnalytics(mode),
   ]);
 
@@ -58,7 +58,7 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   console.log(`\nFound ${artifacts.length} artifact(s):\n`);
 
   const artifactsWithDownloads = artifacts.map((artifact) => {
-    const fileName = artifact.name.replace(EXTENSION_PREFIX, "");
+    const fileName = artifact.name.replace(MCP_PREFIX, "");
     return {
       ...artifact,
       downloads: downloadCounts.get(fileName) ?? 0,
@@ -72,7 +72,7 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   });
 
   for (const artifact of sortedArtifacts) {
-    const name = artifact.name.replace(EXTENSION_PREFIX, "");
+    const name = artifact.name.replace(MCP_PREFIX, "");
     const size = formatSize(artifact.size);
     const age = formatAge(artifact.created);
     const downloads = artifact.downloads.toLocaleString();

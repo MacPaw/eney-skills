@@ -1,5 +1,6 @@
 import color from "picocolors";
 import { CloudflareAnalyticsClient } from "../analytics/cf-analytics.ts";
+import { spawnSync } from "child_process";
 
 export function formatSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -56,4 +57,14 @@ export async function fetchAnalytics(mode: "staging" | "production"): Promise<Ma
     );
     return new Map();
   }
+}
+
+export async function getFileHash(filePath: string): Promise<string> {
+  const result = spawnSync("shasum", ["-a", "256", filePath], { encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(`Failed to calculate sha256 hash: ${result.stderr}`);
+  }
+  // shasum outputs "<hash>  <filename>"
+  const hash = result.stdout.split(" ")[0].trim();
+  return hash;
 }

@@ -8,7 +8,7 @@ type DeleteArtifactsOptions = {
   prefix?: string;
 };
 
-const EXTENSION_PREFIX = "extensions/";
+const MCP_PREFIX = "mcps/";
 
 async function promptForOptions(options: DeleteArtifactsOptions) {
   p.intro("Delete Artifacts");
@@ -47,7 +47,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   spinner.start("Fetching artifacts and analytics...");
 
   const [artifacts, downloadCounts] = await Promise.all([
-    api.listExtensionArchivesInCloud(prefix),
+    api.listMcpArchivesInCloud(prefix),
     fetchAnalytics(mode),
   ]);
 
@@ -59,7 +59,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   }
 
   const artifactsWithDownloads = artifacts.map((artifact) => {
-    const fileName = artifact.name.replace(EXTENSION_PREFIX, "");
+    const fileName = artifact.name.replace(MCP_PREFIX, "");
     return {
       ...artifact,
       downloads: downloadCounts.get(fileName) ?? 0,
@@ -71,7 +71,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   const selected = await p.autocompleteMultiselect({
     message: `Select artifacts to delete (${mode}):`,
     options: sortedArtifacts.map((artifact) => {
-      const name = artifact.name.replace(EXTENSION_PREFIX, "");
+      const name = artifact.name.replace(MCP_PREFIX, "");
       const size = formatSize(artifact.size);
       const age = formatAge(artifact.created);
       const downloads = artifact.downloads.toLocaleString();
@@ -95,7 +95,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
 
   console.log(`\n${color.yellow("The following artifacts will be deleted:")}\n`);
   for (const name of selected) {
-    console.log(`  ${color.red("×")} ${(name as string).replace(EXTENSION_PREFIX, "")}`);
+    console.log(`  ${color.red("×")} ${(name as string).replace(MCP_PREFIX, "")}`);
   }
   console.log();
 
@@ -113,9 +113,9 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   const errors: string[] = [];
 
   for (const name of selected) {
-    const fileName = (name as string).replace(EXTENSION_PREFIX, "");
+    const fileName = (name as string).replace(MCP_PREFIX, "");
     try {
-      await api.deleteExtensionArtifactFromCloud(fileName);
+      await api.deleteMcpArtifactFromCloud(fileName);
       deleted++;
     } catch (error) {
       errors.push(`${fileName}: ${error instanceof Error ? error.message : String(error)}`);

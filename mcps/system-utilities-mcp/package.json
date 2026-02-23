@@ -7,7 +7,7 @@
   "scripts": {
     "start": "tsx index.ts",
     "build": "tsc",
-    "postbuild": "npm i --omit=dev && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i",
+    "postbuild": "npm ci && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i",
     "clean": "rm -rf dist",
     "prepack": "npm run clean && npm run build",
     "pack": "mcpb pack dist"
