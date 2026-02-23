@@ -17,7 +17,8 @@ jobs:
 
   publish-mcp:
     name: Publish MCP
-    runs-on: ubuntu-latest
+    runs-on:
+      group: gcp-k8s
     needs: detect-changes
     permissions:
       contents: read
