@@ -21,7 +21,9 @@ jobs:
     needs: detect-changes
     permissions:
       contents: read
-    if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    if: needs.detect-changes.outputs.has_swift_changes == 'true'
+      && !contains(github.event.pull_request.title, '[skip ci]')
+      && github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
