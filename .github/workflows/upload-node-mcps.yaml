@@ -42,7 +42,8 @@ jobs:
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
           ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
-          npm run pack -- "$ARCHIVE_NAME"
+          npm run build
+          npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
         working-directory: mcps/${{ matrix.mcp }}
 
