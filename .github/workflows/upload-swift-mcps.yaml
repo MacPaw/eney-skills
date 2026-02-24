@@ -57,11 +57,20 @@ jobs:
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
         working-directory: mcps/${{ matrix.mcp }}
 
+      - name: Extract MCP tools
+        run: |
+          TEMP_DIR=$(mktemp -d)
+          npx --yes @anthropic-ai/mcpb unpack "mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
+          node cli/main.ts extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
+          rm -rf "$TEMP_DIR"
+
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
         with:
           name: swift-mcp-${{ matrix.mcp }}
-          path: mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+          path: |
+            mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+            mcps/${{ matrix.mcp }}/tools.json
           retention-days: 1
 
   publish-swift-mcp:
@@ -122,4 +131,5 @@ jobs:
         run: |
           node cli/main.ts publish-mcp-metadata \
             --mode staging \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }}
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --tools-json mcps/${{ matrix.mcp }}/tools.json

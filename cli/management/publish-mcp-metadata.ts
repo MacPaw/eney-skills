@@ -13,6 +13,7 @@ import { getFileHash } from "./utils.ts";
 type PublishMcpMetadataOptions = {
   mode?: "staging" | "production";
   archivePath?: string;
+  toolsJsonPath?: string;
 };
 
 async function promptForOptions(options: PublishMcpMetadataOptions) {
@@ -62,7 +63,7 @@ async function unpackMcpArchive(archivePath: string): Promise<string> {
   return tmpDir;
 }
 
-async function publishMcpMetadata(mode: "staging" | "production", archivePath: string) {
+async function publishMcpMetadata(mode: "staging" | "production", archivePath: string, toolsJsonPath?: string) {
   const api = new ApiClient(mode);
   const resolvedArchivePath = resolve(archivePath);
 
@@ -78,7 +79,13 @@ async function publishMcpMetadata(mode: "staging" | "production", archivePath: s
     await checkMcpVersion(tmpDir, mode);
 
     console.log("\nStep 2/3: Extracting tools from MCP server...");
-    const tools = await extractMcpTools(tmpDir);
+    let tools;
+    if (toolsJsonPath) {
+      console.log(`Using pre-extracted tools from ${toolsJsonPath}`);
+      tools = JSON.parse(await fs.readFile(resolve(toolsJsonPath), "utf8"));
+    } else {
+      tools = await extractMcpTools(tmpDir);
+    }
 
     console.log("\nStep 3/3: Publishing metadata to backend...");
     const finalHash = await getFileHash(resolvedArchivePath);
@@ -120,17 +127,21 @@ async function publishMcpMetadata(mode: "staging" | "production", archivePath: s
   }
 }
 
-export async function publishMcpMetadataCommand(mode?: "staging" | "production", archivePath?: string) {
+export async function publishMcpMetadataCommand(
+  mode?: "staging" | "production",
+  archivePath?: string,
+  toolsJson?: string,
+) {
   const hasRequiredOptions = mode !== undefined && archivePath !== undefined;
   const isCI = process.env.CI === "true";
 
   if (hasRequiredOptions) {
-    await publishMcpMetadata(mode, archivePath);
+    await publishMcpMetadata(mode, archivePath, toolsJson);
   } else if (isCI) {
     console.error("Error: --mode and --archive-path are required in CI mode");
     process.exit(1);
   } else {
     const resolved = await promptForOptions({ mode, archivePath });
-    await publishMcpMetadata(resolved.mode, resolved.archivePath);
+    await publishMcpMetadata(resolved.mode, resolved.archivePath, toolsJson);
   }
 }

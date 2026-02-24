@@ -10,6 +10,7 @@ import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
 import { listArtifactsCommand } from "./management/list-artifacts.ts";
 import { deleteArtifactsCommand } from "./management/delete-artifacts.ts";
+import { extractMcpTools } from "./management/extract-mcp-tools.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -131,7 +132,21 @@ program
   .description("Extract tools and publish MCP metadata to backend")
   .option("--mode <mode>", "Publish mode (staging or production)")
   .option("--archive-path <path>", "Path to .mcpb archive")
-  .action(({ mode, archivePath }) => publishMcpMetadataCommand(mode, archivePath));
+  .option("--tools-json <path>", "Path to pre-extracted tools JSON file (skips binary execution)")
+  .action(({ mode, archivePath, toolsJson }) => publishMcpMetadataCommand(mode, archivePath, toolsJson));
+
+program
+  .command("extract-mcp-tools")
+  .description("Extract tools from a built MCP server and write to JSON")
+  .requiredOption("--mcp-dir <path>", "Path to unpacked MCP directory")
+  .requiredOption("--output <path>", "Output JSON file path")
+  .action(async ({ mcpDir, output }) => {
+    const { resolve } = await import("path");
+    const { writeFile } = await import("fs/promises");
+    const tools = await extractMcpTools(mcpDir);
+    await writeFile(resolve(output), JSON.stringify(tools, null, 2));
+    console.log(`Wrote ${tools.length} tool(s) to ${output}`);
+  });
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
