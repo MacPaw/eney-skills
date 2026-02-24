@@ -15,10 +15,60 @@ jobs:
       pull-requests: read
       contents: read
 
-  publish-swift-mcp:
-    name: Publish Swift MCP
+  build-swift-mcp:
+    name: Build Swift MCP
     runs-on: macos-26
     needs: detect-changes
+    permissions:
+      contents: read
+    if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    strategy:
+      fail-fast: false
+      matrix:
+        mcp: ${{ fromJson(needs.detect-changes.outputs.swift_mcps) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Build Swift binary
+        run: swift build -c release
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Prepare binary for packaging
+        run: |
+          ENTRY_POINT=$(jq -r '.server.entry_point' manifest.json)
+          BINARY_NAME=$(swift package dump-package | jq -r '.targets[0].name')
+          mkdir -p "$(dirname $ENTRY_POINT)"
+          cp ".build/release/$BINARY_NAME" "$ENTRY_POINT"
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Pack MCP archive
+        id: pack
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npx --yes @anthropic-ai/mcpb pack . "$ARCHIVE_NAME"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Upload MCP archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-mcp-${{ matrix.mcp }}
+          path: mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+          retention-days: 1
+
+  publish-swift-mcp:
+    name: Publish Swift MCP
+    runs-on:
+      group: gcp-k8s
+    needs: [detect-changes, build-swift-mcp]
     permissions:
       contents: read
       id-token: write
@@ -44,31 +94,23 @@ jobs:
           service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
           access_token_lifetime: 300s
 
-      - name: Build Swift binary
-        run: swift build -c release
-        working-directory: mcps/${{ matrix.mcp }}
+      - name: Download MCP archive artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-mcp-${{ matrix.mcp }}
+          path: mcps/${{ matrix.mcp }}
 
-      - name: Prepare binary for packaging
+      - name: Resolve archive name
         run: |
-          ENTRY_POINT=$(jq -r '.server.entry_point' manifest.json)
-          BINARY_NAME=$(swift package dump-package | jq -r '.targets[0].name')
-          mkdir -p "$(dirname $ENTRY_POINT)"
-          cp ".build/release/$BINARY_NAME" "$ENTRY_POINT"
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          echo "ARCHIVE_NAME=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_ENV
         working-directory: mcps/${{ matrix.mcp }}
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
-
-      - name: Pack MCP archive
-        run: |
-          MCP_NAME=$(jq -r '.name' manifest.json)
-          MCP_VERSION=$(jq -r '.version' manifest.json)
-          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
-          npx --yes @anthropic-ai/mcpb pack . "$ARCHIVE_NAME"
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
-        working-directory: mcps/${{ matrix.mcp }}
 
       - name: Publish Swift MCP
         run: |
