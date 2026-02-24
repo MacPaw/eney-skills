@@ -30,9 +30,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Setup NPM Token
+      - name: Prepare Node.js
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
+          npm ci
+        working-directory: mcps/${{ matrix.mcp }}
 
       - name: Pack MCP archive
         id: pack
