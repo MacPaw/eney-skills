@@ -101,10 +101,11 @@ jobs:
           path: mcps/${{ matrix.mcp }}
 
       - name: Resolve archive name
+        id: archive
         run: |
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
-          echo "ARCHIVE_NAME=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_ENV
+          echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
         working-directory: mcps/${{ matrix.mcp }}
 
       - name: Setup CLI
@@ -112,10 +113,17 @@ jobs:
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Publish Swift MCP
+      - name: Upload MCP archive
+        if: env.IS_DRY_RUN != 'true'
         run: |
-          node cli/main.ts publish-mcp \
+          node cli/main.ts upload-mcp-archive \
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --mode staging
+
+      - name: Publish MCP metadata
+        if: env.IS_DRY_RUN != 'true'
+        run: |
+          node cli/main.ts publish-mcp-metadata \
             --cwd mcps/${{ matrix.mcp }} \
-            --archive-path mcps/${{ matrix.mcp }}/${{ env.ARCHIVE_NAME }} \
             --mode staging \
-            --dry-run ${{ env.IS_DRY_RUN }}
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }}

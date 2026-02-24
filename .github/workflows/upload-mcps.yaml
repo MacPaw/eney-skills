@@ -15,18 +15,49 @@ jobs:
       pull-requests: read
       contents: read
 
-  publish-mcp:
-    name: Publish MCP
+  build-node-mcp:
+    name: Build Node MCP
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    permissions:
+      contents: read
+    if: needs.detect-changes.outputs.has_node_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    strategy:
+      fail-fast: false
+      matrix:
+        mcp: ${{ fromJson(needs.detect-changes.outputs.node_mcps) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Pack MCP archive
+        id: pack
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npm run pack -- "$ARCHIVE_NAME"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Upload MCP archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-mcp-${{ matrix.mcp }}
+          path: mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+          retention-days: 1
+
+  publish-node-mcp:
+    name: Publish Node MCP
     runs-on:
       group: gcp-k8s
-    needs: detect-changes
+    needs: [detect-changes, build-node-mcp]
     permissions:
       contents: read
       id-token: write
     if: needs.detect-changes.outputs.has_node_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      BACKEND_URL: https://core.eney.appflix.io
       ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
       ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
@@ -46,14 +77,36 @@ jobs:
           service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
           access_token_lifetime: 300s
 
+      - name: Download MCP archive artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: node-mcp-${{ matrix.mcp }}
+          path: mcps/${{ matrix.mcp }}
+
+      - name: Resolve archive name
+        id: archive
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Publish MCP
+      - name: Upload MCP archive
+        if: env.IS_DRY_RUN != 'true'
         run: |
-          node cli/main.ts publish-mcp \
+          node cli/main.ts upload-mcp-archive \
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --mode staging
+
+      - name: Publish MCP metadata
+        if: env.IS_DRY_RUN != 'true'
+        run: |
+          node cli/main.ts publish-mcp-metadata \
             --cwd mcps/${{ matrix.mcp }} \
             --mode staging \
-            --dry-run ${{ env.IS_DRY_RUN }}
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }}

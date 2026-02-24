@@ -4,7 +4,8 @@ import path from "path";
 import * as p from "@clack/prompts";
 import { createCommand } from "./create/command.ts";
 import { checkMcpVersionCommand } from "./management/check-mcp-version.ts";
-import { publishMcpCommand } from "./management/publish-mcp.ts";
+import { uploadMcpArchiveCommand } from "./management/upload-mcp-archive.ts";
+import { publishMcpMetadataCommand } from "./management/publish-mcp-metadata.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
 import { listArtifactsCommand } from "./management/list-artifacts.ts";
@@ -21,9 +22,13 @@ const commands = {
     label: "Check MCP version",
     action: () => checkMcpVersionCommand(),
   },
-  "publish-mcp": {
-    label: "Publish MCP server (pack, upload, and publish to backend)",
-    action: () => publishMcpCommand(),
+  "upload-mcp-archive": {
+    label: "Upload MCP archive to cloud storage",
+    action: () => uploadMcpArchiveCommand(),
+  },
+  "publish-mcp-metadata": {
+    label: "Publish MCP metadata to backend",
+    action: () => publishMcpMetadataCommand(),
   },
   analytics: {
     label: "Analyze download statistics from Cloudflare by path",
@@ -115,13 +120,19 @@ program
   .action(({ cwd, mode }) => checkMcpVersionCommand(cwd, mode));
 
 program
-  .command("publish-mcp")
-  .description("Pack, upload to GCS, and publish MCP to backend")
-  .option("--cwd <path>", "Current working directory")
+  .command("upload-mcp-archive")
+  .description("Upload a pre-built .mcpb archive to cloud storage")
+  .option("--archive-path <path>", "Path to .mcpb archive")
+  .option("--mode <mode>", "Upload mode (staging or production)")
+  .action(({ archivePath, mode }) => uploadMcpArchiveCommand(archivePath, mode));
+
+program
+  .command("publish-mcp-metadata")
+  .description("Extract tools and publish MCP metadata to backend")
+  .option("--cwd <path>", "MCP server directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .option("--archive-path <path>", "Path to pre-built .mcpb archive (skips pack step)")
-  .action(({ cwd, mode, dryRun, archivePath }) => publishMcpCommand(cwd, mode, dryRun, archivePath));
+  .option("--archive-path <path>", "Path to .mcpb archive (for hash computation)")
+  .action(({ cwd, mode, archivePath }) => publishMcpMetadataCommand(cwd, mode, archivePath));
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
