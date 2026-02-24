@@ -77,7 +77,6 @@ jobs:
 
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
-        if: env.IS_DRY_RUN != 'true'
         with:
           token_format: access_token
           workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
