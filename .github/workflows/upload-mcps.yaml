@@ -30,6 +30,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
+      - name: Setup NPM Token
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
+
       - name: Pack MCP archive
         id: pack
         run: |
@@ -39,8 +43,6 @@ jobs:
           npm run pack -- "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
         working-directory: mcps/${{ matrix.mcp }}
-        env:
-          NPM_TOKEN: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
