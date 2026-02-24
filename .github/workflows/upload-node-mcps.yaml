@@ -104,14 +104,12 @@ jobs:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Upload MCP archive
-        if: env.IS_DRY_RUN != 'true'
         run: |
           node cli/main.ts upload-mcp-archive \
             --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --mode staging
 
       - name: Publish MCP metadata
-        if: env.IS_DRY_RUN != 'true'
         run: |
           node cli/main.ts publish-mcp-metadata \
             --cwd mcps/${{ matrix.mcp }} \
