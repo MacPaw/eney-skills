@@ -9,6 +9,18 @@ on:
       has_changes:
         description: "Whether any MCPs changed"
         value: ${{ jobs.detect.outputs.has_changes }}
+      node_mcps:
+        description: "List of Node.js MCPs that changed"
+        value: ${{ jobs.detect.outputs.node_mcps }}
+      has_node_changes:
+        description: "Whether any Node.js MCPs changed"
+        value: ${{ jobs.detect.outputs.has_node_changes }}
+      swift_mcps:
+        description: "List of Swift MCPs that changed"
+        value: ${{ jobs.detect.outputs.swift_mcps }}
+      has_swift_changes:
+        description: "Whether any Swift MCPs changed"
+        value: ${{ jobs.detect.outputs.has_swift_changes }}
 
 jobs:
   detect:
@@ -20,6 +32,10 @@ jobs:
     outputs:
       mcps: ${{ steps.get-changes.outputs.mcps }}
       has_changes: ${{ steps.get-changes.outputs.has_changes }}
+      node_mcps: ${{ steps.get-changes.outputs.node_mcps }}
+      has_node_changes: ${{ steps.get-changes.outputs.has_node_changes }}
+      swift_mcps: ${{ steps.get-changes.outputs.swift_mcps }}
+      has_swift_changes: ${{ steps.get-changes.outputs.has_swift_changes }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -52,6 +68,14 @@ jobs:
               .filter((mcp, index, self) => self.indexOf(mcp) === index)
               .filter((mcp) => mcp !== null);
 
+            const fs = require('fs');
+            const swiftMcps = mcps.filter(mcp => fs.existsSync(`mcps/${mcp}/Package.swift`));
+            const nodeMcps = mcps.filter(mcp => !fs.existsSync(`mcps/${mcp}/Package.swift`));
+
             console.log(JSON.stringify(mcps, null, 2));
             core.setOutput('mcps', mcps);
             core.setOutput('has_changes', mcps.length > 0);
+            core.setOutput('node_mcps', nodeMcps);
+            core.setOutput('has_node_changes', nodeMcps.length > 0);
+            core.setOutput('swift_mcps', swiftMcps);
+            core.setOutput('has_swift_changes', swiftMcps.length > 0);

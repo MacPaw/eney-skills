@@ -120,7 +120,8 @@ program
   .option("--cwd <path>", "Current working directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
   .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, dryRun }) => publishMcpCommand(cwd, mode, dryRun));
+  .option("--archive-path <path>", "Path to pre-built .mcpb archive (skips pack step)")
+  .action(({ cwd, mode, dryRun, archivePath }) => publishMcpCommand(cwd, mode, dryRun, archivePath));
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");

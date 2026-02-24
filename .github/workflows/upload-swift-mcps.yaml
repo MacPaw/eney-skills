@@ -1,4 +1,4 @@
-name: "Publish MCP"
+name: "Publish Swift MCP"
 
 on:
   push:
@@ -15,24 +15,22 @@ jobs:
       pull-requests: read
       contents: read
 
-  publish-mcp:
-    name: Publish MCP
-    runs-on:
-      group: gcp-k8s
+  publish-swift-mcp:
+    name: Publish Swift MCP
+    runs-on: macos-15
     needs: detect-changes
     permissions:
       contents: read
       id-token: write
-    if: needs.detect-changes.outputs.has_node_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      BACKEND_URL: https://core.eney.appflix.io
       ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
       ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
       fail-fast: false
       matrix:
-        mcp: ${{ fromJson(needs.detect-changes.outputs.node_mcps) }}
+        mcp: ${{ fromJson(needs.detect-changes.outputs.swift_mcps) }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -46,14 +44,36 @@ jobs:
           service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
           access_token_lifetime: 300s
 
+      - name: Build Swift binary
+        run: swift build -c release
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Prepare binary for packaging
+        run: |
+          ENTRY_POINT=$(jq -r '.server.entry_point' manifest.json)
+          BINARY_NAME=$(swift package dump-package | jq -r '.targets[0].name')
+          mkdir -p "$(dirname $ENTRY_POINT)"
+          cp ".build/release/$BINARY_NAME" "$ENTRY_POINT"
+        working-directory: mcps/${{ matrix.mcp }}
+
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
         with:
           npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
-      - name: Publish MCP
+      - name: Pack MCP archive
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npx --yes @anthropic-ai/mcpb pack . "$ARCHIVE_NAME"
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Publish Swift MCP
         run: |
           node cli/main.ts publish-mcp \
             --cwd mcps/${{ matrix.mcp }} \
+            --archive-path mcps/${{ matrix.mcp }}/${{ env.ARCHIVE_NAME }} \
             --mode staging \
             --dry-run ${{ env.IS_DRY_RUN }}
