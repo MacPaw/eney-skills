@@ -39,6 +39,8 @@ jobs:
           npm run pack -- "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
         working-directory: mcps/${{ matrix.mcp }}
+        env:
+          NPM_TOKEN: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
