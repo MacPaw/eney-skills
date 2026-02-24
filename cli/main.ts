@@ -129,10 +129,9 @@ program
 program
   .command("publish-mcp-metadata")
   .description("Extract tools and publish MCP metadata to backend")
-  .option("--cwd <path>", "MCP server directory")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--archive-path <path>", "Path to .mcpb archive (for hash computation)")
-  .action(({ cwd, mode, archivePath }) => publishMcpMetadataCommand(cwd, mode, archivePath));
+  .option("--archive-path <path>", "Path to .mcpb archive")
+  .action(({ mode, archivePath }) => publishMcpMetadataCommand(mode, archivePath));
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");

@@ -124,6 +124,5 @@ jobs:
         if: env.IS_DRY_RUN != 'true'
         run: |
           node cli/main.ts publish-mcp-metadata \
-            --cwd mcps/${{ matrix.mcp }} \
             --mode staging \
             --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }}
