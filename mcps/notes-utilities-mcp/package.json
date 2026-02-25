@@ -6,9 +6,9 @@
   "scripts": {
     "start": "tsx index.ts",
     "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
     "build": "tsc",
-    "prebuild": "npm run clean && npm ci --os=darwin --cpu=arm64",
-    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
   },
   "dependencies": {
     "@macpaw/eney-api": "^2.7.0",
