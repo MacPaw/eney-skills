@@ -1,7 +1,7 @@
 {
   "name": "image-utilities-mcp",
   "type": "module",
-  "description": "Image Utilities MCP server",
+  "description": "Image utilities MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
