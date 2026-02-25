@@ -43,6 +43,7 @@ jobs:
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
           ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npm ci --os=darwin --cpu=arm64
           npm run build
           npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
@@ -50,10 +51,10 @@ jobs:
 
       - name: Extract MCP tools
         run: |
-          TEMP_DIR=$(mktemp -d)
-          npx --yes @anthropic-ai/mcpb unpack "mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
-          node cli/main.ts extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
-          rm -rf "$TEMP_DIR"
+          npm i --os=linux --cpu=arm64 # Prepare environment for MCP tools extraction
+          npm run build
+          node ../../cli/main.ts extract-mcp-tools --mcp-dir dist --output tools.json
+        working-directory: mcps/${{ matrix.mcp }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
