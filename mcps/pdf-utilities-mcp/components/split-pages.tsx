@@ -7,6 +7,7 @@ import {
   defineWidget,
   Files,
   Form,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -22,6 +23,7 @@ const props = z.object({
 type Props = z.infer<typeof props>;
 
 function SplitPages(props: Props) {
+  const closeWidget = useCloseWidget();
   const [source, setSource] = useState(props.source);
   const [pages, setPages] = useState<string[]>([]);
   const [outputFolder, setOutputFolder] = useState<string>("");
@@ -59,10 +61,14 @@ function SplitPages(props: Props) {
     setSource(path);
   }
 
+  function onDone() {
+    closeWidget(`Pages saved to: ${outputFolder}`);
+  }
+
   const fileActions = (
     <ActionPanel layout="row">
       <Action.ShowInFinder style="secondary" path={outputFolder} />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -71,7 +77,7 @@ function SplitPages(props: Props) {
       <Form actions={fileActions}>
         <Files>
           {pages.map((path) => {
-            return <Files.Item key={path} path={path} $context={true} />;
+            return <Files.Item key={path} path={path} />;
           })}
         </Files>
       </Form>

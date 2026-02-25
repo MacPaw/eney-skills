@@ -3,17 +3,17 @@ import * as p from '@clack/prompts';
 import { isKebabCase } from './utils.ts';
 import { join } from 'node:path';
 
-export async function askExtensionId(): Promise<string> {
+export async function askMcpId(): Promise<string> {
 	const value = await p.text({
-		message: 'What is the id of the extension?',
-		placeholder: 'security-utilities',
+		message: 'What is the id of the MCP server?',
+		placeholder: 'security-utilities-mcp',
 		validate: (value) => {
 			if (!value) {
-				return 'Extension id is required';
+				return 'MCP server id is required';
 			}
 
 			if (!isKebabCase(value)) {
-				return 'Extension id must be in kebab case, example: security-utilities';
+				return 'MCP server id must be in kebab case, example: security-utilities-mcp';
 			}
 		},
 	});
@@ -33,14 +33,14 @@ export async function getFolderAction(outputFolder: string): Promise<'overwrite'
 		await stat(outputFolder);
 
 		if (isCI) {
-			console.log(`Extension at "${outputFolder}" already exists, overwriting in CI mode`);
+			console.log(`MCP server at "${outputFolder}" already exists, overwriting in CI mode`);
 			return 'overwrite';
 		}
 
-		p.log.warn(`Extension at "${outputFolder}" already exists`);
+		p.log.warn(`MCP server at "${outputFolder}" already exists`);
 
 		const shouldOverwrite = await p.confirm({
-			message: 'Do you want to overwrite the extension?',
+			message: 'Do you want to overwrite the MCP server?',
 			initialValue: false,
 		});
 
@@ -58,19 +58,19 @@ export async function getFolderAction(outputFolder: string): Promise<'overwrite'
 	}
 }
 
-export type ExtensionDetails = {
-	extensionId: string;
-	extensionTitle: string;
+export type McpDetails = {
+	mcpId: string;
+	mcpTitle: string;
 	toolName: string;
 	toolDescription: string;
 	toolTitle: string;
 };
 
 export async function askOutputDirectory(): Promise<string> {
-	const initialDirectory = join(process.cwd(), "extensions");
+	const initialDirectory = join(process.cwd(), "mcps");
 
 	const value = await p.text({
-		message: 'Where do you want to create the extension? (absolute path)',
+		message: 'Where do you want to create the MCP server? (absolute path)',
 		initialValue: initialDirectory,
 		validate: (value) => {
 			if (!value) {
@@ -97,15 +97,15 @@ export async function askOutputDirectory(): Promise<string> {
 	return value;
 }
 
-export async function askExtensionDetails(): Promise<Omit<ExtensionDetails, 'extensionId'>> {
+export async function askMcpDetails(): Promise<Omit<McpDetails, 'mcpId'>> {
 	const answers = await p.group(
 		{
-			extensionTitle: () =>
+			mcpTitle: () =>
 				p.text({
-					message: 'What is the title of the extension?',
+					message: 'What is the title of the MCP server?',
 					placeholder: 'Security Utilities',
 					validate: (value) => {
-						if (!value) return 'Extension title is required';
+						if (!value) return 'MCP server title is required';
 					},
 				}),
 			toolName: () =>
@@ -142,7 +142,7 @@ export async function askExtensionDetails(): Promise<Omit<ExtensionDetails, 'ext
 	);
 
 	return {
-		extensionTitle: answers.extensionTitle,
+		mcpTitle: answers.mcpTitle,
 		toolName: answers.toolName,
 		toolDescription: answers.toolDescription,
 		toolTitle: answers.toolTitle,

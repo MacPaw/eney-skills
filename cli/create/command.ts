@@ -6,10 +6,10 @@ import { copy } from 'fs-extra';
 import handlebars from 'handlebars';
 import * as p from '@clack/prompts';
 import {
-	askExtensionDetails,
-	askExtensionId,
+	askMcpDetails,
+	askMcpId,
 	askOutputDirectory,
-	type ExtensionDetails,
+	type McpDetails,
 	getFolderAction,
 } from './prompt.ts';
 
@@ -35,33 +35,40 @@ async function* walkDirectory(directory: string): AsyncGenerator<WalkEntry> {
 	}
 }
 
+function toPascalCase(str: string): string {
+	return str
+		.split('-')
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join('');
+}
+
 type CreateCommandOptions = {
 	output?: string;
-} & Partial<ExtensionDetails>;
+} & Partial<McpDetails>;
 
 export async function createCommand(options: CreateCommandOptions) {
 	const isCI = process.env.CI === 'true';
-	const requiredDetails: (keyof Omit<ExtensionDetails, 'extensionId'>)[] = [
-		'extensionTitle',
+	const requiredDetails: (keyof Omit<McpDetails, 'mcpId'>)[] = [
+		'mcpTitle',
 		'toolName',
 		'toolDescription',
 		'toolTitle',
 	];
 	const hasAllDetails = requiredDetails.every((key) => options[key]);
-	const hasAllOptions = options.extensionId !== undefined && hasAllDetails;
+	const hasAllOptions = options.mcpId !== undefined && hasAllDetails;
 
 	if (!hasAllOptions && isCI) {
-		console.error('Error: --id, --extension-title, --tool-name, --tool-description, and --tool-title are required in CI mode');
+		console.error('Error: --id, --mcp-title, --tool-name, --tool-description, and --tool-title are required in CI mode');
 		process.exit(1);
 	}
 
 	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
 
-	p.intro('Create Extension');
+	p.intro('Create MCP Server');
 
 	const outputDirectory = options.output || (await askOutputDirectory());
-	const extensionId = options.extensionId || (await askExtensionId());
-	const localOutputFolder = join(outputDirectory, extensionId);
+	const mcpId = options.mcpId || (await askMcpId());
+	const localOutputFolder = join(outputDirectory, mcpId);
 
 	const folderAction = await getFolderAction(localOutputFolder);
 
@@ -70,17 +77,18 @@ export async function createCommand(options: CreateCommandOptions) {
 		process.exit(0);
 	}
 
-	const extensionDetails = hasAllDetails
-		? (options as ExtensionDetails)
-		: await askExtensionDetails();
+	const mcpDetails = hasAllDetails
+		? (options as McpDetails)
+		: await askMcpDetails();
 
 	const fullDetails = {
-		extensionId,
-		...extensionDetails,
+		mcpId,
+		...mcpDetails,
+		toolNamePascal: toPascalCase(mcpDetails.toolName),
 	};
 
 	const spinner = p.spinner();
-	spinner.start('Creating extension...');
+	spinner.start('Creating MCP server...');
 
 	if (folderAction === 'overwrite') {
 		await rm(localOutputFolder, { recursive: true, force: true });
@@ -105,9 +113,19 @@ export async function createCommand(options: CreateCommandOptions) {
 			const updatedContent = handlebars.compile(content)(fullDetails);
 			await writeFile(entry.path, updatedContent, 'utf8');
 
-			if (entry.path.endsWith('.hbs')) {
-				const renamedPath = entry.path.replace(/\.hbs$/, '');
-				await rename(entry.path, renamedPath);
+			let currentPath = entry.path;
+
+			if (currentPath.endsWith('.hbs')) {
+				const renamedPath = currentPath.replace(/\.hbs$/, '');
+				await rename(currentPath, renamedPath);
+				currentPath = renamedPath;
+			}
+
+			if (currentPath.includes('{{') && currentPath.includes('}}')) {
+				const updatedPath = handlebars.compile(currentPath)(fullDetails);
+				if (updatedPath !== currentPath) {
+					await rename(currentPath, updatedPath);
+				}
 			}
 		}
 	}
@@ -118,13 +136,13 @@ export async function createCommand(options: CreateCommandOptions) {
 		await rename(directory.oldPath, directory.newPath);
 	}
 
-	spinner.stop('Extension created');
+	spinner.stop('MCP server created');
 
 	const installSpinner = p.spinner();
 	installSpinner.start('Installing dependencies...');
 
 	await new Promise<void>((resolve, reject) => {
-		exec('npm i @macpaw/eney-api@latest', { cwd: localOutputFolder }, (error) => {
+		exec('npm install', { cwd: localOutputFolder }, (error) => {
 			if (error) {
 				return reject(error);
 			}
@@ -134,5 +152,5 @@ export async function createCommand(options: CreateCommandOptions) {
 
 	installSpinner.stop('Dependencies installed');
 
-	p.outro(`Extension created at ${localOutputFolder}`);
+	p.outro(`MCP server created at ${localOutputFolder}`);
 }

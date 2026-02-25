@@ -1,0 +1,137 @@
+name: "Publish Swift MCP"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/detect-mcps-changes.yaml
+    permissions:
+      pull-requests: read
+      contents: read
+
+  build-swift-mcp:
+    name: Build Swift MCP
+    runs-on: macos-26
+    needs: detect-changes
+    permissions:
+      contents: read
+    if: needs.detect-changes.outputs.has_swift_changes == 'true'
+      && !contains(github.event.pull_request.title, '[skip ci]')
+      && github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        mcp: ${{ fromJson(needs.detect-changes.outputs.swift_mcps) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Build Swift binary
+        run: swift build -c release
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Prepare binary for packaging
+        run: |
+          ENTRY_POINT=$(jq -r '.server.entry_point' manifest.json)
+          BINARY_NAME=$(swift package dump-package | jq -r '.targets[0].name')
+          mkdir -p "$(dirname $ENTRY_POINT)"
+          cp ".build/release/$BINARY_NAME" "$ENTRY_POINT"
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Pack MCP archive
+        id: pack
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npx --yes @anthropic-ai/mcpb pack . "$ARCHIVE_NAME"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Extract MCP tools
+        run: |
+          TEMP_DIR=$(mktemp -d)
+          npx --yes @anthropic-ai/mcpb unpack "mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
+          node cli/main.ts extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
+          rm -rf "$TEMP_DIR"
+
+      - name: Upload MCP archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-mcp-${{ matrix.mcp }}
+          path: |
+            mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+            mcps/${{ matrix.mcp }}/tools.json
+          retention-days: 1
+
+  publish-swift-mcp:
+    name: Publish Swift MCP
+    runs-on:
+      group: gcp-k8s
+    needs: [detect-changes, build-swift-mcp]
+    permissions:
+      contents: read
+      id-token: write
+    if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
+    env:
+      IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
+      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+    strategy:
+      fail-fast: false
+      matrix:
+        mcp: ${{ fromJson(needs.detect-changes.outputs.swift_mcps) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
+          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
+          access_token_lifetime: 300s
+
+      - name: Download MCP archive artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: swift-mcp-${{ matrix.mcp }}
+          path: mcps/${{ matrix.mcp }}
+
+      - name: Resolve archive name
+        id: archive
+        run: |
+          MCP_NAME=$(jq -r '.name' manifest.json)
+          MCP_VERSION=$(jq -r '.version' manifest.json)
+          echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
+
+      - name: Upload MCP archive
+        run: |
+          node cli/main.ts upload-mcp-archive \
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --mode staging
+
+      - name: Publish MCP metadata
+        run: |
+          node cli/main.ts publish-mcp-metadata \
+            --mode staging \
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --tools-json mcps/${{ matrix.mcp }}/tools.json

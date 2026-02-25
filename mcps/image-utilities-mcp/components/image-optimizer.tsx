@@ -7,10 +7,10 @@ import {
   defineWidget,
   Files,
   Form,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { optimize } from "../helpers/optimize.js";
 import { JPEGOptions } from "./jpeg-options.js";
-import { ImageConverter } from "./image-converter.js";
 
 export const props = z.object({
   source: z
@@ -24,6 +24,7 @@ type Props = z.infer<typeof props>;
 type ImageFormat = keyof sharp.FormatEnum;
 
 export function ImageOptimizer(props: Props) {
+  const closeWidget = useCloseWidget();
   const [source, setSource] = useState(props.source);
   const [result, setResult] = useState("");
   const [options, setOptions] = useState({});
@@ -50,6 +51,10 @@ export function ImageOptimizer(props: Props) {
     setOptions(options);
   }
 
+  function onDone() {
+    closeWidget(`Optimized image saved to: ${result}`);
+  }
+
   useEffect(() => {
     if (!source) return;
     sharp(source)
@@ -63,7 +68,7 @@ export function ImageOptimizer(props: Props) {
   const fileActions = (
     <ActionPanel layout="row">
       <Action.ShowInFinder style="secondary" path={result} />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -71,7 +76,7 @@ export function ImageOptimizer(props: Props) {
     return (
       <Form actions={fileActions}>
         <Files>
-          <Files.Item path={result} $context={true} />
+          <Files.Item path={result} />
         </Files>
       </Form>
     );
@@ -109,7 +114,7 @@ const ImageOptimizerWidget = defineWidget({
   name: "image-optimizer",
   description: "Optimize images",
   schema: props,
-  component: ImageConverter,
+  component: ImageOptimizer,
 });
 
 export default ImageOptimizerWidget;

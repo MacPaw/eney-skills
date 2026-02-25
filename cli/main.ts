@@ -2,68 +2,38 @@ import dotenv from "dotenv";
 import { Command } from "commander";
 import path from "path";
 import * as p from "@clack/prompts";
-import { bundleCommand } from "./bundle/command.ts";
 import { createCommand } from "./create/command.ts";
-import { checkVersionCommand } from "./management/check-version.ts";
-import { packExtensionCommand } from "./management/pack.ts";
-import { uploadArchiveCommand } from "./management/upload-archive.ts";
-import { publishExtensionCommand } from "./management/publish.ts";
 import { checkMcpVersionCommand } from "./management/check-mcp-version.ts";
-import { packMcpCommand } from "./management/pack-mcp.ts";
 import { uploadMcpArchiveCommand } from "./management/upload-mcp-archive.ts";
-import { publishMcpCommand } from "./management/publish-mcp.ts";
+import { publishMcpMetadataCommand } from "./management/publish-mcp-metadata.ts";
 import { analyticsCommand } from "./analytics/command.ts";
 import { createTagsCommand } from "./management/create-tags.ts";
 import { listArtifactsCommand } from "./management/list-artifacts.ts";
 import { deleteArtifactsCommand } from "./management/delete-artifacts.ts";
-import { devCommand } from "./dev/command.ts";
+import { extractMcpTools } from "./management/extract-mcp-tools.ts";
 import { devMcpCommand } from "./dev-mcp/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const commands = {
   create: {
-    label: "Create a new extension",
+    label: "Create a new MCP server",
     action: () => createCommand({}),
-  },
-  bundle: {
-    label: "Bundle a tool",
-    action: () => bundleCommand(),
-  },
-  "check-version": {
-    label: "Check version",
-    action: () => checkVersionCommand(),
-  },
-  pack: {
-    label: "Create extension archive",
-    action: () => packExtensionCommand(),
-  },
-  "upload-archive": {
-    label: "Pack and upload archive to cloud storage",
-    action: () => uploadArchiveCommand(),
-  },
-  publish: {
-    label: "Publish extension metadata to backend",
-    action: () => publishExtensionCommand(),
   },
   "check-mcp-version": {
     label: "Check MCP version",
     action: () => checkMcpVersionCommand(),
   },
-  "pack-mcp": {
-    label: "Create MCP archive",
-    action: () => packMcpCommand(),
-  },
   "upload-mcp-archive": {
-    label: "Pack and upload MCP archive to cloud storage",
+    label: "Upload MCP archive to cloud storage",
     action: () => uploadMcpArchiveCommand(),
   },
-  "publish-mcp": {
+  "publish-mcp-metadata": {
     label: "Publish MCP metadata to backend",
-    action: () => publishMcpCommand(),
+    action: () => publishMcpMetadataCommand(),
   },
   analytics: {
-    label: "Analyze download stats of extensions",
+    label: "Analyze download statistics from Cloudflare by path",
     action: () => analyticsCommand({}),
   },
   "create-tags": {
@@ -87,7 +57,7 @@ const commands = {
 type CommandName = keyof typeof commands;
 
 async function showInteractiveMenu() {
-  p.intro("Eney Extension Helper");
+  p.intro("Eney MCP Helper");
 
   const selected = await p.select({
     message: "What would you like to do?",
@@ -104,41 +74,20 @@ async function showInteractiveMenu() {
 
 const program = new Command();
 
-program.name("eney-extension-helper").description("CLI for Eney Extension Helper").version("1.0.0");
+program.name("eney-mcp-helper").description("CLI for Eney MCP Helper").version("1.0.0");
 
 program
   .command("create")
-  .description("Create a new extension")
+  .description("Create a new MCP server")
   .option("-o, --output <path>", "Output directory (defaults to current directory)")
-  .option("--id <id>", "Extension ID")
-  .option("--extension-title <title>", "Extension title")
+  .option("--id <id>", "MCP server ID")
+  .option("--mcp-title <title>", "MCP server title")
   .option("--tool-name <name>", "Tool name")
   .option("--tool-description <description>", "Tool description")
-  .option("--tool-title <title>", "Tool title", "Tool title")
-  .action(({ output, id, extensionTitle, toolName, toolDescription, toolTitle }) =>
-    createCommand({ output, extensionId: id, extensionTitle, toolName, toolDescription, toolTitle }),
+  .option("--tool-title <title>", "Tool title")
+  .action(({ output, id, mcpTitle, toolName, toolDescription, toolTitle }) =>
+    createCommand({ output, mcpId: id, mcpTitle, toolName, toolDescription, toolTitle }),
   );
-
-program
-  .command("bundle")
-  .description("Bundle a tool")
-  .option("-o, --output <path>", "Output folder")
-  .option("--cwd <path>", "Current working directory")
-  .action(({ output, cwd }) => bundleCommand(output, cwd));
-
-program
-  .command("check-version")
-  .description("Check version")
-  .option("--cwd <path>", "Current working directory")
-  .option("--mode <mode>", "Mode (staging or production)")
-  .action(({ cwd, mode }) => checkVersionCommand(cwd, mode));
-
-program
-  .command("pack")
-  .description("Create extension archive")
-  .option("--cwd <path>", "Current working directory")
-  .option("-o, --output <path>", "Directory to place the archive")
-  .action(({ cwd, output }) => packExtensionCommand(cwd, output));
 
 program
   .command("analytics")
@@ -152,13 +101,8 @@ program
 
 program
   .command("create-tags")
-  .description("Create Git tags for extension versions")
+  .description("Create Git tags for MCP versions")
   .action(() => createTagsCommand());
-
-program
-  .command("dev")
-  .description("Develop an extension")
-  .action(() => devCommand());
 
 program
   .command("dev-mcp")
@@ -188,19 +132,6 @@ program
   .action(({ mode, prefix }) => deleteArtifactsCommand(mode, prefix));
 
 program
-  .command("publish")
-  .description("Publish extension metadata to backend")
-  .option("--cwd <path>", "Current working directory")
-  .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--extension-version <version>", "Extension version")
-  .option("--hash <hash>", "Archive hash (SHA-256)")
-  .option("--download-url <url>", "Archive download URL")
-  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, extensionVersion, hash, downloadUrl, dryRun }) =>
-    publishExtensionCommand(cwd, mode, extensionVersion, hash, downloadUrl, dryRun),
-  );
-
-program
   .command("check-mcp-version")
   .description("Check MCP version")
   .option("--cwd <path>", "Current working directory")
@@ -208,27 +139,32 @@ program
   .action(({ cwd, mode }) => checkMcpVersionCommand(cwd, mode));
 
 program
-  .command("pack-mcp")
-  .description("Create MCP archive")
-  .option("--cwd <path>", "Current working directory")
-  .option("-o, --output <path>", "Directory to place the archive")
-  .action(({ cwd, output }) => packMcpCommand(cwd, output));
-
-program
   .command("upload-mcp-archive")
-  .description("Pack and upload MCP archive to cloud storage")
-  .option("--cwd <path>", "Current working directory")
+  .description("Upload a pre-built .mcpb archive to cloud storage")
+  .option("--archive-path <path>", "Path to .mcpb archive")
   .option("--mode <mode>", "Upload mode (staging or production)")
-  .option("--dry-run <value>", "Do not upload remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, dryRun }) => uploadMcpArchiveCommand(cwd, mode, dryRun));
+  .action(({ archivePath, mode }) => uploadMcpArchiveCommand(archivePath, mode));
 
 program
-  .command("publish-mcp")
-  .description("Pack, upload to GCS, and publish MCP to backend")
-  .option("--cwd <path>", "Current working directory")
+  .command("publish-mcp-metadata")
+  .description("Extract tools and publish MCP metadata to backend")
   .option("--mode <mode>", "Publish mode (staging or production)")
-  .option("--dry-run <value>", "Do not publish remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, dryRun }) => publishMcpCommand(cwd, mode, dryRun));
+  .option("--archive-path <path>", "Path to .mcpb archive")
+  .option("--tools-json <path>", "Path to pre-extracted tools JSON file (skips binary execution)")
+  .action(({ mode, archivePath, toolsJson }) => publishMcpMetadataCommand(mode, archivePath, toolsJson));
+
+program
+  .command("extract-mcp-tools")
+  .description("Extract tools from a built MCP server and write to JSON")
+  .requiredOption("--mcp-dir <path>", "Path to unpacked MCP directory")
+  .requiredOption("--output <path>", "Output JSON file path")
+  .action(async ({ mcpDir, output }) => {
+    const { resolve } = await import("path");
+    const { writeFile } = await import("fs/promises");
+    const tools = await extractMcpTools(mcpDir);
+    await writeFile(resolve(output), JSON.stringify(tools, null, 2));
+    console.log(`Wrote ${tools.length} tool(s) to ${output}`);
+  });
 
 const args = process.argv.slice(2);
 const hasCommand = args.length > 0 && !args[0].startsWith("-");
