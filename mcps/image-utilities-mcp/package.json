@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "build": "tsc",
     "prebuild": "npm run clean",
-    "postbuild": "npm ci && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
+    "postbuild": "npm ci --os=darwin --cpu=arm64 && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
   },
   "dependencies": {
     "@macpaw/eney-api": "^2.7.0",
