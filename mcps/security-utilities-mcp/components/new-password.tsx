@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
-import { Action, ActionPanel, Form, defineWidget } from "@macpaw/eney-api";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  defineWidget,
+  useCloseWidget,
+} from "@macpaw/eney-api";
 import { generatePassword } from "./generate-password.js";
 
 const schema = z.object({
@@ -21,6 +27,7 @@ const schema = z.object({
 type Props = z.infer<typeof schema>;
 
 function NewPassword(props: Props) {
+  const closeWidget = useCloseWidget();
   const [length, setLength] = useState<number | null>(props.length ?? 20);
   const [symbols, setSymbols] = useState(props.symbols ?? true);
   const [numbers, setNumbers] = useState(props.numbers ?? true);
@@ -47,6 +54,10 @@ function NewPassword(props: Props) {
     setPassword(value);
   }
 
+  function onDone() {
+    closeWidget(`Generated password: ${password}`);
+  }
+
   useEffect(() => {
     const value = generatePassword({ length, symbols, numbers });
     setPassword(value);
@@ -59,7 +70,7 @@ function NewPassword(props: Props) {
         onSubmit={onSubmit}
         style="secondary"
       />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -91,7 +102,6 @@ function NewPassword(props: Props) {
         value={password}
         onChange={onPasswordChange}
         isCopyable
-        $context
       />
     </Form>
   );

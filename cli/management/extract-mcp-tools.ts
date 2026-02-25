@@ -12,20 +12,27 @@ export type ToolWithSchema = {
 };
 
 export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]> {
-  const mcpPath = resolve(join(mcpDir, "dist"));
-  const manifestPath = join(mcpPath, "manifest.json");
+  const resolvedMcpDir = resolve(mcpDir);
 
-  // Read manifest to get entry point
-  let manifest: any;
+  // Node MCPs keep their manifest in dist/; binary (Swift) MCPs keep it at root
+  let mcpPath: string;
+  let manifest: Record<string, any>;
   try {
-    const manifestRaw = await fs.readFile(manifestPath, "utf8");
-    manifest = JSON.parse(manifestRaw);
-  } catch (error: any) {
-    throw new Error(`Unable to read manifest at ${manifestPath}: ${error.message}`);
+    const distManifestPath = join(resolvedMcpDir, "dist", "manifest.json");
+    manifest = JSON.parse(await fs.readFile(distManifestPath, "utf8"));
+    mcpPath = join(resolvedMcpDir, "dist");
+  } catch {
+    const rootManifestPath = join(resolvedMcpDir, "manifest.json");
+    try {
+      manifest = JSON.parse(await fs.readFile(rootManifestPath, "utf8"));
+      mcpPath = resolvedMcpDir;
+    } catch (error) {
+      throw new Error(`Unable to read manifest from dist/ or root of ${resolvedMcpDir}: ${error.message}`);
+    }
   }
 
   if (!manifest.server?.entry_point) {
-    throw new Error(`Missing "server.entry_point" field in manifest at ${manifestPath}`);
+    throw new Error(`Missing "server.entry_point" field in manifest at ${mcpPath}`);
   }
 
   // Resolve entry point path
@@ -34,22 +41,28 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
   try {
     await fs.stat(entryPointPath);
   } catch {
-    throw new Error(`Entry point not found: ${entryPointPath}. Did you run 'npm run build' in the MCP directory?`);
+    throw new Error(`Entry point not found: ${entryPointPath}. Did you build the MCP server?`);
   }
 
-  // Get command and args from manifest or use defaults
-  const command = manifest.server.mcp_config?.command || "node";
-  const args = manifest.server.mcp_config?.args || [entryPointPath];
+  // For binary MCPs the entry point is the executable; for node MCPs use mcp_config
+  const isBinary = manifest.server?.type === "binary";
+  let command: string;
+  let resolvedArgs: string[];
 
-  // Resolve ${__dirname} placeholder in args
-  const resolvedArgs = args.map((arg: string) => arg.replace("${__dirname}", mcpPath));
+  if (isBinary) {
+    command = entryPointPath;
+    resolvedArgs = [];
+  } else {
+    command = manifest.server.mcp_config?.command || "node";
+    const args = manifest.server.mcp_config?.args || [entryPointPath];
+    resolvedArgs = args.map((arg: string) => arg.replace("${__dirname}", mcpPath));
+  }
 
   console.log(`Extracting tools from MCP server at ${entryPointPath}...`);
 
   let client: Client | undefined;
 
   try {
-    // Create transport and client
     const transport = new StdioClientTransport({
       command,
       args: resolvedArgs,
@@ -66,19 +79,16 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
       },
     );
 
-    // Connect with timeout
     await Promise.race([
       client.connect(transport),
       new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout connecting to MCP server")), 30000)),
     ]);
 
-    // List tools
     const result = (await Promise.race([
       client.listTools(),
       new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout listing tools from MCP server")), 30000)),
     ])) as Awaited<ReturnType<Client["listTools"]>>;
 
-    // Filter out internal MCP tools
     const excludedTools = ["send-event", "widget-tree"];
     const filteredTools = result.tools.filter((tool) => !excludedTools.includes(tool.name));
 

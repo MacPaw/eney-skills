@@ -3,10 +3,9 @@ import color from "picocolors";
 import { exec, execSync } from "child_process";
 import semver from "semver";
 
-import { getExtensionsInfo } from "../lib/get-extensions.ts";
-import type { ExtensionInfo } from "../lib/types.ts";
+import { getMcpsInfo, type McpInfo } from "../lib/get-mcps.ts";
 
-type ExtensionOption = ExtensionInfo & {
+type McpOption = McpInfo & {
   latestTag: {
     version: string;
     tag: string;
@@ -24,18 +23,18 @@ async function fetchTagsFromGit(): Promise<string[]> {
   });
 }
 
-function formatExtensionOption(extension: ExtensionInfo, remoteTags: string[]) {
-  const label = `${color.bold(color.blue(extension.name))} ${color.bold(color.yellow(`- ${extension.version}`))}`;
+function formatMcpOption(mcp: McpInfo, remoteTags: string[]) {
+  const label = `${color.bold(color.blue(mcp.name))} ${color.bold(color.yellow(`- ${mcp.version}`))}`;
   const baseOption = {
-    value: { ...extension, latestTag: null },
+    value: { ...mcp, latestTag: null },
     label,
   };
 
-  const extensionsTags = remoteTags.filter((tag) => tag.startsWith(`${extension.name}@`));
+  const mcpTags = remoteTags.filter((tag) => tag.startsWith(`${mcp.name}@`));
 
-  if (extensionsTags.length === 0) return baseOption;
+  if (mcpTags.length === 0) return baseOption;
 
-  const formattedTags = extensionsTags
+  const formattedTags = mcpTags
     .map((tag) => ({
       version: tag.split("@")[1],
       tag: tag,
@@ -49,7 +48,7 @@ function formatExtensionOption(extension: ExtensionInfo, remoteTags: string[]) {
   )[0];
 
   return {
-    value: { ...extension, latestTag },
+    value: { ...mcp, latestTag },
     label: `${label} ${color.bold(color.green(`(latest production tag: @${latestTag.version})`))}`,
   };
 }
@@ -71,11 +70,11 @@ async function createTags() {
 
   fetchSpinner.stop("Tags fetched successfully");
 
-  const extensions = getExtensionsInfo();
-  const options = extensions.map((extension) => formatExtensionOption(extension, remoteTags));
+  const mcps = getMcpsInfo();
+  const options = mcps.map((mcp) => formatMcpOption(mcp, remoteTags));
 
-  const result = await p.autocompleteMultiselect<ExtensionOption>({
-    message: "Select extensions (type to filter)",
+  const result = await p.autocompleteMultiselect<McpOption>({
+    message: "Select MCPs (type to filter)",
     options,
     required: true,
   });
@@ -85,38 +84,38 @@ async function createTags() {
     process.exit(0);
   }
 
-  const selectedExtensions = result;
+  const selectedMcps = result;
 
-  if (selectedExtensions.length === 0) {
-    p.outro("No extensions were selected");
+  if (selectedMcps.length === 0) {
+    p.outro("No MCPs were selected");
     process.exit(0);
   }
 
   const tagsToPush: string[] = [];
 
-  for (const extension of selectedExtensions) {
-    const { latestTag } = extension;
+  for (const mcp of selectedMcps) {
+    const { latestTag } = mcp;
 
     if (!latestTag) {
-      tagsToPush.push(`${extension.name}@${extension.version}`);
+      tagsToPush.push(`${mcp.name}@${mcp.version}`);
       continue;
     }
 
-    const coercedCurrent = semver.coerce(extension.version);
+    const coercedCurrent = semver.coerce(mcp.version);
     const coercedLatest = semver.coerce(latestTag.version);
 
     if (!coercedCurrent || !coercedLatest) {
       p.log.warn(
-        `Unable to compare versions for ${extension.name}: "${extension.version}" vs "${latestTag.version}", skipping...`
+        `Unable to compare versions for ${mcp.name}: "${mcp.version}" vs "${latestTag.version}", skipping...`
       );
       continue;
     }
 
     if (semver.gt(coercedCurrent, coercedLatest)) {
-      tagsToPush.push(`${extension.name}@${extension.version}`);
+      tagsToPush.push(`${mcp.name}@${mcp.version}`);
     } else {
       p.log.warn(
-        `${extension.name}@${extension.version} is not greater than prod version ${latestTag.version}, skipping...`
+        `${mcp.name}@${mcp.version} is not greater than prod version ${latestTag.version}, skipping...`
       );
       continue;
     }

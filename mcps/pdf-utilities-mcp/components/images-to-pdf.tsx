@@ -7,6 +7,7 @@ import {
   defineWidget,
   Files,
   Form,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { readFile, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
@@ -22,6 +23,7 @@ export const props = z.object({
 type Props = z.infer<typeof props>;
 
 function ImagesToPdf(props: Props) {
+  const closeWidget = useCloseWidget();
   const [images, setImages] = useState<string[]>(props.images || []);
   const [outputPath, setOutputPath] = useState<string>("");
 
@@ -74,10 +76,14 @@ function ImagesToPdf(props: Props) {
     setImages(paths);
   }
 
+  function onDone() {
+    closeWidget(`PDF created at: ${outputPath}`);
+  }
+
   const fileActions = (
     <ActionPanel layout="row">
       <Action.ShowInFinder style="secondary" path={outputPath} />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -85,7 +91,7 @@ function ImagesToPdf(props: Props) {
     return (
       <Form actions={fileActions}>
         <Files>
-          <Files.Item key={outputPath} path={outputPath} $context={true} />
+          <Files.Item key={outputPath} path={outputPath} />
         </Files>
       </Form>
     );

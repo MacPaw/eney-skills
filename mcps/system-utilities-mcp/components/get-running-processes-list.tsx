@@ -5,9 +5,9 @@ import {
   defineWidget,
   Form,
   Paper,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
-import zod from "zod";
 
 interface ProcessInfo {
   cpu: number;
@@ -104,6 +104,7 @@ async function fetchProcesses(sortBy: SortBy): Promise<ProcessInfo[]> {
 }
 
 function GetRunningProcessesList() {
+  const closeWidget = useCloseWidget();
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,28 +137,6 @@ function GetRunningProcessesList() {
     }
   };
 
-  const actions = (
-    <ActionPanel layout="row">
-      <Action
-        title="Refresh"
-        onAction={() => loadProcesses(sortBy)}
-        style="secondary"
-        isLoading={isLoading}
-      />
-      <Action.Finalize title="Done" />
-    </ActionPanel>
-  );
-
-  if (error) {
-    return (
-      <Paper
-        markdown={`**Error:** ${error}`}
-        actions={actions}
-        $context={true}
-      />
-    );
-  }
-
   const markdown = processes.length
     ? [
         "| CPU % | Memory (MB) | Process |",
@@ -169,6 +148,30 @@ function GetRunningProcessesList() {
         }),
       ].join("\n")
     : "No running processes found.";
+
+  function onDone() {
+    if (error) {
+      closeWidget(`Error: ${error}`);
+    } else {
+      closeWidget(`Successfully retrieved running processes list: ${markdown}`);
+    }
+  }
+
+  const actions = (
+    <ActionPanel layout="row">
+      <Action
+        title="Refresh"
+        onAction={() => loadProcesses(sortBy)}
+        style="secondary"
+        isLoading={isLoading}
+      />
+      <Action.SubmitForm onSubmit={onDone} style="primary" title="Done" />
+    </ActionPanel>
+  );
+
+  if (error) {
+    return <Paper markdown={`**Error:** ${error}`} actions={actions} />;
+  }
 
   return (
     <Form>
@@ -187,7 +190,6 @@ function GetRunningProcessesList() {
         }
         actions={actions}
         isScrollable
-        $context={true}
       />
     </Form>
   );

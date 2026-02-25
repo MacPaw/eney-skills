@@ -2,27 +2,6 @@ import { Storage } from "@google-cloud/storage";
 import { basename } from "path";
 import fs from "fs-extra";
 
-type ExtensionVersion = {
-  artifactType: "extension";
-  artifactId: string;
-  version: string;
-  hash: string;
-  downloadUrl: string;
-  createdAt: string;
-};
-
-type PublishExtensionPayload = {
-  extension_id: string;
-  tools: Record<string, any>[];
-  version: string;
-};
-
-type PublishExtensionVersionPayload = {
-  version: string;
-  hash: string;
-  downloadUrl: string;
-};
-
 type McpVersion = {
   artifactType: "mcp";
   artifactId: string;
@@ -69,134 +48,6 @@ export class ApiClient {
         "X-API-Token": this.accessToken,
       },
     });
-  }
-
-  async getExtensionVersions(extensionName: string): Promise<ExtensionVersion[]> {
-    try {
-      const response = await this.fetch(`/admin/v3/artifacts/extension/${extensionName}/versions`, { method: "GET" });
-
-      if (response.status === 404) {
-        return [];
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to get extension versions: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`\nError getting extension versions!\n${error.message}`);
-      throw error;
-    }
-  }
-
-  async publishExtension(payload: PublishExtensionPayload) {
-    try {
-      const response = await this.fetch(`/admin/v3/extensions/tools`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to publish extension: ${response.status} ${response.statusText} ${await response.text()}`,
-        );
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`\nError publishing extension!\n${error}`);
-      throw error;
-    }
-  }
-
-  async publishExtensionVersion(extensionName: string, payload: PublishExtensionVersionPayload) {
-    try {
-      const response = await this.fetch(`/admin/v3/artifacts/extension/${extensionName}/versions`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to publish extension version: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`\nError publishing extension version!\n${error.message}`);
-      throw error;
-    }
-  }
-
-  async uploadExtensionArchiveToCloud(filePath: string) {
-    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
-    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
-    const fileName = basename(filePath);
-    const destination = `extensions/${fileName}`;
-
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`File not found: ${filePath}`);
-    }
-
-    const storage = new Storage({ projectId });
-
-    console.log(`Uploading ${fileName} to gs://${bucketName}/${destination}...`);
-
-    await storage.bucket(bucketName).upload(filePath, {
-      destination,
-    });
-
-    console.log(`Uploaded to gs://${bucketName}/${destination}`);
-  }
-
-  async deleteExtensionArtifactFromCloud(fileName: string) {
-    if (!fileName?.trim()) {
-      throw new Error("fileName is required");
-    }
-
-    if (fileName.includes("..") || fileName.startsWith("/")) {
-      throw new Error("Invalid fileName: path traversal not allowed");
-    }
-
-    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
-    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
-    const destination = `extensions/${fileName}`;
-
-    const storage = new Storage({ projectId });
-    const file = storage.bucket(bucketName).file(destination);
-
-    const [exists] = await file.exists();
-    if (!exists) {
-      throw new Error(`File not found: gs://${bucketName}/${destination}`);
-    }
-
-    console.log(`Deleting gs://${bucketName}/${destination}...`);
-
-    await file.delete();
-
-    console.log(`Deleted gs://${bucketName}/${destination}`);
-  }
-
-  async listExtensionArchivesInCloud(prefix?: string) {
-    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
-    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
-
-    if (prefix?.includes("..") || prefix?.startsWith("/")) {
-      throw new Error("Invalid prefix: path traversal not allowed");
-    }
-
-    const fullPrefix = prefix ? `extensions/${prefix}` : "extensions/";
-
-    const storage = new Storage({ projectId });
-
-    const [files] = await storage.bucket(bucketName).getFiles({ prefix: fullPrefix });
-
-    return files.map((file) => ({
-      name: file.name,
-      size: file.metadata.size ? Number(file.metadata.size) : 0,
-      created: file.metadata.timeCreated ? new Date(file.metadata.timeCreated) : null,
-      updated: file.metadata.updated ? new Date(file.metadata.updated) : null,
-    }));
   }
 
   async getMcpVersions(mcpName: string): Promise<McpVersion[]> {
@@ -273,6 +124,56 @@ export class ApiClient {
     });
 
     console.log(`Uploaded to gs://${bucketName}/${destination}`);
+  }
+
+  async deleteMcpArtifactFromCloud(fileName: string) {
+    if (!fileName?.trim()) {
+      throw new Error("fileName is required");
+    }
+
+    if (fileName.includes("..") || fileName.startsWith("/")) {
+      throw new Error("Invalid fileName: path traversal not allowed");
+    }
+
+    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
+    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
+    const destination = `mcps/${fileName}`;
+
+    const storage = new Storage({ projectId });
+    const file = storage.bucket(bucketName).file(destination);
+
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new Error(`File not found: gs://${bucketName}/${destination}`);
+    }
+
+    console.log(`Deleting gs://${bucketName}/${destination}...`);
+
+    await file.delete();
+
+    console.log(`Deleted gs://${bucketName}/${destination}`);
+  }
+
+  async listMcpArchivesInCloud(prefix?: string) {
+    const bucketName = this.mode === "production" ? "eney-cdn-production" : "eney-cdn-staging";
+    const projectId = this.mode === "production" ? "macpaw-production" : "macpaw-staging";
+
+    if (prefix?.includes("..") || prefix?.startsWith("/")) {
+      throw new Error("Invalid prefix: path traversal not allowed");
+    }
+
+    const fullPrefix = prefix ? `mcps/${prefix}` : "mcps/";
+
+    const storage = new Storage({ projectId });
+
+    const [files] = await storage.bucket(bucketName).getFiles({ prefix: fullPrefix });
+
+    return files.map((file) => ({
+      name: file.name,
+      size: file.metadata.size ? Number(file.metadata.size) : 0,
+      created: file.metadata.timeCreated ? new Date(file.metadata.timeCreated) : null,
+      updated: file.metadata.updated ? new Date(file.metadata.updated) : null,
+    }));
   }
 }
 
