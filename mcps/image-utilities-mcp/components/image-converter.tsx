@@ -1,5 +1,5 @@
 import { z } from "zod";
-import sharp, { type WriteableMetadata } from "sharp";
+import sharp from "sharp";
 import heicConvert from "heic-convert";
 import { useEffect, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   defineWidget,
   Files,
   Form,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -39,6 +40,7 @@ const formatLabels: Record<string, string> = {
 };
 
 export function ImageConverter(props: Props) {
+  const closeWidget = useCloseWidget();
   const supported: ImageFormat[] = ["png", "jpeg", "webp", "tiff", "gif"];
   const [source, setSource] = useState(props.source);
   const [sourceFormat, setSourceFormat] = useState<ImageFormat | null>(null);
@@ -90,6 +92,10 @@ export function ImageConverter(props: Props) {
     setTargetFormat(value as ImageFormat);
   }
 
+  function onDone() {
+    closeWidget(`Converted image saved to: ${resultPath}`);
+  }
+
   useEffect(() => {
     if (!source) return;
     const ext = source.toLowerCase().split(".").pop();
@@ -112,7 +118,7 @@ export function ImageConverter(props: Props) {
   const fileActions = (
     <ActionPanel layout="row">
       <Action.ShowInFinder style="secondary" path={resultPath} />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
     </ActionPanel>
   );
 
@@ -120,7 +126,7 @@ export function ImageConverter(props: Props) {
     return (
       <Form actions={fileActions}>
         <Files>
-          <Files.Item path={resultPath} $context={true} />
+          <Files.Item path={resultPath} />
         </Files>
       </Form>
     );

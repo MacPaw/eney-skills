@@ -1,6 +1,5 @@
 {
   "name": "notes-utilities-mcp",
-  "version": "1.0.1",
   "type": "module",
   "description": "Notes Utilities MCP server",
   "main": "index.js",
@@ -12,7 +11,7 @@
     "postbuild": "npm ci && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^2.5.0-beta.5",
+    "@macpaw/eney-api": "^2.7.0",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "lodash": "^4.17.21",
     "markdown-it": "^14.1.0",
