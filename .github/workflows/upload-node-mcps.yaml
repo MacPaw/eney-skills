@@ -35,7 +35,7 @@ jobs:
       - name: Prepare Node.js
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
-          npm ci
+          npm ci --os=darwin --cpu=arm64
         working-directory: mcps/${{ matrix.mcp }}
 
       - name: Pack MCP archive
