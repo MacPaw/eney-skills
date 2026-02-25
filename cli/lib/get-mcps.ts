@@ -1,23 +1,27 @@
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
-import type { ExtensionInfo } from "./types.ts";
 
-const extensionsDir = join(import.meta.dirname, "../../extensions");
+export type McpInfo = {
+  name: string;
+  version: string;
+};
 
-export function getExtensionsInfo(): ExtensionInfo[] {
+const mcpsDir = join(import.meta.dirname, "../../mcps");
+
+export function getMcpsInfo(): McpInfo[] {
   let directories;
 
   try {
-    directories = readdirSync(extensionsDir, { withFileTypes: true });
+    directories = readdirSync(mcpsDir, { withFileTypes: true });
   } catch {
-    console.error(`Error: Extensions directory not found: ${extensionsDir}`);
+    console.error(`Error: MCPs directory not found: ${mcpsDir}`);
     process.exit(1);
   }
 
-  const extensions = directories
+  const mcps = directories
     .filter((d) => d.isDirectory())
     .map((d) => {
-      const manifestPath = join(extensionsDir, d.name, "manifest.json");
+      const manifestPath = join(mcpsDir, d.name, "manifest.json");
 
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -27,8 +31,13 @@ export function getExtensionsInfo(): ExtensionInfo[] {
           return null;
         }
 
+        if (!manifest.name) {
+          console.error(`Error: Name not found in manifest at ${manifestPath}`);
+          return null;
+        }
+
         return {
-          name: d.name,
+          name: manifest.name,
           version: manifest.version,
         };
       } catch {
@@ -37,5 +46,5 @@ export function getExtensionsInfo(): ExtensionInfo[] {
       }
     });
 
-  return extensions.filter((e) => e !== null);
+  return mcps.filter((m) => m !== null);
 }

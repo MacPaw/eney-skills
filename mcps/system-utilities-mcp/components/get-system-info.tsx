@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { Action, ActionPanel, defineWidget, Paper } from "@macpaw/eney-api";
+import {
+  Action,
+  ActionPanel,
+  defineWidget,
+  Paper,
+  useCloseWidget,
+} from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
-import zod from "zod";
 
 interface SystemInfo {
   productDescription: string | null;
@@ -73,9 +78,22 @@ async function fetchSystemInfo(): Promise<SystemInfo> {
 }
 
 function GetSystemInfo() {
+  const closeWidget = useCloseWidget();
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  function onDone() {
+    if (error) {
+      closeWidget(`Error: ${error}`);
+    } else if (info) {
+      closeWidget(
+        `System information retrieved: ${info.productDescription}, Chip: ${info.chip}, Memory: ${info.memory}, Serial Number: ${info.serialNumber}, macOS Version: ${info.osVersion}`,
+      );
+    } else {
+      closeWidget("No system information available.");
+    }
+  }
 
   useEffect(() => {
     fetchSystemInfo()
@@ -100,7 +118,7 @@ function GetSystemInfo() {
         markdown={`**Error:** ${error}`}
         actions={
           <ActionPanel>
-            <Action.Finalize title="Done" />
+            <Action.SubmitForm onSubmit={onDone} style="primary" title="Done" />
           </ActionPanel>
         }
       />
@@ -121,10 +139,9 @@ function GetSystemInfo() {
       markdown={markdown}
       actions={
         <ActionPanel>
-          <Action.Finalize title="Done" />
+          <Action.SubmitForm onSubmit={onDone} style="primary" title="Done" />
         </ActionPanel>
       }
-      $context={true}
     />
   );
 }

@@ -5,6 +5,7 @@ import {
   defineWidget,
   Form,
   Paper,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import { spawn } from "node:child_process";
 import { statSync } from "node:fs";
@@ -111,6 +112,7 @@ end tell
 }
 
 export function SendMail(props: Props) {
+  const closeWidget = useCloseWidget();
   const [recipient, setRecipient] = useState(props.recipient ?? "");
   const [subject, setSubject] = useState(props.subject ?? "");
   const [body, setBody] = useState(props.body ?? "");
@@ -133,34 +135,15 @@ export function SendMail(props: Props) {
     setStatus(null);
 
     try {
-      const message = await sendMail(recipient, subject, body, attachments);
-      setStatus({ type: "success", message });
+      await sendMail(recipient, subject, body, attachments);
+      closeWidget(
+        `Message sent successfully to **${recipient}** with subject **${subject}**`,
+      );
     } catch (error) {
-      setStatus({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "Failed to send email",
-      });
-    } finally {
-      setIsSending(false);
+      closeWidget(
+        `Failed to send email: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-  }
-
-  const successActions = (
-    <ActionPanel>
-      <Action.Finalize title="Done" />
-    </ActionPanel>
-  );
-
-  if (status?.type && status.type === "success") {
-    return (
-      <Form actions={successActions}>
-        <Paper
-          markdown={`✅ Message sent successfully to **${recipient}** with subject **${subject}**`}
-          $context={true}
-        />
-      </Form>
-    );
   }
 
   const hasOversizedFiles = oversizedFiles.length > 0;

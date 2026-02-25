@@ -5,6 +5,7 @@ import {
   defineWidget,
   Form,
   Paper,
+  useCloseWidget,
 } from "@macpaw/eney-api";
 import z from "zod";
 
@@ -20,6 +21,7 @@ export const props = z.object({
 type Props = z.infer<typeof props>;
 
 function HowLongUntil(props: Props) {
+  const closeWidget = useCloseWidget();
   const [date, setDate] = useState<Date>(new Date(props.date ?? Date.now()));
   const [result, setResult] = useState<string | undefined>(undefined);
 
@@ -55,16 +57,22 @@ function HowLongUntil(props: Props) {
     calculate();
   }
 
+  function onDone() {
+    closeWidget(
+      `Time until ${date.toLocaleString()}: ${result ?? "No result"}`,
+    );
+  }
+
   return (
     <Form
       actions={
-        <ActionPanel>
+        <ActionPanel layout="row">
           <Action.SubmitForm
             title="Calculate"
             onSubmit={onSubmit}
             style="secondary"
           />
-          <Action.Finalize title="Done" />
+          <Action.SubmitForm onSubmit={onDone} style="primary" title="Done" />
         </ActionPanel>
       }
     >
@@ -75,7 +83,7 @@ function HowLongUntil(props: Props) {
         value={date}
         onChange={onTimeChange}
       />
-      {result && <Paper markdown={result} $context={true} />}
+      {result && <Paper markdown={result} />}
     </Form>
   );
 }
