@@ -1,6 +1,8 @@
 {
   "title": "Eney",
   "pages": [
+    "getting-started",
+    "extension-structure",
     "widgets"
   ]
 }

@@ -28,10 +28,10 @@ Fix any TypeScript errors before proceeding.
 
 ## Step 3: Run Dev Mode
 
-The CLI `dev-mcp` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
+The CLI `dev` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
 
 ```bash
-cd mcps/<mcp-name> && node ../../cli/main.ts dev-mcp
+cd mcps/<mcp-name> && node ../../cli/main.ts dev
 ```
 
 This does three things on every build:
@@ -73,7 +73,7 @@ After launching, ask the user:
 3. **Do the actions work?** — test submit, finalize, copy, etc.
 4. **Any changes needed?** — gather feedback and apply fixes
 
-After each code change, the `dev-mcp` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
+After each code change, the `dev` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
 
 ```bash
 open "eney://run?manifestID=eney_core&commandID=<tool_id>"
@@ -118,7 +118,7 @@ It should print a "running on stdio" message to stderr.
 | defineWidget error          | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
 | Widget not registered       | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
 | Import paths wrong          | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
-| Deeplink doesn't open tool  | Wrong `commandID`                                | Use the snake_case `id` from `~/.eney/tools/<tool>.json` (e.g., `new_password`) |
+| Deeplink doesn't open tool  | Wrong `commandID`                                | Use the widget `name` from `defineWidget()`, not the manifest name      |
 | Tool not visible in Eney    | Missing tool JSON in ~/.eney/tools/              | Run `dev-mcp` — it generates tool definitions automatically             |
 
 ## Debugging Checklist
@@ -129,7 +129,7 @@ It should print a "running on stdio" message to stderr.
 - [ ] Zod schema has `.describe()` on every field
 - [ ] Local imports use `.js` extension (TypeScript ESM requirement)
 - [ ] `npx tsc --noEmit` passes
-- [ ] `dev-mcp` deploys to the Eney MCP folder
+- [ ] `dev` deploys to the Eney MCP folder
 - [ ] Tool JSONs generated in `~/.eney/tools/`
 - [ ] Deeplink opens the widget in Eney
 - [ ] UI renders correctly

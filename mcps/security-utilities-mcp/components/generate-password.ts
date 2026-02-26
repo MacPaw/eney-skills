@@ -36,7 +36,8 @@ export function generatePassword(options: Options) {
   const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const numbers = "0123456789";
   const symbols = "!@#$%^&*?_~";
-  const pool = letters +
+  const pool =
+    letters +
     (options.numbers ? numbers : "") +
     (options.symbols ? symbols : "");
 
