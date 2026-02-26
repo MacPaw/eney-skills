@@ -1,0 +1,249 @@
+---
+title: Getting Started
+description: Create your first Eney extension in minutes
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Eney extensions are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@macpaw/eney-api` widget library — the framework renders them as native macOS UI.
+
+This guide walks you through creating a complete extension from scratch.
+
+## Prerequisites
+
+- Node.js 24+
+- npm
+
+## Create an Extension
+
+<Steps>
+
+<Step>
+### Scaffold the project
+
+Create a new directory under `mcps/` and set up the files:
+
+```bash
+mkdir -p mcps/my-first-mcp/components
+cd mcps/my-first-mcp
+```
+
+Create `package.json`:
+
+```json
+{
+  "name": "my-first-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "My first Eney extension.",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts",
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "prebuild": "npm run clean",
+    "postbuild": "npm ci --os=darwin --cpu=arm64 && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
+  },
+  "dependencies": {
+    "@macpaw/eney-api": "^2.7.0",
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "react": "^18.3.1",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.27",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
+```
+
+Create `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "types": ["@types/react"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
+  "exclude": ["dist", "node_modules"]
+}
+```
+
+Create `manifest.json`:
+
+```json
+{
+  "manifest_version": "0.3",
+  "name": "my-first-mcp",
+  "version": "1.0.0",
+  "description": "My first Eney extension.",
+  "author": {
+    "name": "Your Name"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
+```
+</Step>
+
+<Step>
+### Install dependencies
+
+```bash
+npm install
+```
+</Step>
+
+<Step>
+### Create the MCP server entry point
+
+Create `index.ts` — this registers your widgets and starts the MCP server:
+
+```ts
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { setupUIXForMCP } from "@macpaw/eney-api";
+import Greeting from "./components/greeting.js";
+
+const server = new McpServer(
+  { name: "my-first-mcp", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
+);
+
+const uixServer = setupUIXForMCP(server);
+uixServer.registerWidget(Greeting);
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("My First MCP running on stdio");
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+### Create a widget
+
+Create `components/greeting.tsx`:
+
+```tsx
+import { useState } from "react";
+import { z } from "zod";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Paper,
+  defineWidget,
+  useCloseWidget,
+} from "@macpaw/eney-api";
+
+const schema = z.object({
+  name: z.string().optional().describe("The name to greet."),
+});
+
+type Props = z.infer<typeof schema>;
+
+function Greeting(props: Props) {
+  const closeWidget = useCloseWidget();
+  const [name, setName] = useState(props.name ?? "");
+  const [message, setMessage] = useState<string | null>(null);
+
+  function onSubmit() {
+    setMessage(`Hello, ${name || "World"}!`);
+  }
+
+  function onDone() {
+    closeWidget(message ?? "No greeting generated.");
+  }
+
+  const actions = (
+    <ActionPanel layout="row">
+      <Action.SubmitForm title="Greet" onSubmit={onSubmit} style="secondary" />
+      <Action title="Done" onAction={onDone} style="primary" />
+    </ActionPanel>
+  );
+
+  return (
+    <Form actions={actions}>
+      <Form.TextField name="name" label="Name" value={name} onChange={setName} />
+      {message && <Paper markdown={`**${message}**`} />}
+    </Form>
+  );
+}
+
+const GreetingWidget = defineWidget({
+  name: "greeting",
+  description: "Generate a friendly greeting",
+  schema,
+  component: Greeting,
+});
+
+export default GreetingWidget;
+```
+</Step>
+
+<Step>
+### Verify it compiles
+
+```bash
+npx tsc --noEmit
+```
+
+If there are no errors, your extension is ready.
+</Step>
+
+<Step>
+### Run in dev mode
+
+The CLI `dev-mcp` command compiles, deploys locally, and watches for changes:
+
+```bash
+node ../../cli/main.ts dev-mcp
+```
+
+This deploys the compiled output to the Eney MCP folder and generates tool definitions so Eney discovers your widget.
+</Step>
+
+<Step>
+### Launch in Eney
+
+Open the widget directly using a deeplink:
+
+```bash
+open "eney://run?manifestID=eney_core&commandID=greeting"
+```
+
+The `commandID` matches the `name` field from your `defineWidget()` call.
+</Step>
+
+</Steps>
+
+## Next Steps
+
+- Read [Extension Structure](/docs/extension-structure) to understand each file's role
+- Browse the [Widgets](/docs/widgets) reference for all available UI components
+- Study existing extensions in `mcps/` for real-world patterns
