@@ -1,19 +1,16 @@
 ---
 title: Paper
-description: Display markdown content with optional scrolling and actions
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+Renders markdown content with an optional action panel. Use this component to display results, summaries, or any read-only content.
 
-![Paper widget](https://placeholder.com/widgets/paper.png)
+### Properties
 
-Displays rendered markdown content. Supports scrollable containers and embedded action buttons.
-
-## Import
-
-```tsx
-import { Paper } from "@macpaw/eney-api";
-```
+| Property       | Description                              | Type              | Default | Required |
+| -------------- | ---------------------------------------- | ----------------- | ------- | -------- |
+| `markdown`     | Markdown string to render                | `string`          | —       | No       |
+| `actions`      | A reference to an ActionPanel            | `React.ReactNode` | —       | No       |
+| `isScrollable` | Whether the content area is scrollable   | `boolean`         | —       | No       |
 
 ## Usage
 
@@ -23,45 +20,26 @@ import { Paper } from "@macpaw/eney-api";
 <Paper markdown="Hello **world**" />
 ```
 
-### Scrollable Content
+### Scrollable content
+
+For long content, enable scrolling:
 
 ```tsx
-<Paper markdown={longContent} isScrollable />
+<Paper markdown={longMarkdown} isScrollable />
 ```
 
-### With Actions
+### With actions
 
 ```tsx
-<Paper
-  markdown="File processed successfully."
-  actions={
+import { Paper, Action, ActionPanel } from '@macpaw/eney-api';
+
+function ResultView(props: { result: string }) {
+  const actions = (
     <ActionPanel>
-      <Action.CopyToClipboard content={result} />
+      <Action.CopyToClipboard content={props.result} title="Copy" />
     </ActionPanel>
-  }
-/>
+  );
+
+  return <Paper markdown={props.result} actions={actions} />;
+}
 ```
-
-### As Status Message
-
-A common pattern is using Paper inside a Form to show status feedback:
-
-```tsx
-<Form actions={actions}>
-  {error && <Paper markdown={`❌ ${error}`} />}
-  <Form.TextField name="input" value={input} onChange={setInput} />
-</Form>
-```
-
-## Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `markdown` | `string` | — | Markdown content to render |
-| `isScrollable` | `boolean` | — | Enable scrolling for long content |
-| `actions` | `ReactNode` | — | Action components rendered below content |
-| `$context` | `boolean` | — | Expose content as context to the AI |
-
-<Callout type="info">
-When `$context` is `true`, the markdown content becomes visible to the AI model in conversation context.
-</Callout>

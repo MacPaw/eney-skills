@@ -1,43 +1,37 @@
 ---
-title: CardHeader
-description: Header component with title and optional icon
+title: Card Header
 ---
 
-![CardHeader widget](https://placeholder.com/widgets/card-header.png)
+Renders a header with a title and an optional application icon. Use this as the `header` prop on a `Form`.
 
-Header component typically used inside a `Form` to provide a title and optional icon.
+### Properties
 
-## Import
+| Property       | Description                               | Type     | Default | Required |
+| -------------- | ----------------------------------------- | -------- | ------- | -------- |
+| `title`        | The header title text                     | `string` | —       | Yes      |
+| `iconBundleId` | macOS bundle identifier for the app icon  | `string` | —       | No       |
 
-```tsx
-import { CardHeader } from "@macpaw/eney-api";
-```
-
-## Usage
-
-### Basic
+### Usage
 
 ```tsx
-<CardHeader title="New Document" />
+import { Form, CardHeader, Action, ActionPanel } from '@macpaw/eney-api';
+
+function MyWidget() {
+  const header = <CardHeader title="Image Optimizer" iconBundleId="com.apple.Preview" />;
+
+  return (
+    <Form
+      header={header}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Run" onSubmit={() => {}} />
+        </ActionPanel>
+      }
+    >
+      {/* form fields */}
+    </Form>
+  );
+}
 ```
 
-### With Icon
-
-```tsx
-<CardHeader title="Settings" iconBundleId="gear" />
-```
-
-### Inside a Form
-
-```tsx
-<Form header={<CardHeader title="Create Task" iconBundleId="checklist" />}>
-  <Form.TextField name="title" value={title} onChange={setTitle} label="Title" />
-</Form>
-```
-
-## Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `title` | `string` | **required** | Header text |
-| `iconBundleId` | `string` | — | SF Symbol or bundle icon identifier |
+The `iconBundleId` is a macOS application bundle identifier (e.g. `com.apple.Safari`, `com.apple.Preview`). When provided, the host application displays the corresponding app icon next to the title.

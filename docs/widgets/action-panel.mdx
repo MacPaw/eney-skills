@@ -1,71 +1,51 @@
 ---
-title: ActionPanel
-description: Layout container for grouping action buttons
+title: Action Panel
 ---
 
-![ActionPanel widget](https://placeholder.com/widgets/action-panel.png)
+Groups a set of [actions](/docs/widgets/actions) that the user can perform. Typically passed to a `Form` or `Paper` via the `actions` prop.
 
-Container for grouping action buttons. Supports horizontal or vertical layout.
+### Properties
 
-## Import
+| Property   | Description          | Type                 | Default    | Required |
+| ---------- | -------------------- | -------------------- | ---------- | -------- |
+| `children` | Action elements      | `React.ReactNode`    | —          | Yes      |
+| `layout`   | Layout direction     | `"row" \| "column"`  | `"column"` | No       |
 
-```tsx
-import { ActionPanel } from "@macpaw/eney-api";
-```
-
-## Usage
-
-### Vertical Layout (default)
+### Usage
 
 ```tsx
-<ActionPanel>
-  <Action.SubmitForm title="Save" onSubmit={handleSave} style="primary" />
-  <Action.Finalize title="Cancel" />
-</ActionPanel>
+import { useState } from 'react';
+import { Form, Action, ActionPanel } from '@macpaw/eney-api';
+
+function MyWidget() {
+  const [file, setFile] = useState('');
+
+  function onSubmit() {
+    // process the file
+  }
+
+  const actions = (
+    <ActionPanel>
+      <Action.SubmitForm title="Process" onSubmit={onSubmit} style="primary" />
+      <Action.ShowInFinder title="Show in Finder" path={file} />
+    </ActionPanel>
+  );
+
+  return (
+    <Form actions={actions}>
+      <Form.FilePicker name="file" label="Select file" value={file} onChange={setFile} />
+    </Form>
+  );
+}
 ```
 
-### Horizontal Layout
+### Row layout
+
+Use `layout="row"` to display actions side by side:
 
 ```tsx
 <ActionPanel layout="row">
-  <Action.SubmitForm title="Save" onSubmit={handleSave} style="primary" />
-  <Action.Finalize title="Cancel" />
+  <Action title="Accept" onAction={onAccept} style="primary" />
+  <Action title="Decline" onAction={onDecline} />
 </ActionPanel>
 ```
-
-### Inside a Form
-
-ActionPanel is commonly passed to a Form via the `actions` prop:
-
-```tsx
-<Form
-  actions={
-    <ActionPanel>
-      <Action.SubmitForm title="Submit" onSubmit={onSubmit} style="primary" />
-    </ActionPanel>
-  }
->
-  {/* form fields */}
-</Form>
-```
-
-### Inside Paper
-
-```tsx
-<Paper
-  markdown="Operation complete."
-  actions={
-    <ActionPanel layout="row">
-      <Action.CopyToClipboard content={output} />
-      <Action.ShowInFinder path={filePath} />
-    </ActionPanel>
-  }
-/>
-```
-
-## Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `children` | `ReactNode` | — | Action components |
-| `layout` | `"row" \| "column"` | `"column"` | Button arrangement direction |
