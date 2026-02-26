@@ -37,6 +37,7 @@ cd mcps/<mcp-name> && node ../../cli/main.ts dev-mcp
 This does three things on every build:
 
 1. Compiles TypeScript and deploys the output (compiled JS, manifest.json, node_modules) to:
+
    ```
    ~/Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP/<mcp-name>/
    ```
@@ -58,10 +59,10 @@ cd mcps/<mcp-name> && npm run build
 Open the widget directly in Eney using a deeplink:
 
 ```bash
-open "eney://run?manifestID=eney_core&commandID=<widget-name>"
+open "eney://run?manifestID=eney_core&commandID=<tool_id>"
 ```
 
-Where `<widget-name>` is the `name` field from the `defineWidget()` call in the component (e.g., `new-password`, `append-to-note`).
+Where `<tool_id>` is the snake_case `id` from the generated `~/.eney/tools/<tool-name>.json` (e.g., `new_password`, `append_to_note`). This is the widget name with hyphens replaced by underscores.
 
 ## Step 5: Iterate with User
 
@@ -75,7 +76,7 @@ After launching, ask the user:
 After each code change, the `dev-mcp` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
 
 ```bash
-open "eney://run?manifestID=eney_core&commandID=<widget-name>"
+open "eney://run?manifestID=eney_core&commandID=<tool_id>"
 ```
 
 Repeat until the user is satisfied.
@@ -108,17 +109,17 @@ It should print a "running on stdio" message to stderr.
 
 ## Common Issues
 
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| Build fails | TypeScript errors | Run `npx tsc --noEmit` and fix errors |
-| Server won't start | Missing dependencies | Run `npm install` then rebuild |
-| Widget not rendering | Using HTML elements instead of Eney widgets | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api` |
-| Props not received from LLM | Missing `.describe()` on Zod schema fields | Add `.describe("...")` to every field |
-| defineWidget error | Missing required fields | Ensure `{ name, description, schema, component }` are all provided |
-| Widget not registered | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget |
-| Import paths wrong | Missing `.js` extension in imports | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
-| Deeplink doesn't open tool | Wrong `commandID` | Use the widget `name` from `defineWidget()`, not the manifest name |
-| Tool not visible in Eney | Missing tool JSON in ~/.eney/tools/ | Run `dev-mcp` — it generates tool definitions automatically |
+| Problem                     | Cause                                            | Fix                                                                     |
+| --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Build fails                 | TypeScript errors                                | Run `npx tsc --noEmit` and fix errors                                   |
+| Server won't start          | Missing dependencies                             | Run `npm install` then rebuild                                          |
+| Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api`   |
+| Props not received from LLM | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
+| defineWidget error          | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
+| Widget not registered       | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
+| Import paths wrong          | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
+| Deeplink doesn't open tool  | Wrong `commandID`                                | Use the snake_case `id` from `~/.eney/tools/<tool>.json` (e.g., `new_password`) |
+| Tool not visible in Eney    | Missing tool JSON in ~/.eney/tools/              | Run `dev-mcp` — it generates tool definitions automatically             |
 
 ## Debugging Checklist
 

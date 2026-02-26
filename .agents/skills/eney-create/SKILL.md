@@ -1,6 +1,6 @@
 ---
 name: eney-create
-description: Create a new Eney MCP skill — scaffold the MCP server, implement widget components with Eney UIX, and verify it compiles.
+description: Create a new Eney MCP skill using the CLI scaffolding tool, then implement widget components with Eney UIX.
 metadata:
   author: macpaw
   version: "2.0"
@@ -14,178 +14,52 @@ Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@m
 
 Ask the user for (skip what's already provided):
 
-- **MCP Name** — kebab-case, suffixed with `-mcp` (e.g., `color-converter-mcp`)
-- **MCP Description** — what the server does (e.g., "A MCP server for color conversion utilities")
-- **Widget Name** — kebab-case (e.g., `convert-color`)
-- **Widget Description** — used by LLM to select the tool (e.g., "Convert colors between HEX, RGB, and HSL formats")
+- **MCP ID** — kebab-case, suffixed with `-mcp` (e.g., `color-converter-mcp`)
+- **MCP Title** — display name (e.g., "Color Converter")
+- **Tool Name** — kebab-case (e.g., `convert-color`)
+- **Tool Title** — shown in Eney UI (e.g., "Convert Color")
+- **Tool Description** — used by LLM to select the tool (e.g., "Convert colors between HEX, RGB, and HSL formats")
 
-## Step 2: Scaffold the MCP
+## Step 2: Create a Feature Branch
 
-Create the structure manually under `mcps/<mcp-name>/`:
-
-### Directory Structure
-
-```
-mcps/<mcp-name>/
-├── manifest.json
-├── package.json
-├── tsconfig.json
-├── index.ts
-└── components/
-    └── <widget-name>.tsx
-```
-
-### manifest.json
-
-```json
-{
-  "manifest_version": "0.3",
-  "name": "<mcp-name>",
-  "version": "1.0.0",
-  "description": "<MCP Description>",
-  "author": {
-    "name": "<author>"
-  },
-  "server": {
-    "type": "node",
-    "entry_point": "index.js",
-    "mcp_config": {
-      "command": "node",
-      "args": ["${__dirname}/index.js"],
-      "env": {}
-    }
-  },
-  "license": "MIT"
-}
-```
-
-### package.json
-
-```json
-{
-  "name": "<mcp-name>",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "<MCP Description>",
-  "main": "index.js",
-  "scripts": {
-    "start": "tsx index.ts",
-    "build": "tsc",
-    "postbuild": "npm i --omit=dev && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i",
-    "clean": "rm -rf dist",
-    "prepack": "npm run clean && npm run build",
-    "pack": "mcpb pack dist"
-  },
-  "dependencies": {
-    "@macpaw/eney-api": "^2.5.0-beta.5",
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "react": "^18.3.1",
-    "zod": "^4.1.13"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.27",
-    "typescript": "^5.9.3"
-  }
-}
-```
-
-### tsconfig.json
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "jsx": "react-jsx",
-    "strict": true,
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
-    "types": ["@types/react"]
-  },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
-  "exclude": ["dist", "node_modules"]
-}
-```
-
-### index.ts — MCP Server Entry Point
-
-```typescript
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
-import MyWidget from "./components/<widget-name>.js";
-
-const server = new McpServer(
-  {
-    name: "<mcp-name>",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      logging: {},
-      resources: {},
-    },
-  },
-);
-
-const uixServer = setupUIXForMCP(server);
-uixServer.registerWidget(MyWidget);
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("<MCP Name> running on stdio");
-}
-
-main().catch(console.error);
-```
-
-### components/<widget-name>.tsx — Widget Component
-
-```typescript
-import React, { useState } from "react";
-import { z } from "zod";
-import { Action, ActionPanel, Form, defineWidget } from "@macpaw/eney-api";
-
-const schema = z.object({
-  // Define props with .describe() for LLM context
-  // All fields should be .optional()
-});
-
-type Props = z.infer<typeof schema>;
-
-function MyWidget(props: Props) {
-  // Implement using Eney UIX widgets
-  return (
-    <Form actions={<ActionPanel><Action.Finalize title="Done" /></ActionPanel>}>
-      {/* form fields */}
-    </Form>
-  );
-}
-
-const MyWidgetDef = defineWidget({
-  name: "<widget-name>",
-  description: "<Widget Description>",
-  schema,
-  component: MyWidget,
-});
-
-export default MyWidgetDef;
-```
-
-## Step 3: Install Dependencies
+Start from an up-to-date `main`:
 
 ```bash
-cd mcps/<mcp-name> && npm install
+git checkout main && git pull
+git checkout -b feat/<mcp-id>
 ```
+
+## Step 3: Scaffold with CLI
+
+Run from the repo root:
+
+```bash
+node cli/main.ts create \
+  --id <mcp-id> \
+  --mcp-title "<MCP Title>" \
+  --tool-name <tool-name> \
+  --tool-description "<Tool Description>" \
+  --tool-title "<Tool Title>" \
+  -o ./mcps
+```
+
+This creates the full MCP structure under `mcps/<mcp-id>/`:
+
+```
+mcps/<mcp-id>/
+├── manifest.json          # MCP metadata (manifest_version: "0.3")
+├── package.json           # Dependencies including @modelcontextprotocol/sdk
+├── tsconfig.json          # TypeScript config
+├── index.ts               # Server entry — McpServer + setupUIXForMCP + registerWidget
+└── components/
+    └── <tool-name>.tsx    # Widget using defineWidget()
+```
+
+Dependencies are installed automatically by the CLI.
 
 ## Step 4: Implement the Widget
 
-Edit `mcps/<mcp-name>/components/<widget-name>.tsx`. For the full widget API, read `docs/widgets/`:
+Edit `mcps/<mcp-id>/components/<tool-name>.tsx`. For the full widget API, read `docs/widgets/`:
 
 - `docs/widgets/index.mdx` — overview, rendering pipeline, full example
 - `docs/widgets/form.mdx` — Form container
@@ -221,7 +95,7 @@ uixServer.registerWidget(WidgetB);
 ## Step 5: Verify
 
 ```bash
-cd mcps/<mcp-name> && npx tsc --noEmit
+cd mcps/<mcp-id> && npx tsc --noEmit
 ```
 
 ## Reference: Existing MCPs
