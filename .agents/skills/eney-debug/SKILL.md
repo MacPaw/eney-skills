@@ -28,15 +28,16 @@ Fix any TypeScript errors before proceeding.
 
 ## Step 3: Run Dev Mode
 
-The CLI `dev-mcp` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
+The CLI `dev` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
 
 ```bash
-cd mcps/<mcp-name> && node ../../cli/main.ts dev-mcp
+cd mcps/<mcp-name> && node ../../cli/main.ts dev
 ```
 
 This does three things on every build:
 
 1. Compiles TypeScript and deploys the output (compiled JS, manifest.json, node_modules) to:
+
    ```
    ~/Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP/<mcp-name>/
    ```
@@ -72,7 +73,7 @@ After launching, ask the user:
 3. **Do the actions work?** — test submit, finalize, copy, etc.
 4. **Any changes needed?** — gather feedback and apply fixes
 
-After each code change, the `dev-mcp` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
+After each code change, the `dev` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
 
 ```bash
 open "eney://run?manifestID=eney_core&commandID=<widget-name>"
@@ -108,17 +109,17 @@ It should print a "running on stdio" message to stderr.
 
 ## Common Issues
 
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| Build fails | TypeScript errors | Run `npx tsc --noEmit` and fix errors |
-| Server won't start | Missing dependencies | Run `npm install` then rebuild |
-| Widget not rendering | Using HTML elements instead of Eney widgets | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api` |
-| Props not received from LLM | Missing `.describe()` on Zod schema fields | Add `.describe("...")` to every field |
-| defineWidget error | Missing required fields | Ensure `{ name, description, schema, component }` are all provided |
-| Widget not registered | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget |
-| Import paths wrong | Missing `.js` extension in imports | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
-| Deeplink doesn't open tool | Wrong `commandID` | Use the widget `name` from `defineWidget()`, not the manifest name |
-| Tool not visible in Eney | Missing tool JSON in ~/.eney/tools/ | Run `dev-mcp` — it generates tool definitions automatically |
+| Problem                     | Cause                                            | Fix                                                                     |
+| --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Build fails                 | TypeScript errors                                | Run `npx tsc --noEmit` and fix errors                                   |
+| Server won't start          | Missing dependencies                             | Run `npm install` then rebuild                                          |
+| Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api`   |
+| Props not received from LLM | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
+| defineWidget error          | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
+| Widget not registered       | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
+| Import paths wrong          | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
+| Deeplink doesn't open tool  | Wrong `commandID`                                | Use the widget `name` from `defineWidget()`, not the manifest name      |
+| Tool not visible in Eney    | Missing tool JSON in ~/.eney/tools/              | Run `dev` — it generates tool definitions automatically                 |
 
 ## Debugging Checklist
 
@@ -128,7 +129,7 @@ It should print a "running on stdio" message to stderr.
 - [ ] Zod schema has `.describe()` on every field
 - [ ] Local imports use `.js` extension (TypeScript ESM requirement)
 - [ ] `npx tsc --noEmit` passes
-- [ ] `dev-mcp` deploys to the Eney MCP folder
+- [ ] `dev` deploys to the Eney MCP folder
 - [ ] Tool JSONs generated in `~/.eney/tools/`
 - [ ] Deeplink opens the widget in Eney
 - [ ] UI renders correctly
