@@ -34,10 +34,16 @@ The CLI `dev-mcp` command watches for changes, compiles with tsc, and deploys to
 cd mcps/<mcp-name> && node ../../cli/main.ts dev-mcp
 ```
 
-This compiles TypeScript and deploys the output (compiled JS, manifest.json, node_modules) to:
-```
-~/Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP/<mcp-name>/
-```
+This does three things on every build:
+
+1. Compiles TypeScript and deploys the output (compiled JS, manifest.json, node_modules) to:
+   ```
+   ~/Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP/<mcp-name>/
+   ```
+
+2. Extracts tools from the MCP server via the MCP protocol
+
+3. Generates tool definition JSONs in `~/.eney/tools/<widget-name>.json` so Eney discovers the tools locally without needing backend publishing
 
 It watches for file changes and rebuilds automatically (ignores `node_modules/`, `dist/`, and `package-lock.json`).
 
@@ -84,6 +90,14 @@ ls -la "$HOME/Library/Application Support/com.macpaw.assistant-macos.client-seta
 
 Expected contents: `index.js`, `components/`, `manifest.json`, `node_modules/`
 
+Also check that tool definitions were generated:
+
+```bash
+ls -la ~/.eney/tools/
+```
+
+Expected: one `<widget-name>.json` file per tool in the MCP.
+
 Check the server can start:
 
 ```bash
@@ -104,6 +118,7 @@ It should print a "running on stdio" message to stderr.
 | Widget not registered | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget |
 | Import paths wrong | Missing `.js` extension in imports | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
 | Deeplink doesn't open tool | Wrong `commandID` | Use the widget `name` from `defineWidget()`, not the manifest name |
+| Tool not visible in Eney | Missing tool JSON in ~/.eney/tools/ | Run `dev-mcp` — it generates tool definitions automatically |
 
 ## Debugging Checklist
 
@@ -114,6 +129,7 @@ It should print a "running on stdio" message to stderr.
 - [ ] Local imports use `.js` extension (TypeScript ESM requirement)
 - [ ] `npx tsc --noEmit` passes
 - [ ] `dev-mcp` deploys to the Eney MCP folder
+- [ ] Tool JSONs generated in `~/.eney/tools/`
 - [ ] Deeplink opens the widget in Eney
 - [ ] UI renders correctly
 - [ ] Actions work as expected

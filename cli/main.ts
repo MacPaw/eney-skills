@@ -110,14 +110,6 @@ program
   .action(() => devMcpCommand());
 
 program
-  .command("upload-archive")
-  .description("Pack and upload archive to cloud storage")
-  .option("--cwd <path>", "Current working directory")
-  .option("--mode <mode>", "Upload mode (staging or production)")
-  .option("--dry-run <value>", "Do not upload remotely, just log actions", (value) => value !== "false")
-  .action(({ cwd, mode, dryRun }) => uploadArchiveCommand(cwd, mode, dryRun));
-
-program
   .command("list-artifacts")
   .description("List artifacts in cloud storage")
   .option("--mode <mode>", "Environment mode (staging or production)")
