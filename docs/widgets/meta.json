@@ -3,15 +3,11 @@
   "defaultOpen": true,
   "pages": [
     "index",
-    "---Layout---",
     "paper",
+    "files",
     "card-header",
     "action-panel",
-    "files",
-    "---Forms---",
-    "form",
-    "form-fields",
-    "---Actions---",
-    "actions"
+    "actions",
+    "form"
   ]
 }
