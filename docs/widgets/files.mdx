@@ -1,0 +1,90 @@
+---
+title: Files
+---
+
+Displays a list of files. Each file is rendered as a clickable item showing its path.
+
+## Properties
+
+### Files
+
+| Property   | Description              | Type              | Default | Required |
+| ---------- | ------------------------ | ----------------- | ------- | -------- |
+| `children` | `Files.Item` components  | `React.ReactNode` | —       | Yes      |
+
+### Files.Item
+
+| Property   | Description               | Type      | Default | Required |
+| ---------- | ------------------------- | --------- | ------- | -------- |
+| `path`     | Absolute path to the file | `string`  | —       | Yes      |
+
+## Usage
+
+```tsx
+import { Files } from '@macpaw/eney-api';
+
+function OutputFiles(props: { paths: string[] }) {
+  return (
+    <Files>
+      {props.paths.map((file) => (
+        <Files.Item key={file} path={file} />
+      ))}
+    </Files>
+  );
+}
+```
+
+### Full example — file processing widget
+
+```tsx
+import { useState } from 'react';
+import { Form, Action, ActionPanel, Files } from '@macpaw/eney-api';
+
+function ImageOptimizer() {
+  const [inputImage, setInputImage] = useState('');
+  const [outputFiles, setOutputFiles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function onSubmit() {
+    setLoading(true);
+    // process the image and produce output files
+    const optimized = [
+      '/output/image-optimized.webp',
+      '/output/image-compressed.jpg',
+    ];
+    setOutputFiles(optimized);
+    setLoading(false);
+  }
+
+  if (outputFiles.length > 0) {
+    return (
+      <Files>
+        {outputFiles.map((file) => (
+          <Files.Item key={file} path={file} />
+        ))}
+      </Files>
+    );
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title={loading ? 'Optimizing...' : 'Optimize'}
+            onSubmit={onSubmit}
+            isLoading={loading}
+          />
+        </ActionPanel>
+      }
+    >
+      <Form.FilePicker
+        name="inputImage"
+        label="Select image"
+        value={inputImage}
+        onChange={setInputImage}
+      />
+    </Form>
+  );
+}
+```

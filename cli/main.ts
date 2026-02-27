@@ -11,6 +11,7 @@ import { createTagsCommand } from "./management/create-tags.ts";
 import { listArtifactsCommand } from "./management/list-artifacts.ts";
 import { deleteArtifactsCommand } from "./management/delete-artifacts.ts";
 import { extractMcpTools } from "./management/extract-mcp-tools.ts";
+import { devMcpCommand } from "./dev/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -46,6 +47,10 @@ const commands = {
   "delete-artifacts": {
     label: "Delete artifacts from cloud storage",
     action: () => deleteArtifactsCommand(),
+  },
+  dev: {
+    label: "Start dev mode for MCP extension",
+    action: () => devMcpCommand(),
   },
 } as const;
 
@@ -98,6 +103,13 @@ program
   .command("create-tags")
   .description("Create Git tags for MCP versions")
   .action(() => createTagsCommand());
+
+program
+  .command("dev")
+  .description(
+    "Start dev mode for MCP extension (watches current directory for changes and rebuilds/deploys to MCP folder)",
+  )
+  .action(() => devMcpCommand());
 
 program
   .command("list-artifacts")

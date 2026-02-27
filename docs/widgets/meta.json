@@ -1,0 +1,13 @@
+{
+  "title": "Widgets",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "paper",
+    "files",
+    "card-header",
+    "action-panel",
+    "actions",
+    "form"
+  ]
+}

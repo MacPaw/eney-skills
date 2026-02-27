@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { Action, ActionPanel, Form, Paper, defineWidget } from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, Paper, defineWidget, useCloseWidget } from "@macpaw/eney-api";
 
 const schema = z.object({
   name: z.string().optional().describe("The name to greet."),
@@ -9,6 +9,7 @@ const schema = z.object({
 type Props = z.infer<typeof schema>;
 
 function {{toolNamePascal}}(props: Props) {
+  const closeWidget = useCloseWidget();
   const [name, setName] = useState(props.name ?? "");
   const [result, setResult] = useState("");
 
@@ -16,10 +17,14 @@ function {{toolNamePascal}}(props: Props) {
     setResult(`Hello, ${name}!`);
   }
 
+  function onDone() {
+    closeWidget("Done");
+  }
+
   const actions = (
     <ActionPanel>
-      <Action.SubmitForm title="Submit" onSubmit={onSubmit} style="primary" />
-      <Action.Finalize title="Done" />
+      <Action.SubmitForm title="Submit" onSubmit={onSubmit} style="secondary" />
+      <Action title="Done" onAction={onDone} style="primary" />
     </ActionPanel>
   );
 
