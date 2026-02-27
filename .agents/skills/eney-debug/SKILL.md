@@ -18,10 +18,10 @@ Determine which MCP to debug — ask the user or infer from the current director
 cat mcps/<mcp-name>/manifest.json
 ```
 
-## Step 2: Typecheck
+## Step 2: Build
 
 ```bash
-cd mcps/<mcp-name> && npx tsc --noEmit
+cd mcps/<mcp-name> && npm run build
 ```
 
 Fix any TypeScript errors before proceeding.
@@ -111,7 +111,7 @@ It should print a "running on stdio" message to stderr.
 
 | Problem                     | Cause                                            | Fix                                                                     |
 | --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
-| Build fails                 | TypeScript errors                                | Run `npx tsc --noEmit` and fix errors                                   |
+| Build fails                 | TypeScript errors                                | Run `npm run build` and fix errors                                      |
 | Server won't start          | Missing dependencies                             | Run `npm install` then rebuild                                          |
 | Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api`   |
 | Props not received from LLM | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
@@ -128,7 +128,7 @@ It should print a "running on stdio" message to stderr.
 - [ ] Each component uses `defineWidget({ name, description, schema, component })`
 - [ ] Zod schema has `.describe()` on every field
 - [ ] Local imports use `.js` extension (TypeScript ESM requirement)
-- [ ] `npx tsc --noEmit` passes
+- [ ] `npm run build` passes
 - [ ] `dev` deploys to the Eney MCP folder
 - [ ] Tool JSONs generated in `~/.eney/tools/`
 - [ ] Deeplink opens the widget in Eney

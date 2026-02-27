@@ -95,8 +95,10 @@ uixServer.registerWidget(WidgetB);
 ## Step 5: Verify
 
 ```bash
-cd mcps/<mcp-id> && npx tsc --noEmit
+cd mcps/<mcp-id> && npm run build
 ```
+
+> Always use `npm run build` to verify — never `npx tsc --noEmit` or `npx tsc` directly.
 
 ## Reference: Existing MCPs
 
