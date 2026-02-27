@@ -4,7 +4,6 @@ import {
   Action,
   ActionPanel,
   defineWidget,
-  Files,
   Form,
   Paper,
   useCloseWidget,
