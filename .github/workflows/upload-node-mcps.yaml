@@ -17,7 +17,7 @@ jobs:
 
   build-node-mcp:
     name: Build Node MCP
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     needs: detect-changes
     permissions:
       contents: read
@@ -32,11 +32,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Prepare Node.js
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}"
-          npm ci --os=darwin --cpu=arm64
-        working-directory: mcps/${{ matrix.mcp }}
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
+        with:
+          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Pack MCP archive
         id: pack
@@ -44,16 +43,26 @@ jobs:
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
           ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npm ci --os=darwin --cpu=arm64
           npm run build
           npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+        working-directory: mcps/${{ matrix.mcp }}
+
+      - name: Extract MCP tools
+        run: |
+          npm i --os=linux --cpu=arm64 # Prepare environment for MCP tools extraction
+          npm run build
+          node ../../cli/main.ts extract-mcp-tools --mcp-dir dist --output tools.json
         working-directory: mcps/${{ matrix.mcp }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-mcp-${{ matrix.mcp }}
-          path: mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+          path: |
+            mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+            mcps/${{ matrix.mcp }}/tools.json
           retention-days: 1
 
   publish-node-mcp:
@@ -114,4 +123,5 @@ jobs:
         run: |
           node cli/main.ts publish-mcp-metadata \
             --mode staging \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }}
+            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --tools-json mcps/${{ matrix.mcp }}/tools.json
