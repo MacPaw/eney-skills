@@ -2,8 +2,7 @@ import { resolve, basename, join } from "path";
 import { homedir } from "os";
 import { watch } from "fs";
 import { execSync } from "child_process";
-import { remove } from "fs-extra";
-import { cp, readFile, mkdir, writeFile } from "fs/promises";
+import { cp, readFile, mkdir, writeFile, rm } from "fs/promises";
 import color from "picocolors";
 import { debounce } from "es-toolkit";
 import { extractMcpTools } from "../management/extract-mcp-tools.ts";
@@ -13,7 +12,7 @@ const MCPS_FOLDER = resolve(homedir(), "Library/Application Support/com.macpaw.a
 const TOOLS_FOLDER = resolve(homedir(), ".eney", "tools");
 
 async function copyFolder(src: string, dest: string) {
-  await remove(dest);
+  await rm(dest, { recursive: true, force: true });
 
   return cp(src, dest, { recursive: true, force: true });
 }

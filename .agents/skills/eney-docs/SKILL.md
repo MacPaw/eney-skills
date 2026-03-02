@@ -42,7 +42,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupUIXForMCP } from "@macpaw/eney-api";
 
-const server = new McpServer({ name: "<mcp-name>", version: "1.0.0" }, { capabilities: { logging: {}, resources: {} } });
+const server = new McpServer(
+  { name: "<mcp-name>", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
+);
 const uixServer = setupUIXForMCP(server);
 uixServer.registerWidget(MyWidget);
 
@@ -52,7 +55,7 @@ import { defineWidget } from "@macpaw/eney-api";
 const MyWidgetDef = defineWidget({
   name: "<widget-name>",
   description: "<description for LLM>",
-  schema,            // Zod schema with .describe() on each field
+  schema, // Zod schema with .describe() on each field
   component: MyWidget,
 });
 
@@ -63,8 +66,13 @@ export default MyWidgetDef;
 
 ```tsx
 import {
-  Form, Paper, Action, ActionPanel,
-  Files, CardHeader, defineWidget,
+  Form,
+  Paper,
+  Action,
+  ActionPanel,
+  Files,
+  CardHeader,
+  defineWidget,
 } from "@macpaw/eney-api";
 ```
 
@@ -86,7 +94,10 @@ For full documentation, read the files in `docs/widgets/`:
 Container for form fields.
 
 ```tsx
-<Form header={<CardHeader title="Title" />} actions={<ActionPanel>...</ActionPanel>}>
+<Form
+  header={<CardHeader title="Title" />}
+  actions={<ActionPanel>...</ActionPanel>}
+>
   {/* form fields */}
 </Form>
 ```
@@ -95,33 +106,34 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 
 ### Form Fields
 
-| Field | Key Props | Notes |
-|-------|-----------|-------|
-| `Form.TextField` | `name`, `value`, `onChange`, `label`, `isCopyable`, `$context` | Single-line text |
-| `Form.PasswordField` | `name`, `value`, `onChange`, `label` | Masked input |
-| `Form.NumberField` | `name`, `value`, `onChange`, `label`, `min`, `max` | Numeric input |
-| `Form.Checkbox` | `name`, `checked`, `onChange`, `label`, `variant` | `"checkbox"` or `"switch"` |
-| `Form.Dropdown` | `name`, `value`, `onChange`, `label`, `searchable` | Children: `Form.Dropdown.Item` |
-| `Form.DatePicker` | `name`, `value`, `onChange`, `label`, `type` | `"date"`, `"time"`, or `"datetime"` |
-| `Form.FilePicker` | `name`, `value`, `onChange`, `label`, `accept`, `multiple` | File selection dialog |
-| `Form.RichTextEditor` | `value`, `onChange`, `isInitiallyFocused` | Rich text area |
+| Field                 | Key Props                                                      | Notes                               |
+| --------------------- | -------------------------------------------------------------- | ----------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`, `label`, `isCopyable`, `$context` | Single-line text                    |
+| `Form.PasswordField`  | `name`, `value`, `onChange`, `label`                           | Masked input                        |
+| `Form.NumberField`    | `name`, `value`, `onChange`, `label`, `min`, `max`             | Numeric input                       |
+| `Form.Checkbox`       | `name`, `checked`, `onChange`, `label`, `variant`              | `"checkbox"` or `"switch"`          |
+| `Form.Dropdown`       | `name`, `value`, `onChange`, `label`, `searchable`             | Children: `Form.Dropdown.Item`      |
+| `Form.DatePicker`     | `name`, `value`, `onChange`, `label`, `type`                   | `"date"`, `"time"`, or `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`, `label`, `accept`, `multiple`     | File selection dialog               |
+| `Form.RichTextEditor` | `value`, `onChange`, `isInitiallyFocused`                      | Rich text area                      |
 
 ### Actions
 
-| Action | Key Props | Notes |
-|--------|-----------|-------|
-| `Action` | `title`, `onAction`, `style`, `isLoading`, `isDisabled` | Generic button |
-| `Action.SubmitForm` | `title`, `onSubmit`, `style`, `isLoading`, `isDisabled` | Form submit |
-| `Action.CopyToClipboard` | `content`, `title` | Copy text to clipboard |
-| `Action.ShowInFinder` | `path`, `title` | Reveal file in Finder |
-| `Action.Finalize` | `title` | Signals completion, closes widget |
+| Action                   | Key Props                                               | Notes                  |
+| ------------------------ | ------------------------------------------------------- | ---------------------- |
+| `Action`                 | `title`, `onAction`, `style`, `isLoading`, `isDisabled` | Generic button         |
+| `Action.SubmitForm`      | `title`, `onSubmit`, `style`, `isLoading`, `isDisabled` | Form submit            |
+| `Action.CopyToClipboard` | `content`, `title`                                      | Copy text to clipboard |
+| `Action.ShowInFinder`    | `path`, `title`                                         | Reveal file in Finder  |
 
 ### ActionPanel
 
 ```tsx
-<ActionPanel layout="row">  {/* or "column" (default) */}
+<ActionPanel layout="row">
+  {" "}
+  {/* or "column" (default) */}
   <Action.SubmitForm title="Save" onSubmit={fn} style="primary" />
-  <Action.Finalize title="Cancel" />
+  <Action title="Cancel" onAction={fn} />
 </ActionPanel>
 ```
 
@@ -166,7 +178,13 @@ Swap UI after a successful operation:
 ```tsx
 if (status === "success") {
   return (
-    <Form actions={<ActionPanel><Action.Finalize title="Done" /></ActionPanel>}>
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Done" />
+        </ActionPanel>
+      }
+    >
       <Paper markdown="Done!" $context />
     </Form>
   );
@@ -189,25 +207,27 @@ return <Form actions={actions}>{/* fields */}</Form>;
 ### Error Display
 
 ```tsx
-{error && <Paper markdown={`Error: ${error}`} />}
+{
+  error && <Paper markdown={`Error: ${error}`} />;
+}
 ```
 
 ## Real MCP Examples
 
 Study these in the repo for real-world patterns:
 
-| MCP | Highlights |
-|-----|------------|
-| `mcps/security-utilities-mcp/` | NumberField, Checkbox switches, useEffect auto-generate, `isCopyable` |
-| `mcps/notes-utilities-mcp/` | Dropdown with dynamic items, RichTextEditor, external helper scripts, loading states |
-| `mcps/pdf-utilities-mcp/` | FilePicker usage |
-| `mcps/send-mail-mcp/` | Email sending with multiple form fields |
-| `mcps/image-utilities-mcp/` | Image processing patterns |
+| MCP                            | Highlights                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------ |
+| `mcps/security-utilities-mcp/` | NumberField, Checkbox switches, useEffect auto-generate, `isCopyable`                |
+| `mcps/notes-utilities-mcp/`    | Dropdown with dynamic items, RichTextEditor, external helper scripts, loading states |
+| `mcps/pdf-utilities-mcp/`      | FilePicker usage                                                                     |
+| `mcps/send-mail-mcp/`          | Email sending with multiple form fields                                              |
+| `mcps/image-utilities-mcp/`    | Image processing patterns                                                            |
 
 ## CLI Commands
 
-| Command | Purpose |
-|---------|---------|
+| Command                    | Purpose                              |
+| -------------------------- | ------------------------------------ |
 | `node cli/main.ts dev-mcp` | Watch + compile + deploy MCP to Eney |
-| `node cli/main.ts dev` | Watch + bundle JSX extension to Eney |
-| `node cli/main.ts bundle` | One-time bundle (extensions) |
+| `node cli/main.ts dev`     | Watch + bundle JSX extension to Eney |
+| `node cli/main.ts bundle`  | One-time bundle (extensions)         |
