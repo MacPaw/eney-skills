@@ -64,7 +64,7 @@ Edit `mcps/<mcp-id>/components/<tool-name>.tsx`. For the full widget API, read `
 - `docs/widgets/index.mdx` — overview, rendering pipeline, full example
 - `docs/widgets/form.mdx` — Form container
 - `docs/widgets/form-fields.mdx` — TextField, NumberField, Checkbox, Dropdown, DatePicker, FilePicker, RichTextEditor
-- `docs/widgets/actions.mdx` — Action, SubmitForm, CopyToClipboard, ShowInFinder, Finalize
+- `docs/widgets/actions.mdx` — Action, SubmitForm, CopyToClipboard, ShowInFinder
 - `docs/widgets/action-panel.mdx` — ActionPanel layout
 - `docs/widgets/paper.mdx` — markdown display
 - `docs/widgets/card-header.mdx` — form header with icon
@@ -75,8 +75,7 @@ Key patterns:
 - **defineWidget** — wraps the component with `{ name, description, schema, component }` and is the default export
 - **registerWidget** — each widget is imported in `index.ts` and registered with `uixServer.registerWidget()`
 - **Schema** — `z.object({...})`, every field needs `.describe()`, fields should be `.optional()`
-- **$context** — expose widget values to the AI conversation
-- **Action.Finalize** — signals completion, closes the widget
+- **useCloseWidget** — signals completion, closes the widget
 - **Success state pattern** — swap UI after successful operations (return different JSX)
 - **Business logic** — extract into separate files (`components/utils.ts` or `helpers/`)
 

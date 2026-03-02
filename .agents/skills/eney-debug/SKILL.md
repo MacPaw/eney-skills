@@ -70,7 +70,7 @@ After launching, ask the user:
 
 1. **Did the tool open correctly?** — if not, check the build output and manifest
 2. **Does the UI render as expected?** — if not, review the widget usage
-3. **Do the actions work?** — test submit, finalize, copy, etc.
+3. **Do the actions work?** — test submit, copy, etc.
 4. **Any changes needed?** — gather feedback and apply fixes
 
 After each code change, the `dev` watcher auto-rebuilds and redeploys. Re-launch with the deeplink to test:
