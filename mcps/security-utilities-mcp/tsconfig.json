@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "types": [
-      "@types/react"
+      "@types/react",
+      "@types/node"
     ]
   },
   "include": [
