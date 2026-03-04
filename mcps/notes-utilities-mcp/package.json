@@ -11,7 +11,7 @@
     "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^2.9.1",
+    "@macpaw/eney-api": "^2.10.0-beta.1",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "lodash": "^4.17.23",
     "markdown-it": "^14.1.1",
