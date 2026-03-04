@@ -4,6 +4,10 @@ function toSnakeCase(str: string): string {
   return str.replace(/-/g, "_");
 }
 
+export async function getOpenLink(toolId: string) {
+  return `eney://run?manifestID=eney_core&commandID=${toSnakeCase(toolId)}`;
+}
+
 function jsonSchemaPropertyToTypeMetadata(prop: Record<string, any>): Record<string, any> {
   if (prop.enum) {
     return {

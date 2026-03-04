@@ -6,7 +6,7 @@ import { cp, readFile, mkdir, writeFile, rm } from "fs/promises";
 import color from "picocolors";
 import { debounce } from "es-toolkit";
 import { extractMcpTools } from "../management/extract-mcp-tools.ts";
-import { toolToManifest } from "./tool-to-manifest.ts";
+import { getOpenLink, toolToManifest } from "./tool-to-manifest.ts";
 
 const MCPS_FOLDER = resolve(homedir(), "Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP");
 const TOOLS_FOLDER = resolve(homedir(), ".eney", "tools");
@@ -47,6 +47,11 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
     const toolPath = join(TOOLS_FOLDER, `${tool.name}.json`);
     await writeFile(toolPath, JSON.stringify(toolManifest, null, 2));
     console.log(color.bold(color.cyan(`  → ${toolPath}`)));
+  }
+
+  for (const tool of tools) {
+    const openLink = await getOpenLink(tool.name);
+    console.log(color.bold(color.magenta(`Run ${tool.name}: ${openLink}`)));
   }
 
   return targetDir;
