@@ -39,11 +39,12 @@ Create `package.json`:
   "description": "My first Eney extension.",
   "main": "index.js",
   "scripts": {
-    "start": "tsx index.ts",
+    "start": "npx tsx index.ts",
     "clean": "rm -rf dist",
-    "build": "tsc",
     "prebuild": "npm run clean",
-    "postbuild": "npm ci --os=darwin --cpu=arm64 && cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && npm i"
+    "test": "npx tsx --test tests/*.test.ts",
+    "build": "tsc",
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
   },
   "dependencies": {
     "@macpaw/eney-api": "^2.7.0",
@@ -52,7 +53,7 @@ Create `package.json`:
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@types/node": "^20.14.10",
+    "@types/node": "^25.3.3",
     "@types/react": "^18.3.27",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
@@ -75,7 +76,7 @@ Create `tsconfig.json`:
     "esModuleInterop": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "types": ["@types/react"]
+    "types": ["@types/react", "@types/node"]
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
   "exclude": ["dist", "node_modules"]

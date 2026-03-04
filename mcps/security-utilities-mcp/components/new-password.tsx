@@ -6,6 +6,7 @@ import {
   Form,
   defineWidget,
   useCloseWidget,
+  useLogger,
 } from "@macpaw/eney-api";
 import { generatePassword } from "./generate-password.js";
 
@@ -28,6 +29,7 @@ type Props = z.infer<typeof schema>;
 
 function NewPassword(props: Props) {
   const closeWidget = useCloseWidget();
+  const logger = useLogger();
   const [length, setLength] = useState<number | null>(props.length ?? 20);
   const [symbols, setSymbols] = useState(props.symbols ?? true);
   const [numbers, setNumbers] = useState(props.numbers ?? true);
@@ -60,6 +62,13 @@ function NewPassword(props: Props) {
 
   useEffect(() => {
     const value = generatePassword({ length, symbols, numbers });
+
+    logger.debug("Generated password: %s on mount or options change", value, {
+      length,
+      symbols,
+      numbers,
+    });
+
     setPassword(value);
   }, [length, symbols, numbers]);
 
