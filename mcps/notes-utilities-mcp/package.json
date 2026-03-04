@@ -1,7 +1,7 @@
 {
   "name": "notes-utilities-mcp",
   "type": "module",
-  "description": "Notes Utilities MCP server",
+  "description": "Notes utilities MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",

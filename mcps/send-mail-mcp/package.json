@@ -1,7 +1,7 @@
 {
   "name": "send-mail-mcp",
   "type": "module",
-  "description": "Send Mail MCP server",
+  "description": "Send mail MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",

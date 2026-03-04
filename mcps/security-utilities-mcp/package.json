@@ -1,7 +1,7 @@
 {
   "name": "security-utilities-mcp",
   "type": "module",
-  "description": "A MCP server for the password and other utilities.",
+  "description": "A MCP server for the password and other utilities",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
