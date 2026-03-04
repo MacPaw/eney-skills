@@ -1,4 +1,4 @@
-import color from "picocolors";
+import { styleText } from "node:util";
 import { CloudflareAnalyticsClient } from "../analytics/cf-analytics.ts";
 import { spawnSync } from "child_process";
 
@@ -10,7 +10,7 @@ export function formatSize(bytes: number): string {
 }
 
 export function formatAge(date: Date | null): string {
-  if (!date) return color.dim("unknown");
+  if (!date) return styleText("dim", "unknown");
 
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -37,11 +37,11 @@ export function formatAge(date: Date | null): string {
   }
 
   if (diffDays <= 2) {
-    return color.green(text);
+    return styleText("green", text);
   } else if (diffDays <= 7) {
-    return color.yellow(text);
+    return styleText("yellow", text);
   } else {
-    return color.red(text);
+    return styleText("red", text);
   }
 }
 

@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import color from "picocolors";
+import { styleText } from "node:util";
 import { ApiClient } from "../lib/api.ts";
 import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
@@ -77,7 +77,7 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
       const downloads = artifact.downloads.toLocaleString();
       return {
         value: artifact.name,
-        label: `${color.bold(color.blue(name))} ${color.dim("-")} ${color.yellow(size)} ${color.dim("|")} ${color.cyan(age)} ${color.dim("|")} ${color.magenta(downloads + " downloads")}`,
+        label: `${styleText(["blue", "bold"], name)} ${styleText("dim", "-")} ${styleText("yellow", size)} ${styleText("dim", "|")} ${styleText("cyan", age)} ${styleText("dim", "|")} ${styleText("magenta", downloads + " downloads")}`,
       };
     }),
     required: false,
@@ -93,9 +93,9 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
     return;
   }
 
-  console.log(`\n${color.yellow("The following artifacts will be deleted:")}\n`);
+  console.log(`\n${styleText("yellow", "The following artifacts will be deleted:")}\n`);
   for (const name of selected) {
-    console.log(`  ${color.red("×")} ${(name as string).replace(MCP_PREFIX, "")}`);
+    console.log(`  ${styleText("red", "×")} ${(name as string).replace(MCP_PREFIX, "")}`);
   }
   console.log();
 
@@ -123,13 +123,13 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   }
 
   if (deleted > 0) {
-    p.log.success(`${color.green(`Deleted ${deleted} artifact(s)`)}`);
+    p.log.success(`${styleText("green", `Deleted ${deleted} artifact(s)`)}`);
   }
 
   if (errors.length > 0) {
     p.log.error(`Failed to delete ${errors.length} artifact(s):`);
     for (const err of errors) {
-      console.log(`  ${color.red("×")} ${err}`);
+      console.log(`  ${styleText("red", "×")} ${err}`);
     }
   }
 }

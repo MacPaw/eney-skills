@@ -1,7 +1,7 @@
 {
   "name": "pdf-utilities-mcp",
   "type": "module",
-  "description": "PDF Utilities MCP server",
+  "description": "PDF utilities MCP server",
   "main": "index.js",
   "scripts": {
     "start": "tsx index.ts",
