@@ -22,7 +22,7 @@ All form fields are **controlled**. That means:
 
 ```tsx
 import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@macpaw/eney-api';
+import { Form, Action, ActionPanel } from '@eney/api';
 
 function MyForm() {
   const [name, setName] = useState('');
@@ -63,7 +63,7 @@ Single-line text input.
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [city, setCity] = useState('');
@@ -95,7 +95,7 @@ Numeric input with optional min/max bounds.
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [quantity, setQuantity] = useState<number | null>(1);
@@ -132,7 +132,7 @@ Masked text input for sensitive values.
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [apiKey, setApiKey] = useState('');
@@ -180,7 +180,7 @@ Select or searchable autocomplete. Behaves like a `<select>` by default. When `s
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [currency, setCurrency] = useState('usd');
@@ -221,7 +221,7 @@ Toggle input that can be displayed as a checkbox or a switch.
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [enabled, setEnabled] = useState(false);
@@ -258,7 +258,7 @@ Date, time, or datetime picker.
 
 ```tsx
 import { useState } from 'react';
-import { Form, Paper, Action, ActionPanel } from '@macpaw/eney-api';
+import { Form, Paper, Action, ActionPanel } from '@eney/api';
 
 function CountdownWidget() {
   const [date, setDate] = useState<Date>(new Date());
@@ -307,7 +307,7 @@ File selection. Supports single or multiple file selection.
 
 ```tsx
 import { useState } from 'react';
-import { Form } from '@macpaw/eney-api';
+import { Form } from '@eney/api';
 
 function MyWidget() {
   const [files, setFiles] = useState<string[]>([]);
@@ -342,7 +342,7 @@ Multi-line rich text editor.
 
 ```tsx
 import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@macpaw/eney-api';
+import { Form, Action, ActionPanel } from '@eney/api';
 
 function NoteEditor() {
   const [content, setContent] = useState('');

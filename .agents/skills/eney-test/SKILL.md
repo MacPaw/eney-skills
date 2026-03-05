@@ -8,7 +8,7 @@ metadata:
 
 # Test an Eney MCP Skill
 
-Add widget and unit tests to an MCP extension using `@macpaw/eney-api/testing` and `node:test`.
+Add widget and unit tests to an MCP extension using `@eney/api/testing` and `node:test`.
 
 ## Step 1: Identify the MCP
 
@@ -32,12 +32,12 @@ Create test files in a `tests/` directory inside the MCP.
 
 ### Widget Tests (using `createUIXTestSession`)
 
-Use `createUIXTestSession` from `@macpaw/eney-api/testing` to mount a widget definition and interact with it:
+Use `createUIXTestSession` from `@eney/api/testing` to mount a widget definition and interact with it:
 
 ```ts
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createUIXTestSession } from "@macpaw/eney-api/testing";
+import { createUIXTestSession } from "@eney/api/testing";
 import MyWidget from "../components/my-widget.js";
 
 describe("MyWidget", () => {

@@ -7,7 +7,7 @@ import {
   Paper,
   CardHeader,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 import { z } from "zod";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";

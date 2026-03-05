@@ -113,7 +113,7 @@ It should print a "running on stdio" message to stderr.
 | --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
 | Build fails                 | TypeScript errors                                | Run `npm run build` and fix errors                                      |
 | Server won't start          | Missing dependencies                             | Run `npm install` then rebuild                                          |
-| Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api`   |
+| Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@eney/api`          |
 | Props not received from LLM | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
 | defineWidget error          | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
 | Widget not registered       | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |

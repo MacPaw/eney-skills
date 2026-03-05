@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 import AppendToNote from "./components/append-to-note.js";
 
 const server = new McpServer(

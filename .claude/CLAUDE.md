@@ -17,7 +17,7 @@ Always use `npm run build` to build/verify extensions — never `npx tsc --noEmi
 
 ## Key Patterns
 - AppleScript integration: use `runScript()` helper (see `notes-utilities-mcp/helpers/run-script.ts`)
-- SQL DB access: use `useSQL()` from `@macpaw/eney-api`
+- SQL DB access: use `useSQL()` from `@eney/api`
 - Always use `.js` extensions for local imports (ESM requirement)
 - All Zod schema fields need `.describe()` and should be `.optional()`
 - Widget name in `defineWidget` uses hyphens; `commandID` in deeplinks uses underscores

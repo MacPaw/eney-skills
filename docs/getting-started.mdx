@@ -6,7 +6,7 @@ description: Create your first Eney extension in minutes
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Eney extensions are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@macpaw/eney-api` widget library — the framework renders them as native macOS UI.
+Eney extensions are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@eney/api` widget library — the framework renders them as native macOS UI.
 
 This guide walks you through creating a complete extension from scratch.
 
@@ -47,7 +47,7 @@ Create `package.json`:
     "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
   },
   "dependencies": {
-    "@macpaw/eney-api": "^2.7.0",
+    "@eney/api": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "react": "^18.3.1",
     "zod": "^4.1.13"
@@ -124,7 +124,7 @@ Create `index.ts` — this registers your widgets and starts the MCP server:
 ```ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 import Greeting from "./components/greeting.js";
 
 const server = new McpServer(
@@ -160,7 +160,7 @@ import {
   Paper,
   defineWidget,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 
 const schema = z.object({
   name: z.string().optional().describe("The name to greet."),

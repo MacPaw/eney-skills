@@ -8,7 +8,7 @@ import {
   Files,
   Form,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 import { optimize } from "../helpers/optimize.js";
 import { JPEGOptions } from "./jpeg-options.js";
 
