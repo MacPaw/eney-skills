@@ -8,7 +8,7 @@ metadata:
 
 # Create a New Eney MCP Skill
 
-Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@macpaw/eney-api`. Each MCP runs as a standalone Node.js process communicating over stdio.
+Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@eney/api`. Each MCP runs as a standalone Node.js process communicating over stdio.
 
 ## Step 1: Gather Requirements
 

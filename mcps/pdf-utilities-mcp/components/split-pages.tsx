@@ -8,7 +8,7 @@ import {
   Files,
   Form,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";

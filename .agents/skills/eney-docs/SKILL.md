@@ -18,7 +18,7 @@ Eney widgets are a JSX-based interface for building native macOS UI. The renderi
 JSX Component → JSON tree → Native Swift UI
 ```
 
-You write React components using widget primitives from `@macpaw/eney-api`. The runtime serializes the component tree to JSON, and the Eney macOS app renders native views.
+You write React components using widget primitives from `@eney/api`. The runtime serializes the component tree to JSON, and the Eney macOS app renders native views.
 
 ## MCP Extension Structure
 
@@ -40,7 +40,7 @@ mcps/<mcp-name>/
 // index.ts — Server setup
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 
 const server = new McpServer(
   { name: "<mcp-name>", version: "1.0.0" },
@@ -50,7 +50,7 @@ const uixServer = setupUIXForMCP(server);
 uixServer.registerWidget(MyWidget);
 
 // components/<widget-name>.tsx — Widget definition
-import { defineWidget } from "@macpaw/eney-api";
+import { defineWidget } from "@eney/api";
 
 const MyWidgetDef = defineWidget({
   name: "<widget-name>",
@@ -73,7 +73,7 @@ import {
   Files,
   CardHeader,
   defineWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 ```
 
 ## Widgets Reference

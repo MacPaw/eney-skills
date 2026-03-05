@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 import GetRunningProcessesList from "./components/get-running-processes-list.js";
 import GetSystemInfo from "./components/get-system-info.js";
 import HowLongUntil from "./components/how-long-until.js";

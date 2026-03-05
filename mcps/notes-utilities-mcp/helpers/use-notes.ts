@@ -1,7 +1,7 @@
 import { homedir } from "os";
 import { resolve } from "path";
 
-import { useLogger, useSQL } from "@macpaw/eney-api";
+import { useLogger, useSQL } from "@eney/api";
 import partition from "lodash/partition.js";
 
 type Link = {

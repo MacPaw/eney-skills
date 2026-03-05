@@ -7,7 +7,7 @@ import {
   defineWidget,
   useCloseWidget,
   useLogger,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 import { generatePassword } from "./generate-password.js";
 
 const schema = z.object({

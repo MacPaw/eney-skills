@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "send-mail-mcp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Send Mail MCP server",
   "author": {
     "name": "Yurii"

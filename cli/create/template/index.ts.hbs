@@ -1,20 +1,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 import {{toolNamePascal}} from "./components/{{toolName}}.js";
 
 const server = new McpServer(
-  { name: "{{mcpId}}", version: "1.0.0" },
-  { capabilities: { logging: {}, resources: {} } },
+{ name: "{{mcpId}}", version: "1.0.0" },
+{ capabilities: { logging: {}, resources: {} } },
 );
 
 const uixServer = setupUIXForMCP(server);
 uixServer.registerWidget({{toolNamePascal}});
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("{{mcpTitle}} MCP Server running on stdio");
+const transport = new StdioServerTransport();
+await server.connect(transport);
+console.error("{{mcpTitle}} MCP Server running on stdio");
 }
 
 main().catch(console.error);

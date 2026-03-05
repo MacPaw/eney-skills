@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createUIXTestSession } from "@macpaw/eney-api/testing";
+import { createUIXTestSession } from "@eney/api/testing";
 import NewPasswordWidget from "../components/new-password.js";
 
 describe("NewPassword widget", () => {

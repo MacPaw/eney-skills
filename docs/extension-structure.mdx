@@ -57,7 +57,7 @@ The entry point creates an MCP server, wraps it with the Eney UIX layer, and reg
 ```ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 import MyWidget from "./components/my-widget.js";
 
 const server = new McpServer(
@@ -109,7 +109,7 @@ import {
   Paper,
   defineWidget,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 
 const schema = z.object({
   city: z.string().optional().describe("The city name to look up."),
