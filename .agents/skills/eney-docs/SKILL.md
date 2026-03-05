@@ -106,16 +106,16 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 
 ### Form Fields
 
-| Field                 | Key Props                                                      | Notes                               |
-| --------------------- | -------------------------------------------------------------- | ----------------------------------- |
-| `Form.TextField`      | `name`, `value`, `onChange`, `label`, `isCopyable`, `$context` | Single-line text                    |
-| `Form.PasswordField`  | `name`, `value`, `onChange`, `label`                           | Masked input                        |
-| `Form.NumberField`    | `name`, `value`, `onChange`, `label`, `min`, `max`             | Numeric input                       |
-| `Form.Checkbox`       | `name`, `checked`, `onChange`, `label`, `variant`              | `"checkbox"` or `"switch"`          |
-| `Form.Dropdown`       | `name`, `value`, `onChange`, `label`, `searchable`             | Children: `Form.Dropdown.Item`      |
-| `Form.DatePicker`     | `name`, `value`, `onChange`, `label`, `type`                   | `"date"`, `"time"`, or `"datetime"` |
-| `Form.FilePicker`     | `name`, `value`, `onChange`, `label`, `accept`, `multiple`     | File selection dialog               |
-| `Form.RichTextEditor` | `value`, `onChange`, `isInitiallyFocused`                      | Rich text area                      |
+| Field                 | Key Props                                                  | Notes                               |
+| --------------------- | ---------------------------------------------------------- | ----------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`, `label`, `isCopyable`         | Single-line text                    |
+| `Form.PasswordField`  | `name`, `value`, `onChange`, `label`                       | Masked input                        |
+| `Form.NumberField`    | `name`, `value`, `onChange`, `label`, `min`, `max`         | Numeric input                       |
+| `Form.Checkbox`       | `name`, `checked`, `onChange`, `label`, `variant`          | `"checkbox"` or `"switch"`          |
+| `Form.Dropdown`       | `name`, `value`, `onChange`, `label`, `searchable`         | Children: `Form.Dropdown.Item`      |
+| `Form.DatePicker`     | `name`, `value`, `onChange`, `label`, `type`               | `"date"`, `"time"`, or `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`, `label`, `accept`, `multiple` | File selection dialog               |
+| `Form.RichTextEditor` | `value`, `onChange`, `isInitiallyFocused`                  | Rich text area                      |
 
 ### Actions
 
@@ -142,7 +142,7 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 Displays rendered markdown content.
 
 ```tsx
-<Paper markdown="Hello **world**" isScrollable $context />
+<Paper markdown="Hello **world**" isScrollable />
 <Paper markdown={result} actions={<ActionPanel><Action.CopyToClipboard content={result} /></ActionPanel>} />
 ```
 
@@ -158,15 +158,6 @@ Displays rendered markdown content.
 <Files>
   <Files.Item path="/path/to/file.pdf" />
 </Files>
-```
-
-## The `$context` Prop
-
-When `$context={true}` on a widget, its content is exposed to the AI as conversation context — the model can read and reference the displayed values.
-
-```tsx
-<Paper markdown={summary} $context />
-<Form.TextField name="url" value={url} onChange={setUrl} $context />
 ```
 
 ## Common Patterns
@@ -185,7 +176,7 @@ if (status === "success") {
         </ActionPanel>
       }
     >
-      <Paper markdown="Done!" $context />
+      <Paper markdown="Done!" />
     </Form>
   );
 }
