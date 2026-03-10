@@ -1,7 +1,6 @@
 import { join } from "path";
 import fs from "fs/promises";
 import semver from "semver";
-import * as p from "@clack/prompts";
 
 import { ApiClient } from "../lib/api.ts";
 
@@ -50,59 +49,6 @@ export async function checkMcpVersion(cwd: string, mode: "staging" | "production
   }
 }
 
-type CheckMcpVersionOptions = {
-  cwd?: string;
-  mode?: "staging" | "production";
-};
-
-async function promptForOptions(options: CheckMcpVersionOptions) {
-  p.intro("Check MCP Version");
-
-  const answers = await p.group(
-    {
-      cwd: () =>
-        options.cwd
-          ? Promise.resolve(options.cwd)
-          : p.text({
-              message: "MCP server directory:",
-              initialValue: process.cwd(),
-            }),
-      mode: () =>
-        options.mode
-          ? Promise.resolve(options.mode)
-          : p.select({
-              message: "Mode:",
-              options: [
-                { value: "staging", label: "Staging" },
-                { value: "production", label: "Production" },
-              ],
-            }),
-    },
-    {
-      onCancel: () => {
-        p.cancel("Operation cancelled.");
-        process.exit(0);
-      },
-    }
-  );
-
-  return {
-    cwd: answers.cwd as string,
-    mode: answers.mode as "staging" | "production",
-  };
-}
-
-export async function checkMcpVersionCommand(cwd?: string, mode?: "staging" | "production") {
-  const hasAllOptions = cwd !== undefined && mode !== undefined;
-  const isCI = process.env.CI === "true";
-
-  if (hasAllOptions) {
-    await checkMcpVersion(cwd, mode);
-  } else if (isCI) {
-    console.error("Error: --cwd and --mode are required in CI mode");
-    process.exit(1);
-  } else {
-    const resolved = await promptForOptions({ cwd, mode });
-    await checkMcpVersion(resolved.cwd, resolved.mode);
-  }
+export async function checkMcpVersionCommand(cwd: string, mode: "staging" | "production") {
+  await checkMcpVersion(cwd, mode);
 }

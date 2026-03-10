@@ -3,54 +3,11 @@ import semver from "semver";
 import fs from "fs/promises";
 import os from "os";
 import { spawnSync } from "child_process";
-import * as p from "@clack/prompts";
 
 import { ApiClient, getMcpFileDownloadUrl } from "../lib/api.ts";
 import { extractMcpTools } from "./extract-mcp-tools.ts";
 import { checkMcpVersion } from "./check-mcp-version.ts";
 import { getFileHash } from "./utils.ts";
-
-type PublishMcpMetadataOptions = {
-  mode?: "staging" | "production";
-  archivePath?: string;
-  toolsJsonPath?: string;
-};
-
-async function promptForOptions(options: PublishMcpMetadataOptions) {
-  p.intro("Publish MCP Metadata");
-
-  const answers = await p.group(
-    {
-      mode: () =>
-        options.mode
-          ? Promise.resolve(options.mode)
-          : p.select({
-              message: "Publish mode:",
-              options: [
-                { value: "staging", label: "Staging" },
-                { value: "production", label: "Production" },
-              ],
-            }),
-      archivePath: () =>
-        options.archivePath
-          ? Promise.resolve(options.archivePath)
-          : p.text({
-              message: "Path to .mcpb archive:",
-            }),
-    },
-    {
-      onCancel: () => {
-        p.cancel("Operation cancelled.");
-        process.exit(0);
-      },
-    },
-  );
-
-  return {
-    mode: answers.mode as "staging" | "production",
-    archivePath: answers.archivePath as string,
-  };
-}
 
 async function unpackMcpArchive(archivePath: string): Promise<string> {
   const tmpDir = await fs.mkdtemp(join(os.tmpdir(), "mcpb-"));
@@ -128,20 +85,9 @@ async function publishMcpMetadata(mode: "staging" | "production", archivePath: s
 }
 
 export async function publishMcpMetadataCommand(
-  mode?: "staging" | "production",
-  archivePath?: string,
+  mode: "staging" | "production",
+  archivePath: string,
   toolsJson?: string,
 ) {
-  const hasRequiredOptions = mode !== undefined && archivePath !== undefined;
-  const isCI = process.env.CI === "true";
-
-  if (hasRequiredOptions) {
-    await publishMcpMetadata(mode, archivePath, toolsJson);
-  } else if (isCI) {
-    console.error("Error: --mode and --archive-path are required in CI mode");
-    process.exit(1);
-  } else {
-    const resolved = await promptForOptions({ mode, archivePath });
-    await publishMcpMetadata(resolved.mode, resolved.archivePath, toolsJson);
-  }
+  await publishMcpMetadata(mode, archivePath, toolsJson);
 }

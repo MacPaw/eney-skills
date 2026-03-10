@@ -1,60 +1,21 @@
-import * as p from "@clack/prompts";
 import { styleText } from "node:util";
 import { ApiClient } from "../lib/api.ts";
 import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
-type DeleteArtifactsOptions = {
-  mode?: "staging" | "production";
-  prefix?: string;
-};
-
 const MCP_PREFIX = "mcps/";
 
-async function promptForOptions(options: DeleteArtifactsOptions) {
-  p.intro("Delete Artifacts");
-
-  const answers = await p.group(
-    {
-      mode: () =>
-        options.mode
-          ? Promise.resolve(options.mode)
-          : p.select({
-              message: "Select environment:",
-              options: [
-                { value: "staging", label: "Staging" },
-                { value: "production", label: "Production" },
-              ],
-            }),
-    },
-    {
-      onCancel: () => {
-        p.cancel("Operation cancelled.");
-        process.exit(0);
-      },
-    },
-  );
-
-  return {
-    mode: answers.mode as "staging" | "production",
-    prefix: options.prefix,
-  };
-}
-
-async function deleteArtifacts(mode: "staging" | "production", prefix?: string) {
+async function deleteArtifacts(mode: "staging" | "production", prefix: string, yes: boolean) {
   const api = new ApiClient(mode);
 
-  const spinner = p.spinner();
-  spinner.start("Fetching artifacts and analytics...");
+  console.log("Fetching artifacts and analytics...");
 
   const [artifacts, downloadCounts] = await Promise.all([
     api.listMcpArchivesInCloud(prefix),
     fetchAnalytics(mode),
   ]);
 
-  spinner.stop("Data fetched");
-
   if (artifacts.length === 0) {
-    p.log.info("No artifacts found.");
+    console.log("No artifacts found.");
     return;
   }
 
@@ -68,52 +29,25 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
 
   const sortedArtifacts = artifactsWithDownloads.sort((a, b) => a.downloads - b.downloads);
 
-  const selected = await p.autocompleteMultiselect({
-    message: `Select artifacts to delete (${mode}):`,
-    options: sortedArtifacts.map((artifact) => {
-      const name = artifact.name.replace(MCP_PREFIX, "");
-      const size = formatSize(artifact.size);
-      const age = formatAge(artifact.created);
-      const downloads = artifact.downloads.toLocaleString();
-      return {
-        value: artifact.name,
-        label: `${styleText(["blue", "bold"], name)} ${styleText("dim", "-")} ${styleText("yellow", size)} ${styleText("dim", "|")} ${styleText("cyan", age)} ${styleText("dim", "|")} ${styleText("magenta", downloads + " downloads")}`,
-      };
-    }),
-    required: false,
-  });
-
-  if (p.isCancel(selected)) {
-    p.cancel("Operation cancelled.");
-    process.exit(0);
+  console.log(`\nArtifacts matching prefix "${prefix}" (${mode}):\n`);
+  for (const artifact of sortedArtifacts) {
+    const name = artifact.name.replace(MCP_PREFIX, "");
+    const size = formatSize(artifact.size);
+    const age = formatAge(artifact.created);
+    const downloads = artifact.downloads.toLocaleString();
+    console.log(`  ${styleText(["blue", "bold"], name)} - ${styleText("yellow", size)} | ${styleText("cyan", age)} | ${styleText("magenta", downloads + " downloads")}`);
   }
 
-  if (!selected || selected.length === 0) {
-    p.log.info("No artifacts selected.");
+  if (!yes) {
+    console.log(`\nTo delete these artifacts, re-run with --yes`);
     return;
-  }
-
-  console.log(`\n${styleText("yellow", "The following artifacts will be deleted:")}\n`);
-  for (const name of selected) {
-    console.log(`  ${styleText("red", "×")} ${(name as string).replace(MCP_PREFIX, "")}`);
-  }
-  console.log();
-
-  const confirmed = await p.confirm({
-    message: `Are you sure you want to delete ${selected.length} artifact(s) from ${mode}?`,
-    initialValue: false,
-  });
-
-  if (p.isCancel(confirmed) || !confirmed) {
-    p.cancel("Deletion cancelled.");
-    process.exit(0);
   }
 
   let deleted = 0;
   const errors: string[] = [];
 
-  for (const name of selected) {
-    const fileName = (name as string).replace(MCP_PREFIX, "");
+  for (const artifact of sortedArtifacts) {
+    const fileName = artifact.name.replace(MCP_PREFIX, "");
     try {
       await api.deleteMcpArtifactFromCloud(fileName);
       deleted++;
@@ -123,30 +57,17 @@ async function deleteArtifacts(mode: "staging" | "production", prefix?: string) 
   }
 
   if (deleted > 0) {
-    p.log.success(`${styleText("green", `Deleted ${deleted} artifact(s)`)}`);
+    console.log(`${styleText("green", `Deleted ${deleted} artifact(s)`)}`);
   }
 
   if (errors.length > 0) {
-    p.log.error(`Failed to delete ${errors.length} artifact(s):`);
+    console.error(`Failed to delete ${errors.length} artifact(s):`);
     for (const err of errors) {
       console.log(`  ${styleText("red", "×")} ${err}`);
     }
   }
 }
 
-export async function deleteArtifactsCommand(mode?: "staging" | "production", prefix?: string) {
-  const hasAllOptions = mode !== undefined;
-  const isCI = process.env.CI === "true";
-
-  if (isCI) {
-    console.error("Error: delete-artifacts command cannot be run in CI because it requires interactive prompts.");
-    process.exit(1);
-  }
-
-  if (hasAllOptions) {
-    await deleteArtifacts(mode, prefix);
-  } else {
-    const resolved = await promptForOptions({ mode, prefix });
-    await deleteArtifacts(resolved.mode, resolved.prefix);
-  }
+export async function deleteArtifactsCommand(mode: "staging" | "production", prefix: string, yes?: boolean) {
+  await deleteArtifacts(mode, prefix, yes ?? false);
 }
