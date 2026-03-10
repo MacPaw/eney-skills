@@ -49,6 +49,3 @@ export async function checkMcpVersion(cwd: string, mode: "staging" | "production
   }
 }
 
-export async function checkMcpVersionCommand(cwd: string, mode: "staging" | "production") {
-  await checkMcpVersion(cwd, mode);
-}

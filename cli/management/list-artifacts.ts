@@ -4,7 +4,7 @@ import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
 const MCP_PREFIX = "mcps/";
 
-async function listArtifacts(mode: "staging" | "production", prefix?: string) {
+export async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   const api = new ApiClient(mode);
 
   console.log(`\nFetching artifacts and analytics from ${mode}...`);
@@ -48,8 +48,4 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   }
 
   console.log();
-}
-
-export async function listArtifactsCommand(mode: "staging" | "production", prefix?: string) {
-  await listArtifacts(mode, prefix);
 }

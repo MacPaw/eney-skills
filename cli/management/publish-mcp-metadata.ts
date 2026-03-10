@@ -20,7 +20,7 @@ async function unpackMcpArchive(archivePath: string): Promise<string> {
   return tmpDir;
 }
 
-async function publishMcpMetadata(mode: "staging" | "production", archivePath: string, toolsJsonPath?: string) {
+export async function publishMcpMetadata(mode: "staging" | "production", archivePath: string, toolsJsonPath?: string) {
   const api = new ApiClient(mode);
   const resolvedArchivePath = resolve(archivePath);
 
@@ -82,12 +82,4 @@ async function publishMcpMetadata(mode: "staging" | "production", archivePath: s
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
-}
-
-export async function publishMcpMetadataCommand(
-  mode: "staging" | "production",
-  archivePath: string,
-  toolsJson?: string,
-) {
-  await publishMcpMetadata(mode, archivePath, toolsJson);
 }

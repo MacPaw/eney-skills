@@ -2,14 +2,14 @@ import dotenv from "dotenv";
 import { Command } from "commander";
 import path from "path";
 import { createCommand } from "./create/command.ts";
-import { checkMcpVersionCommand } from "./management/check-mcp-version.ts";
-import { uploadMcpArchiveCommand } from "./management/upload-mcp-archive.ts";
-import { publishMcpMetadataCommand } from "./management/publish-mcp-metadata.ts";
+import { checkMcpVersion } from "./management/check-mcp-version.ts";
+import { uploadMcpArchive } from "./management/upload-mcp-archive.ts";
+import { publishMcpMetadata } from "./management/publish-mcp-metadata.ts";
 import { analyticsCommand } from "./analytics/command.ts";
-import { listArtifactsCommand } from "./management/list-artifacts.ts";
-import { deleteArtifactsCommand } from "./management/delete-artifacts.ts";
+import { listArtifacts } from "./management/list-artifacts.ts";
+import { deleteArtifacts } from "./management/delete-artifacts.ts";
 import { extractMcpTools } from "./management/extract-mcp-tools.ts";
-import { devMcpCommand } from "./dev/command.ts";
+import { devMcp } from "./dev/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -45,14 +45,14 @@ program
   .description(
     "Start dev mode for MCP extension (watches current directory for changes and rebuilds/deploys to MCP folder)",
   )
-  .action(() => devMcpCommand());
+  .action(() => devMcp());
 
 program
   .command("list-artifacts")
   .description("List artifacts in cloud storage")
   .requiredOption("--mode <mode>", "Environment mode (staging or production)")
   .option("--prefix <prefix>", "Filter by prefix")
-  .action(({ mode, prefix }) => listArtifactsCommand(mode, prefix));
+  .action(({ mode, prefix }) => listArtifacts(mode, prefix));
 
 program
   .command("delete-artifacts")
@@ -60,21 +60,21 @@ program
   .requiredOption("--mode <mode>", "Environment mode (staging or production)")
   .requiredOption("--prefix <prefix>", "Filter by prefix")
   .option("--yes", "Skip confirmation and delete all matching artifacts")
-  .action(({ mode, prefix, yes }) => deleteArtifactsCommand(mode, prefix, yes));
+  .action(({ mode, prefix, yes }) => deleteArtifacts(mode, prefix, yes));
 
 program
   .command("check-mcp-version")
   .description("Check MCP version")
   .option("--cwd <path>", "Current working directory", ".")
   .requiredOption("--mode <mode>", "Mode (staging or production)")
-  .action(({ cwd, mode }) => checkMcpVersionCommand(cwd, mode));
+  .action(({ cwd, mode }) => checkMcpVersion(cwd, mode));
 
 program
   .command("upload-mcp-archive")
   .description("Upload a pre-built .mcpb archive to cloud storage")
   .requiredOption("--archive-path <path>", "Path to .mcpb archive")
   .requiredOption("--mode <mode>", "Upload mode (staging or production)")
-  .action(({ archivePath, mode }) => uploadMcpArchiveCommand(archivePath, mode));
+  .action(({ archivePath, mode }) => uploadMcpArchive(archivePath, mode));
 
 program
   .command("publish-mcp-metadata")
@@ -82,7 +82,7 @@ program
   .requiredOption("--mode <mode>", "Publish mode (staging or production)")
   .requiredOption("--archive-path <path>", "Path to .mcpb archive")
   .option("--tools-json <path>", "Path to pre-extracted tools JSON file (skips binary execution)")
-  .action(({ mode, archivePath, toolsJson }) => publishMcpMetadataCommand(mode, archivePath, toolsJson));
+  .action(({ mode, archivePath, toolsJson }) => publishMcpMetadata(mode, archivePath, toolsJson));
 
 program
   .command("extract-mcp-tools")

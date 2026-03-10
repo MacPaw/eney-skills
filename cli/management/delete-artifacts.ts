@@ -4,7 +4,7 @@ import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
 const MCP_PREFIX = "mcps/";
 
-async function deleteArtifacts(mode: "staging" | "production", prefix: string, yes: boolean) {
+export async function deleteArtifacts(mode: "staging" | "production", prefix: string, yes = false) {
   const api = new ApiClient(mode);
 
   console.log("Fetching artifacts and analytics...");
@@ -66,8 +66,4 @@ async function deleteArtifacts(mode: "staging" | "production", prefix: string, y
       console.log(`  ${styleText("red", "×")} ${err}`);
     }
   }
-}
-
-export async function deleteArtifactsCommand(mode: "staging" | "production", prefix: string, yes?: boolean) {
-  await deleteArtifacts(mode, prefix, yes ?? false);
 }
