@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import color from "picocolors";
+import { styleText } from "node:util";
 import { ApiClient } from "../lib/api.ts";
 import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
@@ -77,9 +77,9 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
     const age = formatAge(artifact.created);
     const downloads = artifact.downloads.toLocaleString();
 
-    console.log(`  ${color.bold(name)}`);
+    console.log(`  ${styleText("bold", name)}`);
     console.log(
-      `    Uploaded: ${age}  |  Downloads in last 30 days: ${color.magenta(downloads)} | Size: ${color.yellow(size)}`,
+      `    Uploaded: ${age}  |  Downloads in last 30 days: ${styleText("magenta", downloads)} | Size: ${styleText("yellow", size)}`,
     );
   }
 

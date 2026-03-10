@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import color from "picocolors";
+import { styleText } from "node:util";
 import { exec, execSync } from "child_process";
 import semver from "semver";
 
@@ -24,7 +24,7 @@ async function fetchTagsFromGit(): Promise<string[]> {
 }
 
 function formatMcpOption(mcp: McpInfo, remoteTags: string[]) {
-  const label = `${color.bold(color.blue(mcp.name))} ${color.bold(color.yellow(`- ${mcp.version}`))}`;
+  const label = `${styleText(["blue", "bold"], mcp.name)} ${styleText(["yellow", "bold"], `- ${mcp.version}`)}`;
   const baseOption = {
     value: { ...mcp, latestTag: null },
     label,
@@ -49,7 +49,7 @@ function formatMcpOption(mcp: McpInfo, remoteTags: string[]) {
 
   return {
     value: { ...mcp, latestTag },
-    label: `${label} ${color.bold(color.green(`(latest production tag: @${latestTag.version})`))}`,
+    label: `${label} ${styleText(["green", "bold"], `(latest production tag: @${latestTag.version})`)}`,
   };
 }
 
@@ -145,11 +145,11 @@ async function createTags() {
       p.log.error(`Failed to create tag ${tag}: ${error}`);
       process.exit(1);
     }
-    p.log.message(`Created tag ${color.green(tag)}`);
+    p.log.message(`Created tag ${styleText("green", tag)}`);
   }
 
-  p.log.message(`To push the tags, run the following command: ${color.bold(color.cyan("git push origin --tags"))}`);
-  p.outro(`Successfully created ${color.green(tagsToPush.length)} tags.`);
+  p.log.message(`To push the tags, run the following command: ${styleText(["cyan", "bold"], "git push origin --tags")}`);
+  p.outro(`Successfully created ${styleText("green", String(tagsToPush.length))} tags.`);
 }
 
 export async function createTagsCommand() {

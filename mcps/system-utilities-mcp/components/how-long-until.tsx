@@ -6,7 +6,7 @@ import {
   Form,
   Paper,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 import z from "zod";
 
 export const props = z.object({

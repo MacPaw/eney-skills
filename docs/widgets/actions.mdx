@@ -2,6 +2,8 @@
 title: Actions
 ---
 
+![Actions](../assets/action-panel.png)
+
 Actions are buttons that trigger behavior when clicked. The library includes several built-in action types for common operations. For custom behavior, use the base `Action` component.
 
 All actions share a common set of style props:
@@ -32,7 +34,7 @@ A custom action button. Use this when the built-in action types don't cover your
 ### Usage
 
 ```tsx
-import { Action, ActionPanel } from '@macpaw/eney-api';
+import { Action, ActionPanel } from '@eney/api';
 
 function MyWidget() {
   function handleRefresh() {
@@ -67,7 +69,7 @@ Triggers a form submission handler. Typically used inside an `ActionPanel` that 
 
 ```tsx
 import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@macpaw/eney-api';
+import { Form, Action, ActionPanel } from '@eney/api';
 
 function MyWidget() {
   const [name, setName] = useState('');
@@ -111,7 +113,7 @@ Opens a file or folder in macOS Finder.
 ### Usage
 
 ```tsx
-import { Action, ActionPanel } from '@macpaw/eney-api';
+import { Action, ActionPanel } from '@eney/api';
 
 <ActionPanel>
   <Action.ShowInFinder path="/Users/me/Documents/report.pdf" />
@@ -136,7 +138,7 @@ Copies text content to the system clipboard.
 ### Usage
 
 ```tsx
-import { Action, ActionPanel, Paper } from '@macpaw/eney-api';
+import { Action, ActionPanel, Paper } from '@eney/api';
 
 function ResultView(props: { result: string }) {
   return (

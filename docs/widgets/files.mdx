@@ -2,6 +2,8 @@
 title: Files
 ---
 
+![Files](../assets/files.png)
+
 Displays a list of files. Each file is rendered as a clickable item showing its path.
 
 ## Properties
@@ -21,7 +23,7 @@ Displays a list of files. Each file is rendered as a clickable item showing its 
 ## Usage
 
 ```tsx
-import { Files } from '@macpaw/eney-api';
+import { Files } from '@eney/api';
 
 function OutputFiles(props: { paths: string[] }) {
   return (
@@ -38,7 +40,7 @@ function OutputFiles(props: { paths: string[] }) {
 
 ```tsx
 import { useState } from 'react';
-import { Form, Action, ActionPanel, Files } from '@macpaw/eney-api';
+import { Form, Action, ActionPanel, Files } from '@eney/api';
 
 function ImageOptimizer() {
   const [inputImage, setInputImage] = useState('');

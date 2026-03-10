@@ -3,10 +3,10 @@ import { homedir } from "os";
 import { watch } from "fs";
 import { execSync } from "child_process";
 import { cp, readFile, mkdir, writeFile, rm } from "fs/promises";
-import color from "picocolors";
+import { styleText } from "node:util";
 import { debounce } from "es-toolkit";
 import { extractMcpTools } from "../management/extract-mcp-tools.ts";
-import { toolToManifest } from "./tool-to-manifest.ts";
+import { getOpenLink, toolToManifest } from "./tool-to-manifest.ts";
 
 const MCPS_FOLDER = resolve(homedir(), "Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP");
 const TOOLS_FOLDER = resolve(homedir(), ".eney", "tools");
@@ -38,7 +38,7 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
     await copyFolder(nodeModules, targetNodeModules);
   }
 
-  console.log(color.bold(color.cyan("Extracting tools...")));
+  console.log(styleText(["cyan", "bold"], "Extracting tools..."));
   const tools = await extractMcpTools(mcpDir);
   await mkdir(TOOLS_FOLDER, { recursive: true });
 
@@ -46,7 +46,12 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
     const toolManifest = toolToManifest(tool, mcpName, mcpVersion);
     const toolPath = join(TOOLS_FOLDER, `${tool.name}.json`);
     await writeFile(toolPath, JSON.stringify(toolManifest, null, 2));
-    console.log(color.bold(color.cyan(`  → ${toolPath}`)));
+    console.log(styleText(["cyan", "bold"], `  → ${toolPath}`));
+  }
+
+  for (const tool of tools) {
+    const openLink = await getOpenLink(tool.name);
+    console.log(styleText(["magenta", "bold"], `Run ${tool.name}: ${openLink}`));
   }
 
   return targetDir;
@@ -56,18 +61,18 @@ async function devMcp() {
   let isInitialBuild = true;
   const currentFolder = process.cwd();
 
-  console.log(color.bold(color.green(`Watching ${currentFolder} for changes...`)));
+  console.log(styleText(["green", "bold"], `Watching ${currentFolder} for changes...`));
 
   const build = async (filename?: string) => {
     if (filename) {
-      console.log(color.bold(color.green(`File ${filename} changed`)));
+      console.log(styleText(["green", "bold"], `File ${filename} changed`));
     }
-    console.log(color.bold(color.green("Building...")));
+    console.log(styleText(["green", "bold"], "Building..."));
     try {
       const targetDir = await buildAndDeploy(currentFolder, MCPS_FOLDER, isInitialBuild);
-      console.log(color.bold(color.green(`Build complete! Deployed to: ${targetDir}`)));
+      console.log(styleText(["green", "bold"], `Build complete! Deployed to: ${targetDir}`));
     } catch (error) {
-      console.error(color.bold(color.red("Build failed:")));
+      console.error(styleText(["red", "bold"], "Build failed:"));
       console.error(error);
     }
   };

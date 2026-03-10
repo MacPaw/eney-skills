@@ -1,7 +1,7 @@
 import { homedir } from "os";
 import { resolve } from "path";
 
-import { useSQL } from "@macpaw/eney-api";
+import { useLogger, useSQL } from "@eney/api";
 import partition from "lodash/partition.js";
 
 type Link = {
@@ -43,7 +43,10 @@ export type NoteItem = {
   checklistInProgress: boolean;
 };
 
-const NOTES_DB = resolve(homedir(), "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite");
+const NOTES_DB = resolve(
+  homedir(),
+  "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
+);
 
 const query = `
     SELECT
@@ -115,12 +118,21 @@ const tagsQuery = `
 `;
 
 export const useNotes = () => {
+  const logger = useLogger();
+
   const { data, ...rest } = useSQL<NoteItem[]>(NOTES_DB, query);
 
+  logger.debug(`Fetched ${data?.length ?? 0} notes from the database`);
+
   // Split the query into two to avoid a SQL error if the zcinivitation table doesn't exist
-  const { data: invitations } = useSQL<{ invitationLink: string | null; noteId: string }[]>(NOTES_DB, invitationQuery, {
+  const { data: invitations } = useSQL<
+    { invitationLink: string | null; noteId: string }[]
+  >(NOTES_DB, invitationQuery, {
     execute: data && data.length > 0,
     onError() {
+      logger.debug(
+        "Failed to fetch invitations, likely because the zcinvitation table doesn't exist. This is expected if the user hasn't shared any notes.",
+      );
       // Silently fail if the table doesn't exist
     },
   });
@@ -141,7 +153,9 @@ export const useNotes = () => {
         if (!found) alreadyFound[x.id] = true;
         return !found;
       })
-      .sort((a, b) => (a.modifiedAt && b.modifiedAt && a.modifiedAt < b.modifiedAt ? 1 : -1)) ?? [];
+      .sort((a, b) =>
+        a.modifiedAt && b.modifiedAt && a.modifiedAt < b.modifiedAt ? 1 : -1,
+      ) ?? [];
 
   const notesWithAdditionalFields = notes.map((note) => {
     const noteInvitation = invitations?.find((inv) => inv.noteId === note.id);
@@ -172,11 +186,22 @@ export const useNotes = () => {
     };
   });
 
-  const [activeNotes, deletedNotes] = partition(notesWithAdditionalFields, (note) => note.folder != "Recently Deleted");
-  const [pinnedNotes, unpinnedNotes] = partition(activeNotes, (note) => note.pinned);
+  const [activeNotes, deletedNotes] = partition(
+    notesWithAdditionalFields,
+    (note) => note.folder != "Recently Deleted",
+  );
+  const [pinnedNotes, unpinnedNotes] = partition(
+    activeNotes,
+    (note) => note.pinned,
+  );
 
   return {
-    data: { pinnedNotes, unpinnedNotes, deletedNotes, allNotes: [...pinnedNotes, ...unpinnedNotes, ...deletedNotes] },
+    data: {
+      pinnedNotes,
+      unpinnedNotes,
+      deletedNotes,
+      allNotes: [...pinnedNotes, ...unpinnedNotes, ...deletedNotes],
+    },
     ...rest,
   };
 };

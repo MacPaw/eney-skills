@@ -1,11 +1,9 @@
-import { defineDocs, defineConfig } from 'fumadocs-mdx/config';
+import { defineDocs, defineConfig } from "fumadocs-mdx/config";
 
 export const docs = defineDocs({
-  dir: '../docs',
+  dir: "../docs",
 });
 
 export default defineConfig({
-  mdxOptions: {
-    remarkImageOptions: false,
-  },
+  mdxOptions: {},
 });

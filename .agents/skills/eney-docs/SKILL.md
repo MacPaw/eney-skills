@@ -18,7 +18,7 @@ Eney widgets are a JSX-based interface for building native macOS UI. The renderi
 JSX Component → JSON tree → Native Swift UI
 ```
 
-You write React components using widget primitives from `@macpaw/eney-api`. The runtime serializes the component tree to JSON, and the Eney macOS app renders native views.
+You write React components using widget primitives from `@eney/api`. The runtime serializes the component tree to JSON, and the Eney macOS app renders native views.
 
 **Important constraints:**
 
@@ -45,7 +45,7 @@ mcps/<mcp-name>/
 // index.ts — Server setup
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@macpaw/eney-api";
+import { setupUIXForMCP } from "@eney/api";
 
 const server = new McpServer(
   { name: "<mcp-name>", version: "1.0.0" },
@@ -55,7 +55,7 @@ const uixServer = setupUIXForMCP(server);
 uixServer.registerWidget(MyWidget);
 
 // components/<widget-name>.tsx — Widget definition
-import { defineWidget } from "@macpaw/eney-api";
+import { defineWidget } from "@eney/api";
 
 const MyWidgetDef = defineWidget({
   name: "<widget-name>",
@@ -79,7 +79,7 @@ import {
   CardHeader,
   defineWidget,
   useCloseWidget,
-} from "@macpaw/eney-api";
+} from "@eney/api";
 ```
 
 ## Widgets Reference
@@ -114,16 +114,16 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 
 **`onChange` is REQUIRED on all form input fields.** Even if a field is display-only, you must pass an `onChange` handler.
 
-| Field                 | Required Props               | Optional Props                       | Notes                               |
-| --------------------- | ---------------------------- | ------------------------------------ | ----------------------------------- |
-| `Form.TextField`      | `name`, `value`, `onChange`  | `label`, `isCopyable`                | Single-line text                    |
-| `Form.PasswordField`  | `name`, `value`, `onChange`  | `label`                              | Masked input                        |
-| `Form.NumberField`    | `name`, `value`, `onChange`  | `label`, `min`, `max`                | `value` is `number \| null`         |
-| `Form.Checkbox`       | `name`, `checked`, `onChange`| `label`, `variant`                   | `"checkbox"` or `"switch"`          |
-| `Form.Dropdown`       | `name`, `value`, `onChange`  | `label`, `searchable`                | Children: `Form.Dropdown.Item`      |
-| `Form.DatePicker`     | `name`, `value`, `onChange`  | `label`, `type`                      | `"date"`, `"time"`, or `"datetime"` |
-| `Form.FilePicker`     | `name`, `value`, `onChange`  | `label`, `accept`, `multiple`        | File selection dialog               |
-| `Form.RichTextEditor` | `value`, `onChange`          | `isInitiallyFocused`                 | Rich text area                      |
+| Field                 | Required Props                | Optional Props                | Notes                               |
+| --------------------- | ----------------------------- | ----------------------------- | ----------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`   | `label`, `isCopyable`         | Single-line text                    |
+| `Form.PasswordField`  | `name`, `value`, `onChange`   | `label`                       | Masked input                        |
+| `Form.NumberField`    | `name`, `value`, `onChange`   | `label`, `min`, `max`         | `value` is `number \| null`         |
+| `Form.Checkbox`       | `name`, `checked`, `onChange` | `label`, `variant`            | `"checkbox"` or `"switch"`          |
+| `Form.Dropdown`       | `name`, `value`, `onChange`   | `label`, `searchable`         | Children: `Form.Dropdown.Item`      |
+| `Form.DatePicker`     | `name`, `value`, `onChange`   | `label`, `type`               | `"date"`, `"time"`, or `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`   | `label`, `accept`, `multiple` | File selection dialog               |
+| `Form.RichTextEditor` | `value`, `onChange`           | `isInitiallyFocused`          | Rich text area                      |
 
 ### Actions
 
@@ -150,6 +150,7 @@ Layout: `"row"` for horizontal, `"column"` (default) for vertical.
 Displays rendered markdown content. Supports standard markdown including images via `![alt](url)`.
 
 ```tsx
+<Paper markdown="Hello **world**" isScrollable />
 <Paper markdown="Hello **world**" isScrollable />
 <Paper markdown={result} actions={<ActionPanel><Action.CopyToClipboard content={result} /></ActionPanel>} />
 ```
@@ -180,7 +181,7 @@ There is no dedicated Image component. Use one of these approaches:
 
 ```tsx
 const dataUrl = "data:image/png;base64,...";
-<Paper markdown={`![Description](${dataUrl})`} />
+<Paper markdown={`![Description](${dataUrl})`} />;
 ```
 
 **File-based image via Files:**
@@ -232,7 +233,9 @@ return <Form actions={actions}>{/* input fields */}</Form>;
 ### Error Display
 
 ```tsx
-{error && <Paper markdown={`**Error:** ${error}`} />}
+{
+  error && <Paper markdown={`**Error:** ${error}`} />;
+}
 ```
 
 ### Auto-Generate with useEffect
@@ -310,13 +313,23 @@ function MyTool(props: Props) {
         header={<CardHeader title="My Tool" />}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
+            <Action.SubmitForm
+              title="Start Over"
+              onSubmit={() => setResult("")}
+              style="secondary"
+            />
             <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
         <Paper markdown={result} />
-        <Form.TextField name="text" label="Input" value={text} onChange={setText} isCopyable />
+        <Form.TextField
+          name="text"
+          label="Input"
+          value={text}
+          onChange={setText}
+          isCopyable
+        />
       </Form>
     );
   }
@@ -337,7 +350,12 @@ function MyTool(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.TextField name="text" label="Input Text" value={text} onChange={setText} />
+      <Form.TextField
+        name="text"
+        label="Input Text"
+        value={text}
+        onChange={setText}
+      />
     </Form>
   );
 }
