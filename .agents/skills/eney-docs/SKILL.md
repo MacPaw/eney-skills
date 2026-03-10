@@ -3,7 +3,7 @@ name: eney-docs
 description: Reference documentation for Eney UIX widgets and UI generation. Covers Form, Paper, Actions, and all components for building native macOS UIs in MCP extensions.
 metadata:
   author: macpaw
-  version: "2.0"
+  version: "3.0"
 ---
 
 # Eney UIX and Widget Documentation
@@ -19,6 +19,11 @@ JSX Component → JSON tree → Native Swift UI
 ```
 
 You write React components using widget primitives from `@eney/api`. The runtime serializes the component tree to JSON, and the Eney macOS app renders native views.
+
+**Important constraints:**
+
+- There is NO DOM. Only Eney primitives (`Form`, `Paper`, `ActionPanel`, etc.) can be used — no `<div>`, `<span>`, `<img>`, or other HTML elements.
+- There is NO `Image` component. To display images, use `Paper` with markdown image syntax: `<Paper markdown="![alt](dataUrl)" />` (data URLs work) or use `Files` to display file paths.
 
 ## MCP Extension Structure
 
@@ -73,6 +78,7 @@ import {
   Files,
   CardHeader,
   defineWidget,
+  useCloseWidget,
 } from "@eney/api";
 ```
 
@@ -106,16 +112,18 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 
 ### Form Fields
 
-| Field                 | Key Props                                                  | Notes                               |
-| --------------------- | ---------------------------------------------------------- | ----------------------------------- |
-| `Form.TextField`      | `name`, `value`, `onChange`, `label`, `isCopyable`         | Single-line text                    |
-| `Form.PasswordField`  | `name`, `value`, `onChange`, `label`                       | Masked input                        |
-| `Form.NumberField`    | `name`, `value`, `onChange`, `label`, `min`, `max`         | Numeric input                       |
-| `Form.Checkbox`       | `name`, `checked`, `onChange`, `label`, `variant`          | `"checkbox"` or `"switch"`          |
-| `Form.Dropdown`       | `name`, `value`, `onChange`, `label`, `searchable`         | Children: `Form.Dropdown.Item`      |
-| `Form.DatePicker`     | `name`, `value`, `onChange`, `label`, `type`               | `"date"`, `"time"`, or `"datetime"` |
-| `Form.FilePicker`     | `name`, `value`, `onChange`, `label`, `accept`, `multiple` | File selection dialog               |
-| `Form.RichTextEditor` | `value`, `onChange`, `isInitiallyFocused`                  | Rich text area                      |
+**`onChange` is REQUIRED on all form input fields.** Even if a field is display-only, you must pass an `onChange` handler.
+
+| Field                 | Required Props                | Optional Props                | Notes                               |
+| --------------------- | ----------------------------- | ----------------------------- | ----------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`   | `label`, `isCopyable`         | Single-line text                    |
+| `Form.PasswordField`  | `name`, `value`, `onChange`   | `label`                       | Masked input                        |
+| `Form.NumberField`    | `name`, `value`, `onChange`   | `label`, `min`, `max`         | `value` is `number \| null`         |
+| `Form.Checkbox`       | `name`, `checked`, `onChange` | `label`, `variant`            | `"checkbox"` or `"switch"`          |
+| `Form.Dropdown`       | `name`, `value`, `onChange`   | `label`, `searchable`         | Children: `Form.Dropdown.Item`      |
+| `Form.DatePicker`     | `name`, `value`, `onChange`   | `label`, `type`               | `"date"`, `"time"`, or `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`   | `label`, `accept`, `multiple` | File selection dialog               |
+| `Form.RichTextEditor` | `value`, `onChange`           | `isInitiallyFocused`          | Rich text area                      |
 
 ### Actions
 
@@ -130,21 +138,24 @@ Props: `children`, `actions` (ReactNode), `header` (ReactNode)
 
 ```tsx
 <ActionPanel layout="row">
-  {" "}
-  {/* or "column" (default) */}
   <Action.SubmitForm title="Save" onSubmit={fn} style="primary" />
   <Action title="Cancel" onAction={fn} />
 </ActionPanel>
 ```
 
+Layout: `"row"` for horizontal, `"column"` (default) for vertical.
+
 ### Paper
 
-Displays rendered markdown content.
+Displays rendered markdown content. Supports standard markdown including images via `![alt](url)`.
 
 ```tsx
 <Paper markdown="Hello **world**" isScrollable />
+<Paper markdown="Hello **world**" isScrollable />
 <Paper markdown={result} actions={<ActionPanel><Action.CopyToClipboard content={result} /></ActionPanel>} />
 ```
+
+Props: `markdown` (string), `isScrollable` (boolean), `actions` (ReactNode)
 
 ### CardHeader
 
@@ -154,33 +165,57 @@ Displays rendered markdown content.
 
 ### Files
 
+Display a list of files with native previews and actions.
+
 ```tsx
 <Files>
   <Files.Item path="/path/to/file.pdf" />
 </Files>
 ```
 
-## Common Patterns
+## Displaying Images
 
-### Success State
+There is no dedicated Image component. Use one of these approaches:
 
-Swap UI after a successful operation:
+**Inline image via Paper (data URL):**
 
 ```tsx
-if (status === "success") {
+const dataUrl = "data:image/png;base64,...";
+<Paper markdown={`![Description](${dataUrl})`} />;
+```
+
+**File-based image via Files:**
+
+```tsx
+<Files>
+  <Files.Item path="/path/to/image.png" />
+</Files>
+```
+
+## Common Patterns
+
+### Success State with Result
+
+Swap to a result UI after an operation completes:
+
+```tsx
+if (resultPath) {
   return (
     <Form
       actions={
-        <ActionPanel>
-          <Action.SubmitForm title="Done" />
+        <ActionPanel layout="row">
+          <Action.ShowInFinder style="secondary" path={resultPath} />
+          <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
         </ActionPanel>
       }
     >
-      <Paper markdown="Done!" />
+      <Files>
+        <Files.Item path={resultPath} />
+      </Files>
     </Form>
   );
 }
-return <Form actions={actions}>{/* fields */}</Form>;
+return <Form actions={actions}>{/* input fields */}</Form>;
 ```
 
 ### Loading State
@@ -199,21 +234,148 @@ return <Form actions={actions}>{/* fields */}</Form>;
 
 ```tsx
 {
-  error && <Paper markdown={`Error: ${error}`} />;
+  error && <Paper markdown={`**Error:** ${error}`} />;
 }
 ```
 
-## Real MCP Examples
+### Auto-Generate with useEffect
 
-Study these in the repo for real-world patterns:
+Automatically recompute a result when inputs change:
 
-| MCP                            | Highlights                                                                           |
-| ------------------------------ | ------------------------------------------------------------------------------------ |
-| `mcps/security-utilities-mcp/` | NumberField, Checkbox switches, useEffect auto-generate, `isCopyable`                |
-| `mcps/notes-utilities-mcp/`    | Dropdown with dynamic items, RichTextEditor, external helper scripts, loading states |
-| `mcps/pdf-utilities-mcp/`      | FilePicker usage                                                                     |
-| `mcps/send-mail-mcp/`          | Email sending with multiple form fields                                              |
-| `mcps/image-utilities-mcp/`    | Image processing patterns                                                            |
+```tsx
+useEffect(() => {
+  const value = generatePassword({ length, symbols, numbers });
+  setPassword(value);
+}, [length, symbols, numbers]);
+```
+
+### Dropdown with Dynamic Items
+
+```tsx
+<Form.Dropdown name="format" value={format} onChange={setFormat} label="Format">
+  {formats.map((f) => (
+    <Form.Dropdown.Item key={f} title={f.toUpperCase()} value={f} />
+  ))}
+</Form.Dropdown>
+```
+
+## Complete Widget Example
+
+A full widget with form input, async processing, and result display:
+
+```tsx
+import { useState } from "react";
+import { z } from "zod";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Paper,
+  CardHeader,
+  defineWidget,
+  useCloseWidget,
+} from "@macpaw/eney-api";
+
+const schema = z.object({
+  text: z.string().optional().describe("The input text to process."),
+});
+
+type Props = z.infer<typeof schema>;
+
+function MyTool(props: Props) {
+  const closeWidget = useCloseWidget();
+  const [text, setText] = useState(props.text ?? "");
+  const [result, setResult] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit() {
+    if (!text.trim()) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const output = await doSomething(text);
+      setResult(output);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function onDone() {
+    closeWidget("Done processing.");
+  }
+
+  if (result) {
+    return (
+      <Form
+        header={<CardHeader title="My Tool" />}
+        actions={
+          <ActionPanel layout="row">
+            <Action.SubmitForm
+              title="Start Over"
+              onSubmit={() => setResult("")}
+              style="secondary"
+            />
+            <Action title="Done" onAction={onDone} style="primary" />
+          </ActionPanel>
+        }
+      >
+        <Paper markdown={result} />
+        <Form.TextField
+          name="text"
+          label="Input"
+          value={text}
+          onChange={setText}
+          isCopyable
+        />
+      </Form>
+    );
+  }
+
+  return (
+    <Form
+      header={<CardHeader title="My Tool" />}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title={isLoading ? "Processing..." : "Process"}
+            onSubmit={onSubmit}
+            style="primary"
+            isLoading={isLoading}
+            isDisabled={!text.trim()}
+          />
+        </ActionPanel>
+      }
+    >
+      {error && <Paper markdown={`**Error:** ${error}`} />}
+      <Form.TextField
+        name="text"
+        label="Input Text"
+        value={text}
+        onChange={setText}
+      />
+    </Form>
+  );
+}
+
+const MyToolWidget = defineWidget({
+  name: "my-tool",
+  description: "Process the provided text",
+  schema,
+  component: MyTool,
+});
+
+export default MyToolWidget;
+```
+
+## TypeScript Gotchas
+
+- **`onChange` is required** on all form fields — even display-only fields need it.
+- **`Form.NumberField` value is `number | null`**, not just `number`.
+- **Use `.js` extensions** for all local imports (ESM requirement): `import X from "./foo.js"`.
+- **All Zod fields need `.describe()`** and should be `.optional()`.
 
 ## CLI Commands
 

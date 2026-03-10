@@ -109,17 +109,19 @@ It should print a "running on stdio" message to stderr.
 
 ## Common Issues
 
-| Problem                     | Cause                                            | Fix                                                                     |
-| --------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
-| Build fails                 | TypeScript errors                                | Run `npm run build` and fix errors                                      |
-| Server won't start          | Missing dependencies                             | Run `npm install` then rebuild                                          |
-| Widget not rendering        | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@eney/api`          |
-| Props not received from LLM | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
-| defineWidget error          | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
-| Widget not registered       | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
-| Import paths wrong          | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
-| Deeplink doesn't open tool  | Wrong `commandID`                                | Use the widget `name` from `defineWidget()`, not the manifest name      |
-| Tool not visible in Eney    | Missing tool JSON in ~/.eney/tools/              | Run `dev-mcp` — it generates tool definitions automatically             |
+| Problem                                               | Cause                                            | Fix                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| Build fails                                           | TypeScript errors                                | Run `npm run build` and fix errors                                      |
+| `Property 'onChange' is missing`                      | `onChange` is required on all form fields        | Add `onChange={setter}` even for display-only fields                    |
+| `Type 'number' is not assignable to 'number \| null'` | NumberField value is nullable                    | Use `useState<number \| null>(defaultValue)`                            |
+| Server won't start                                    | Missing dependencies                             | Run `npm install` then rebuild                                          |
+| Widget not rendering                                  | Using HTML elements instead of Eney widgets      | Use only `Form`, `Paper`, `ActionPanel`, etc. from `@macpaw/eney-api`   |
+| Props not received from LLM                           | Missing `.describe()` on Zod schema fields       | Add `.describe("...")` to every field                                   |
+| defineWidget error                                    | Missing required fields                          | Ensure `{ name, description, schema, component }` are all provided      |
+| Widget not registered                                 | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
+| Import paths wrong                                    | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
+| Deeplink doesn't open tool                            | Wrong `commandID`                                | Use the widget `name` from `defineWidget()`, not the manifest name      |
+| Tool not visible in Eney                              | Missing tool JSON in ~/.eney/tools/              | Run `dev-mcp` — it generates tool definitions automatically             |
 
 ## Debugging Checklist
 
