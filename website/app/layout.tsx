@@ -1,10 +1,13 @@
-import { RootProvider } from 'fumadocs-ui/provider/next';
-import type { ReactNode } from 'react';
-import './global.css';
+import { RootProvider } from "fumadocs-ui/provider/next";
+import type { ReactNode } from "react";
+import "./global.css";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/eney-logo.png" />
+      </head>
       <body className="flex flex-col min-h-screen">
         <RootProvider>{children}</RootProvider>
       </body>
