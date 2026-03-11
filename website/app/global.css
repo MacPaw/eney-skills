@@ -3,3 +3,41 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+@theme {
+  --color-fd-background: hsl(300, 20%, 97%);
+  --color-fd-foreground: hsl(270, 10%, 10%);
+  --color-fd-muted: hsl(300, 15%, 94%);
+  --color-fd-muted-foreground: hsl(270, 5%, 45%);
+  --color-fd-popover: hsl(300, 15%, 98%);
+  --color-fd-popover-foreground: hsl(270, 10%, 15%);
+  --color-fd-card: hsl(300, 15%, 95%);
+  --color-fd-card-foreground: hsl(270, 10%, 10%);
+  --color-fd-border: hsla(310, 30%, 80%, 40%);
+  --color-fd-primary: hsl(330, 90%, 55%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-secondary: hsl(300, 15%, 93%);
+  --color-fd-secondary-foreground: hsl(270, 10%, 10%);
+  --color-fd-accent: hsla(310, 40%, 85%, 50%);
+  --color-fd-accent-foreground: hsl(270, 10%, 10%);
+  --color-fd-ring: hsl(330, 70%, 65%);
+}
+
+.dark {
+  --color-fd-background: hsl(280, 15%, 7%);
+  --color-fd-foreground: hsl(300, 10%, 93%);
+  --color-fd-muted: hsl(280, 12%, 13%);
+  --color-fd-muted-foreground: hsla(300, 10%, 70%, 0.8);
+  --color-fd-popover: hsl(280, 12%, 12%);
+  --color-fd-popover-foreground: hsl(300, 10%, 87%);
+  --color-fd-card: hsl(280, 12%, 10%);
+  --color-fd-card-foreground: hsl(300, 10%, 98%);
+  --color-fd-border: hsla(310, 20%, 40%, 20%);
+  --color-fd-primary: hsl(330, 85%, 60%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
+  --color-fd-secondary: hsl(280, 12%, 13%);
+  --color-fd-secondary-foreground: hsl(300, 10%, 93%);
+  --color-fd-accent: hsla(310, 30%, 40%, 30%);
+  --color-fd-accent-foreground: hsl(300, 10%, 90%);
+  --color-fd-ring: hsl(330, 70%, 55%);
+}
