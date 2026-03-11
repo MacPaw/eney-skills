@@ -24,4 +24,3 @@ runs:
     - name: Install CLI dependencies
       shell: bash
       run: npm ci --prefix cli
-

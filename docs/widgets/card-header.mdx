@@ -8,18 +8,20 @@ Renders a header with a title and an optional application icon. Use this as the 
 
 ### Properties
 
-| Property       | Description                               | Type     | Default | Required |
-| -------------- | ----------------------------------------- | -------- | ------- | -------- |
-| `title`        | The header title text                     | `string` | —       | Yes      |
-| `iconBundleId` | macOS bundle identifier for the app icon  | `string` | —       | Yes      |
+| Property       | Description                              | Type     | Default | Required |
+| -------------- | ---------------------------------------- | -------- | ------- | -------- |
+| `title`        | The header title text                    | `string` | —       | Yes      |
+| `iconBundleId` | macOS bundle identifier for the app icon | `string` | —       | Yes      |
 
 ### Usage
 
 ```tsx
-import { Form, CardHeader, Action, ActionPanel } from '@eney/api';
+import { Form, CardHeader, Action, ActionPanel } from "@eney/api";
 
 function MyWidget() {
-  const header = <CardHeader title="Image Optimizer" iconBundleId="com.apple.Preview" />;
+  const header = (
+    <CardHeader title="Image Optimizer" iconBundleId="com.apple.Preview" />
+  );
 
   return (
     <Form

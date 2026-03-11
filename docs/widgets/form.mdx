@@ -14,18 +14,18 @@ All form fields are **controlled**. That means:
 - The field's `value` comes from state
 - The field's `onChange` updates that state
 
-| Property   | Description                    | Type              | Default | Required |
-| ---------- | ------------------------------ | ----------------- | ------- | -------- |
-| `children` | Form fields                    | `React.ReactNode` | —       | Yes      |
-| `actions`  | A reference to an ActionPanel  | `React.ReactNode` | —       | No       |
-| `header`   | Header element                 | `React.ReactNode` | —       | No       |
+| Property   | Description                   | Type              | Default | Required |
+| ---------- | ----------------------------- | ----------------- | ------- | -------- |
+| `children` | Form fields                   | `React.ReactNode` | —       | Yes      |
+| `actions`  | A reference to an ActionPanel | `React.ReactNode` | —       | No       |
+| `header`   | Header element                | `React.ReactNode` | —       | No       |
 
 ```tsx
-import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@eney/api';
+import { useState } from "react";
+import { Form, Action, ActionPanel } from "@eney/api";
 
 function MyForm() {
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
 
   function onSubmit() {
     // handle form submit
@@ -39,7 +39,12 @@ function MyForm() {
 
   return (
     <Form actions={actions}>
-      <Form.TextField name="name" label="Name" value={name} onChange={setName} />
+      <Form.TextField
+        name="name"
+        label="Name"
+        value={name}
+        onChange={setName}
+      />
     </Form>
   );
 }
@@ -53,24 +58,29 @@ function MyForm() {
 
 Single-line text input.
 
-| Property     | Description                                         | Type                      | Default | Required |
-| ------------ | --------------------------------------------------- | ------------------------- | ------- | -------- |
-| `name`       | Unique name of the form field                       | `string`                  | —       | Yes      |
-| `value`      | The current value of the field                      | `string`                  | `""`    | No       |
-| `onChange`   | Callback triggered when the value changes           | `(value: string) => void` | —       | Yes      |
-| `label`      | The label displayed for the field                   | `string`                  | —       | No       |
-| `isCopyable` | Whether the field shows a copy button               | `boolean`                 | —       | No       |
+| Property     | Description                               | Type                      | Default | Required |
+| ------------ | ----------------------------------------- | ------------------------- | ------- | -------- |
+| `name`       | Unique name of the form field             | `string`                  | —       | Yes      |
+| `value`      | The current value of the field            | `string`                  | `""`    | No       |
+| `onChange`   | Callback triggered when the value changes | `(value: string) => void` | —       | Yes      |
+| `label`      | The label displayed for the field         | `string`                  | —       | No       |
+| `isCopyable` | Whether the field shows a copy button     | `boolean`                 | —       | No       |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
-  const [city, setCity] = useState('');
+  const [city, setCity] = useState("");
 
   return (
     <Form>
-      <Form.TextField name="city" label="City" value={city} onChange={setCity} />
+      <Form.TextField
+        name="city"
+        label="City"
+        value={city}
+        onChange={setCity}
+      />
     </Form>
   );
 }
@@ -84,18 +94,18 @@ function MyWidget() {
 
 Numeric input with optional min/max bounds.
 
-| Property   | Description                                         | Type                              | Default | Required |
-| ---------- | --------------------------------------------------- | --------------------------------- | ------- | -------- |
-| `name`     | Unique name of the form field                       | `string`                          | —       | Yes      |
-| `value`    | The current value of the field                      | `number \| null`                  | `0`     | No       |
-| `onChange`  | Callback triggered when the value changes          | `(value: number \| null) => void` | —       | Yes      |
-| `label`    | The label displayed for the field                   | `string`                          | —       | No       |
-| `min`      | Minimum allowed value                               | `number`                          | —       | No       |
-| `max`      | Maximum allowed value                               | `number`                          | —       | No       |No       |
+| Property   | Description                               | Type                              | Default | Required |
+| ---------- | ----------------------------------------- | --------------------------------- | ------- | -------- | --- |
+| `name`     | Unique name of the form field             | `string`                          | —       | Yes      |
+| `value`    | The current value of the field            | `number \| null`                  | `0`     | No       |
+| `onChange` | Callback triggered when the value changes | `(value: number \| null) => void` | —       | Yes      |
+| `label`    | The label displayed for the field         | `string`                          | —       | No       |
+| `min`      | Minimum allowed value                     | `number`                          | —       | No       |
+| `max`      | Maximum allowed value                     | `number`                          | —       | No       | No  |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
   const [quantity, setQuantity] = useState<number | null>(1);
@@ -123,19 +133,19 @@ function MyWidget() {
 
 Masked text input for sensitive values.
 
-| Property   | Description                                         | Type                      | Default | Required |
-| ---------- | --------------------------------------------------- | ------------------------- | ------- | -------- |
-| `name`     | Unique name of the form field                       | `string`                  | —       | Yes      |
-| `value`    | The current value of the field                      | `string`                  | `""`    | No       |
-| `onChange`  | Callback triggered when the value changes          | `(value: string) => void` | —       | Yes      |
-| `label`    | The label displayed for the field                   | `string`                  | —       | No       |
+| Property   | Description                               | Type                      | Default | Required |
+| ---------- | ----------------------------------------- | ------------------------- | ------- | -------- |
+| `name`     | Unique name of the form field             | `string`                  | —       | Yes      |
+| `value`    | The current value of the field            | `string`                  | `""`    | No       |
+| `onChange` | Callback triggered when the value changes | `(value: string) => void` | —       | Yes      |
+| `label`    | The label displayed for the field         | `string`                  | —       | No       |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
 
   return (
     <Form>
@@ -158,14 +168,14 @@ function MyWidget() {
 
 Select or searchable autocomplete. Behaves like a `<select>` by default. When `searchable` is `true`, it works as a search field with suggestions (similar to `<datalist>`).
 
-| Property     | Description                                         | Type                      | Default | Required |
-| ------------ | --------------------------------------------------- | ------------------------- | ------- | -------- |
-| `name`       | Unique name of the form field                       | `string`                  | —       | Yes      |
-| `value`      | The current selected value                          | `string`                  | —       | No       |
-| `onChange`    | Callback triggered when the value changes           | `(value: string) => void` | —       | Yes      |
-| `label`      | The label displayed for the field                   | `string`                  | —       | No       |
-| `searchable` | Whether to show a search field with autocomplete    | `boolean`                 | `false` | No       |
-| `children`   | `Form.Dropdown.Item` elements                       | `React.ReactNode`         | —       | Yes      |
+| Property     | Description                                      | Type                      | Default | Required |
+| ------------ | ------------------------------------------------ | ------------------------- | ------- | -------- |
+| `name`       | Unique name of the form field                    | `string`                  | —       | Yes      |
+| `value`      | The current selected value                       | `string`                  | —       | No       |
+| `onChange`   | Callback triggered when the value changes        | `(value: string) => void` | —       | Yes      |
+| `label`      | The label displayed for the field                | `string`                  | —       | No       |
+| `searchable` | Whether to show a search field with autocomplete | `boolean`                 | `false` | No       |
+| `children`   | `Form.Dropdown.Item` elements                    | `React.ReactNode`         | —       | Yes      |
 
 ---
 
@@ -179,11 +189,11 @@ Select or searchable autocomplete. Behaves like a `<select>` by default. When `s
 | `title`  | The title displayed for the item  | `string` | —       | Yes      |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
-  const [currency, setCurrency] = useState('usd');
+  const [currency, setCurrency] = useState("usd");
 
   return (
     <Form>
@@ -211,17 +221,17 @@ function MyWidget() {
 
 Toggle input that can be displayed as a checkbox or a switch.
 
-| Property   | Description                                         | Type                       | Default      | Required |
-| ---------- | --------------------------------------------------- | -------------------------- | ------------ | -------- |
-| `name`     | Unique name of the form field                       | `string`                   | —            | Yes      |
-| `label`    | The label displayed for the field                   | `string`                   | —            | Yes      |
-| `checked`  | The current state of the checkbox                   | `boolean`                  | —            | Yes      |
-| `onChange`  | Callback triggered when the value changes          | `(value: boolean) => void` | —            | Yes      |
-| `variant`  | Display variant                                     | `"checkbox" \| "switch"`   | `"checkbox"` | No       |No       |
+| Property   | Description                               | Type                       | Default      | Required |
+| ---------- | ----------------------------------------- | -------------------------- | ------------ | -------- | --- |
+| `name`     | Unique name of the form field             | `string`                   | —            | Yes      |
+| `label`    | The label displayed for the field         | `string`                   | —            | Yes      |
+| `checked`  | The current state of the checkbox         | `boolean`                  | —            | Yes      |
+| `onChange` | Callback triggered when the value changes | `(value: boolean) => void` | —            | Yes      |
+| `variant`  | Display variant                           | `"checkbox" \| "switch"`   | `"checkbox"` | No       | No  |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
   const [enabled, setEnabled] = useState(false);
@@ -248,17 +258,17 @@ function MyWidget() {
 
 Date, time, or datetime picker.
 
-| Property   | Description                                         | Type                        | Default      | Required |
-| ---------- | --------------------------------------------------- | --------------------------- | ------------ | -------- |
-| `name`     | Unique name of the form field                       | `string`                    | —            | Yes      |
-| `label`    | The label displayed for the field                   | `string`                    | —            | Yes      |
-| `value`    | The current date value                              | `Date`                      | —            | Yes      |
-| `onChange`  | Callback triggered when the value changes          | `(value: Date) => void`     | —            | Yes      |
-| `type`     | The types of date components the user can pick      | `"date" \| "time" \| "datetime"` | `"datetime"` | No  |No       |
+| Property   | Description                                    | Type                             | Default      | Required |
+| ---------- | ---------------------------------------------- | -------------------------------- | ------------ | -------- | --- |
+| `name`     | Unique name of the form field                  | `string`                         | —            | Yes      |
+| `label`    | The label displayed for the field              | `string`                         | —            | Yes      |
+| `value`    | The current date value                         | `Date`                           | —            | Yes      |
+| `onChange` | Callback triggered when the value changes      | `(value: Date) => void`          | —            | Yes      |
+| `type`     | The types of date components the user can pick | `"date" \| "time" \| "datetime"` | `"datetime"` | No       | No  |
 
 ```tsx
-import { useState } from 'react';
-import { Form, Paper, Action, ActionPanel } from '@eney/api';
+import { useState } from "react";
+import { Form, Paper, Action, ActionPanel } from "@eney/api";
 
 function CountdownWidget() {
   const [date, setDate] = useState<Date>(new Date());
@@ -279,7 +289,13 @@ function CountdownWidget() {
         </ActionPanel>
       }
     >
-      <Form.DatePicker name="date" label="Target date" value={date} onChange={setDate} type="date" />
+      <Form.DatePicker
+        name="date"
+        label="Target date"
+        value={date}
+        onChange={setDate}
+        type="date"
+      />
       {result && <Paper markdown={result} />}
     </Form>
   );
@@ -301,13 +317,13 @@ File selection. Supports single or multiple file selection.
 | `name`     | Unique name of the form field                                                                                  | `string`                              | —       | Yes      |
 | `label`    | The label displayed for the field                                                                              | `string`                              | —       | No       |
 | `value`    | Current file path(s). If `multiple` is `true`, expects an array                                                | `string \| string[]`                  | —       | No       |
-| `onChange`  | Callback triggered when selection changes                                                                     | `(value: string \| string[]) => void` | —       | Yes      |
+| `onChange` | Callback triggered when selection changes                                                                      | `(value: string \| string[]) => void` | —       | Yes      |
 | `multiple` | Allow selecting multiple files                                                                                 | `boolean`                             | `false` | No       |
 | `accept`   | [Uniform Type Identifiers](https://developer.apple.com/documentation/uniformtypeidentifiers) to filter by type | `string[]`                            | —       | No       |
 
 ```tsx
-import { useState } from 'react';
-import { Form } from '@eney/api';
+import { useState } from "react";
+import { Form } from "@eney/api";
 
 function MyWidget() {
   const [files, setFiles] = useState<string[]>([]);
@@ -334,18 +350,18 @@ function MyWidget() {
 
 Multi-line rich text editor.
 
-| Property             | Description                                       | Type                      | Default | Required |
-| -------------------- | ------------------------------------------------- | ------------------------- | ------- | -------- |
-| `value`              | The current text content                          | `string`                  | `""`    | No       |
-| `onChange`            | Callback triggered when the content changes       | `(value: string) => void` | —       | Yes      |
-| `isInitiallyFocused` | Whether the editor receives focus on mount        | `boolean`                 | —       | No       |No       |
+| Property             | Description                                 | Type                      | Default | Required |
+| -------------------- | ------------------------------------------- | ------------------------- | ------- | -------- | --- |
+| `value`              | The current text content                    | `string`                  | `""`    | No       |
+| `onChange`           | Callback triggered when the content changes | `(value: string) => void` | —       | Yes      |
+| `isInitiallyFocused` | Whether the editor receives focus on mount  | `boolean`                 | —       | No       | No  |
 
 ```tsx
-import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@eney/api';
+import { useState } from "react";
+import { Form, Action, ActionPanel } from "@eney/api";
 
 function NoteEditor() {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
 
   function onSubmit() {
     // process content
@@ -359,7 +375,11 @@ function NoteEditor() {
         </ActionPanel>
       }
     >
-      <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
+      <Form.RichTextEditor
+        value={content}
+        onChange={setContent}
+        isInitiallyFocused
+      />
     </Form>
   );
 }

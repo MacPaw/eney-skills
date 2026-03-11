@@ -10,20 +10,20 @@ Displays a list of files. Each file is rendered as a clickable item showing its 
 
 ### Files
 
-| Property   | Description              | Type              | Default | Required |
-| ---------- | ------------------------ | ----------------- | ------- | -------- |
-| `children` | `Files.Item` components  | `React.ReactNode` | —       | Yes      |
+| Property   | Description             | Type              | Default | Required |
+| ---------- | ----------------------- | ----------------- | ------- | -------- |
+| `children` | `Files.Item` components | `React.ReactNode` | —       | Yes      |
 
 ### Files.Item
 
-| Property   | Description               | Type      | Default | Required |
-| ---------- | ------------------------- | --------- | ------- | -------- |
-| `path`     | Absolute path to the file | `string`  | —       | Yes      |
+| Property | Description               | Type     | Default | Required |
+| -------- | ------------------------- | -------- | ------- | -------- |
+| `path`   | Absolute path to the file | `string` | —       | Yes      |
 
 ## Usage
 
 ```tsx
-import { Files } from '@eney/api';
+import { Files } from "@eney/api";
 
 function OutputFiles(props: { paths: string[] }) {
   return (
@@ -39,11 +39,11 @@ function OutputFiles(props: { paths: string[] }) {
 ### Full example — file processing widget
 
 ```tsx
-import { useState } from 'react';
-import { Form, Action, ActionPanel, Files } from '@eney/api';
+import { useState } from "react";
+import { Form, Action, ActionPanel, Files } from "@eney/api";
 
 function ImageOptimizer() {
-  const [inputImage, setInputImage] = useState('');
+  const [inputImage, setInputImage] = useState("");
   const [outputFiles, setOutputFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -51,8 +51,8 @@ function ImageOptimizer() {
     setLoading(true);
     // process the image and produce output files
     const optimized = [
-      '/output/image-optimized.webp',
-      '/output/image-compressed.jpg',
+      "/output/image-optimized.webp",
+      "/output/image-compressed.jpg",
     ];
     setOutputFiles(optimized);
     setLoading(false);
@@ -73,7 +73,7 @@ function ImageOptimizer() {
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title={loading ? 'Optimizing...' : 'Optimize'}
+            title={loading ? "Optimizing..." : "Optimize"}
             onSubmit={onSubmit}
             isLoading={loading}
           />
