@@ -15,6 +15,16 @@ This guide walks you through creating a complete extension from scratch.
 - Node.js 24+
 - npm
 
+## Setup
+
+Link the CLI globally so you can run it from anywhere in the repo:
+
+```bash
+cd cli && npm link
+```
+
+This registers the `eney-skills-cli` command. You only need to do this once after cloning the repository.
+
 ## Create an Extension
 
 <Steps>
@@ -39,13 +49,13 @@ Claude Code will ask you for the extension details and handle the rest. You can 
 Scaffold a new extension manually:
 
 ```bash
-node cli/main.ts create ...options
+eney-skills-cli create ...options
 ```
 
 Example of command call with all required options:
 
 ```bash
-node cli/main.ts create --id weather-forecaster \
+eney-skills-cli create --id weather-forecaster \
   --mcp-title="Your town forecast" \
   --tool-name="get-weather-forecast" \
   --tool-description="Get Weather Forecast" \
@@ -169,7 +179,7 @@ If there are no errors, your extension is ready.
 The CLI `dev` command compiles, deploys locally, and watches for changes:
 
 ```bash
-node ../../cli/main.ts dev
+eney-skills-cli dev
 ```
 
 This deploys the compiled output to the Eney MCP folder and generates tool definitions so Eney discovers your widget.

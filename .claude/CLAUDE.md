@@ -14,7 +14,7 @@ Always use `npm run build` to build/verify extensions — never `npx tsc --noEmi
 ## MCP Creation Workflow
 
 1. `git checkout main && git pull && git checkout -b feat/<mcp-id>`
-2. `node cli/main.ts create --id <mcp-id> --mcp-title "..." --tool-name <name> --tool-description "..." --tool-title "..." -o ./mcps`
+2. `eney-skills-cli create --id <mcp-id> --mcp-title "..." --tool-name <name> --tool-description "..." --tool-title "..." -o ./mcps`
 3. Implement widgets in `mcps/<mcp-id>/components/`
 4. `cd mcps/<mcp-id> && npm run build`
 

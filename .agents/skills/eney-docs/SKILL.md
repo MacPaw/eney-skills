@@ -381,4 +381,4 @@ export default MyToolWidget;
 
 | Command                | Purpose                              |
 | ---------------------- | ------------------------------------ |
-| `node cli/main.ts dev` | Watch + compile + deploy MCP to Eney |
+| `eney-skills-cli dev` | Watch + compile + deploy MCP to Eney |

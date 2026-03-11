@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Command-line tool for Eney extension tools",
   "main": "main.ts",
+  "bin": {
+    "eney-skills-cli": "./main.ts"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -34,7 +34,7 @@ git checkout -b feat/<mcp-id>
 Run from the repo root:
 
 ```bash
-node cli/main.ts create \
+eney-skills-cli create \
   --id <mcp-id> \
   --mcp-title "<MCP Title>" \
   --tool-name <tool-name> \
@@ -42,6 +42,8 @@ node cli/main.ts create \
   --tool-title "<Tool Title>" \
   -o ./mcps
 ```
+
+> If `eney-skills-cli` is not found, run `cd cli && npm link` first.
 
 This creates the full MCP structure under `mcps/<mcp-id>/` and installs base dependencies.
 
