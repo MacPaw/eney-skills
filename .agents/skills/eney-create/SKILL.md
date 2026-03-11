@@ -236,3 +236,14 @@ cd mcps/<mcp-id> && npm run build
 | `Property 'onChange' is missing`                      | `onChange` is required on all form fields | Add `onChange={setter}` even for display-only fields |
 | `Type 'number' is not assignable to 'number \| null'` | NumberField value is nullable             | Use `useState<number \| null>(defaultValue)`         |
 | `Cannot find module './foo'`                          | Missing `.js` extension in import         | Use `import X from "./foo.js"`                       |
+
+## Step 7: Publish
+
+To publish the extension, create a pull request to `main` with a short description of what the extension does:
+
+```bash
+git add mcps/<mcp-id>
+git commit -m "feat: add <mcp-id>"
+git push -u origin feat/<mcp-id>
+gh pr create --title "feat: add <MCP Title>" --body "Short description of the extension."
+```
