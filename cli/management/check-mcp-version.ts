@@ -32,13 +32,13 @@ export async function checkMcpVersion(cwd: string, mode: "staging" | "production
 
     if (!semver.valid(currentVersion)) {
       throw new Error(
-        `Version ${currentVersion} is not a valid semver version! Please update the version in the manifest.json file.`
+        `Version ${currentVersion} is not a valid semver version! Please update the version in the manifest.json file.`,
       );
     }
 
     if (semver.lt(currentVersion, latestVersion)) {
       throw new Error(
-        `Version ${currentVersion} is less than the latest version ${versionList[0]}! Please update the version in the manifest.json file.`
+        `Version ${currentVersion} is less than the latest version ${versionList[0]}! Please update the version in the manifest.json file.`,
       );
     }
 
@@ -48,4 +48,3 @@ export async function checkMcpVersion(cwd: string, mode: "staging" | "production
     process.exit(1);
   }
 }
-

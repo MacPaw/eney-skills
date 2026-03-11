@@ -9,10 +9,7 @@ export async function deleteArtifacts(mode: "staging" | "production", prefix: st
 
   console.log("Fetching artifacts and analytics...");
 
-  const [artifacts, downloadCounts] = await Promise.all([
-    api.listMcpArchivesInCloud(prefix),
-    fetchAnalytics(mode),
-  ]);
+  const [artifacts, downloadCounts] = await Promise.all([api.listMcpArchivesInCloud(prefix), fetchAnalytics(mode)]);
 
   if (artifacts.length === 0) {
     console.log("No artifacts found.");
@@ -35,7 +32,9 @@ export async function deleteArtifacts(mode: "staging" | "production", prefix: st
     const size = formatSize(artifact.size);
     const age = formatAge(artifact.created);
     const downloads = artifact.downloads.toLocaleString();
-    console.log(`  ${styleText(["blue", "bold"], name)} - ${styleText("yellow", size)} | ${styleText("cyan", age)} | ${styleText("magenta", downloads + " downloads")}`);
+    console.log(
+      `  ${styleText(["blue", "bold"], name)} - ${styleText("yellow", size)} | ${styleText("cyan", age)} | ${styleText("magenta", downloads + " downloads")}`,
+    );
   }
 
   if (!yes) {

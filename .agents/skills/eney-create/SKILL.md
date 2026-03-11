@@ -120,13 +120,23 @@ function MyTool(props: Props) {
         header={<CardHeader title="My Tool" />}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
+            <Action.SubmitForm
+              title="Start Over"
+              onSubmit={() => setResult("")}
+              style="secondary"
+            />
             <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
         <Paper markdown={result} />
-        <Form.TextField name="input" label="Input" value={input} onChange={setInput} isCopyable />
+        <Form.TextField
+          name="input"
+          label="Input"
+          value={input}
+          onChange={setInput}
+          isCopyable
+        />
       </Form>
     );
   }
@@ -148,7 +158,12 @@ function MyTool(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.TextField name="input" label="Input" value={input} onChange={setInput} />
+      <Form.TextField
+        name="input"
+        label="Input"
+        value={input}
+        onChange={setInput}
+      />
     </Form>
   );
 }
@@ -174,16 +189,16 @@ export default MyToolWidget;
 
 ### Available Form Fields
 
-| Field                 | Required Props               | Optional Props                | Notes                               |
-| --------------------- | ---------------------------- | ----------------------------- | ----------------------------------- |
-| `Form.TextField`      | `name`, `value`, `onChange`  | `label`, `isCopyable`         | Single-line text                    |
-| `Form.PasswordField`  | `name`, `value`, `onChange`  | `label`                       | Masked input                        |
-| `Form.NumberField`    | `name`, `value`, `onChange`  | `label`, `min`, `max`         | `value` is `number \| null`         |
-| `Form.Checkbox`       | `name`, `checked`, `onChange`| `label`, `variant`            | `"checkbox"` or `"switch"`          |
-| `Form.Dropdown`       | `name`, `value`, `onChange`  | `label`, `searchable`         | Children: `Form.Dropdown.Item`      |
-| `Form.DatePicker`     | `name`, `value`, `onChange`  | `label`, `type`               | `"date"`, `"time"`, `"datetime"`    |
-| `Form.FilePicker`     | `name`, `value`, `onChange`  | `label`, `accept`, `multiple` | File selection dialog               |
-| `Form.RichTextEditor` | `value`, `onChange`          | `isInitiallyFocused`          | Rich text area                      |
+| Field                 | Required Props                | Optional Props                | Notes                            |
+| --------------------- | ----------------------------- | ----------------------------- | -------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`   | `label`, `isCopyable`         | Single-line text                 |
+| `Form.PasswordField`  | `name`, `value`, `onChange`   | `label`                       | Masked input                     |
+| `Form.NumberField`    | `name`, `value`, `onChange`   | `label`, `min`, `max`         | `value` is `number \| null`      |
+| `Form.Checkbox`       | `name`, `checked`, `onChange` | `label`, `variant`            | `"checkbox"` or `"switch"`       |
+| `Form.Dropdown`       | `name`, `value`, `onChange`   | `label`, `searchable`         | Children: `Form.Dropdown.Item`   |
+| `Form.DatePicker`     | `name`, `value`, `onChange`   | `label`, `type`               | `"date"`, `"time"`, `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`   | `label`, `accept`, `multiple` | File selection dialog            |
+| `Form.RichTextEditor` | `value`, `onChange`           | `isInitiallyFocused`          | Rich text area                   |
 
 ### Available Actions
 
@@ -216,8 +231,8 @@ cd mcps/<mcp-id> && npm run build
 
 ### Common Build Errors
 
-| Error | Cause | Fix |
-| ----- | ----- | --- |
-| `Property 'onChange' is missing` | `onChange` is required on all form fields | Add `onChange={setter}` even for display-only fields |
-| `Type 'number' is not assignable to 'number \| null'` | NumberField value is nullable | Use `useState<number \| null>(defaultValue)` |
-| `Cannot find module './foo'` | Missing `.js` extension in import | Use `import X from "./foo.js"` |
+| Error                                                 | Cause                                     | Fix                                                  |
+| ----------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| `Property 'onChange' is missing`                      | `onChange` is required on all form fields | Add `onChange={setter}` even for display-only fields |
+| `Type 'number' is not assignable to 'number \| null'` | NumberField value is nullable             | Use `useState<number \| null>(defaultValue)`         |
+| `Cannot find module './foo'`                          | Missing `.js` extension in import         | Use `import X from "./foo.js"`                       |

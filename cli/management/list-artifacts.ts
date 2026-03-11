@@ -9,10 +9,7 @@ export async function listArtifacts(mode: "staging" | "production", prefix?: str
 
   console.log(`\nFetching artifacts and analytics from ${mode}...`);
 
-  const [artifacts, downloadCounts] = await Promise.all([
-    api.listMcpArchivesInCloud(prefix),
-    fetchAnalytics(mode),
-  ]);
+  const [artifacts, downloadCounts] = await Promise.all([api.listMcpArchivesInCloud(prefix), fetchAnalytics(mode)]);
 
   if (artifacts.length === 0) {
     console.log("No artifacts found.");

@@ -1,35 +1,20 @@
-# Eney-skills
+# Eney Skills
 
-Repository for Eney skills
+Monorepo for Eney extensions — MCP servers that expose interactive widgets to the Eney app.
 
-## How to start
+## Repository Structure
 
-### Prerequisites
+- `mcps/` — production MCP extensions (each is a standalone Node.js server)
+- `cli/` — scaffolding and dev tools for creating and running extensions
+- `docs/` — widget API reference and guides (MDX, powers the documentation site)
+- `website/` — documentation website (Next.js + Fumadocs)
+- `scripts/` — CI/CD and utility scripts
 
-1. Node.js v24+.
-2. For local development, clone [playground repo](https://github.com/MacPawLabs/eney-jsx-playground).
+## Getting Started
 
-### Steps
+See the [Getting Started](/docs/getting-started) guide for a full walkthrough on creating your first extension.
 
-#### 1. Create new extension
+## Prerequisites
 
-You can create new extension via CLI. Go to root folder and add new one via:
-
-```bash
-node cli/main.ts create
-```
-
-Please create new extension inside `eney-skills/extensions/` folder as other commands rely on this folder.
-
-#### 2. Update code inside extension
-
-Do what your imagination wants.
-It's important that `setupTool` is called at the end.
-
-#### 3. Publish extension
-
-Create PR to the main branch. After PR is merged, CI will publish extension to staging.
-
-#### 4. Call extension inside Eney
-
-After CI is done, check Eney Admin for created manifest. Run this manifest via "Run" button.
+- Node.js 24+
+- npm
