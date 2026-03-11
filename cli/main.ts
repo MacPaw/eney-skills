@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import dotenv from "dotenv";
 import { Command } from "commander";
 import path from "path";

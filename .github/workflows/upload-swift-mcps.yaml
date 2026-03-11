@@ -63,7 +63,7 @@ jobs:
         run: |
           TEMP_DIR=$(mktemp -d)
           npx --yes @anthropic-ai/mcpb unpack "mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
-          node cli/main.ts extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
+          eney-skills-cli extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
           rm -rf "$TEMP_DIR"
 
       - name: Upload MCP archive artifact
@@ -125,13 +125,13 @@ jobs:
 
       - name: Upload MCP archive
         run: |
-          node cli/main.ts upload-mcp-archive \
+          eney-skills-cli upload-mcp-archive \
             --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --mode staging
 
       - name: Publish MCP metadata
         run: |
-          node cli/main.ts publish-mcp-metadata \
+          eney-skills-cli publish-mcp-metadata \
             --mode staging \
             --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --tools-json mcps/${{ matrix.mcp }}/tools.json

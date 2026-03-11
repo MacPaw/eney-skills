@@ -31,7 +31,7 @@ Fix any TypeScript errors before proceeding.
 The CLI `dev` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
 
 ```bash
-cd mcps/<mcp-name> && node ../../cli/main.ts dev
+cd mcps/<mcp-name> && eney-skills-cli dev
 ```
 
 This does three things on every build:

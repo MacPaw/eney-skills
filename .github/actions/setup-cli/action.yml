@@ -24,3 +24,7 @@ runs:
     - name: Install CLI dependencies
       shell: bash
       run: npm ci --prefix cli
+
+    - name: Link CLI globally
+      shell: bash
+      run: npm link --prefix cli
