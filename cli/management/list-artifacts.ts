@@ -1,46 +1,10 @@
-import * as p from "@clack/prompts";
 import { styleText } from "node:util";
 import { ApiClient } from "../lib/api.ts";
 import { fetchAnalytics, formatAge, formatSize } from "./utils.ts";
 
-type ListArtifactsOptions = {
-  mode?: "staging" | "production";
-  prefix?: string;
-};
-
 const MCP_PREFIX = "mcps/";
 
-async function promptForOptions(options: ListArtifactsOptions) {
-  p.intro("List Artifacts");
-
-  const answers = await p.group(
-    {
-      mode: () =>
-        options.mode
-          ? Promise.resolve(options.mode)
-          : p.select({
-              message: "Select environment:",
-              options: [
-                { value: "staging", label: "Staging" },
-                { value: "production", label: "Production" },
-              ],
-            }),
-    },
-    {
-      onCancel: () => {
-        p.cancel("Operation cancelled.");
-        process.exit(0);
-      },
-    },
-  );
-
-  return {
-    mode: answers.mode as "staging" | "production",
-    prefix: options.prefix,
-  };
-}
-
-async function listArtifacts(mode: "staging" | "production", prefix?: string) {
+export async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   const api = new ApiClient(mode);
 
   console.log(`\nFetching artifacts and analytics from ${mode}...`);
@@ -84,19 +48,4 @@ async function listArtifacts(mode: "staging" | "production", prefix?: string) {
   }
 
   console.log();
-}
-
-export async function listArtifactsCommand(mode?: "staging" | "production", prefix?: string) {
-  const hasAllOptions = mode !== undefined;
-  const isCI = process.env.CI === "true";
-
-  if (hasAllOptions) {
-    await listArtifacts(mode, prefix);
-  } else if (isCI) {
-    console.error("Error: --mode is required in CI mode");
-    process.exit(1);
-  } else {
-    const resolved = await promptForOptions({ mode, prefix });
-    await listArtifacts(resolved.mode, resolved.prefix);
-  }
 }

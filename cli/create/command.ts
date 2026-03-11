@@ -1,17 +1,9 @@
 import { join } from 'node:path';
-import { readdir, mkdir, readFile, writeFile, rename, rm } from 'node:fs/promises';
+import { readdir, mkdir, readFile, writeFile, rename, rm, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { exec } from 'node:child_process';
 import { copy } from 'fs-extra';
 import handlebars from 'handlebars';
-import * as p from '@clack/prompts';
-import {
-	askMcpDetails,
-	askMcpId,
-	askOutputDirectory,
-	type McpDetails,
-	getFolderAction,
-} from './prompt.ts';
 
 const templateFolder = fileURLToPath(new URL('./template', import.meta.url));
 
@@ -42,57 +34,49 @@ function toPascalCase(str: string): string {
 		.join('');
 }
 
+type McpDetails = {
+	mcpId: string;
+	mcpTitle: string;
+	toolName: string;
+	toolDescription: string;
+	toolTitle: string;
+};
+
 type CreateCommandOptions = {
-	output?: string;
-} & Partial<McpDetails>;
+	output: string;
+} & McpDetails;
+
+async function folderExists(path: string): Promise<boolean> {
+	try {
+		await stat(path);
+		return true;
+	} catch {
+		return false;
+	}
+}
 
 export async function createCommand(options: CreateCommandOptions) {
-	const isCI = process.env.CI === 'true';
-	const requiredDetails: (keyof Omit<McpDetails, 'mcpId'>)[] = [
-		'mcpTitle',
-		'toolName',
-		'toolDescription',
-		'toolTitle',
-	];
-	const hasAllDetails = requiredDetails.every((key) => options[key]);
-	const hasAllOptions = options.mcpId !== undefined && hasAllDetails;
-
-	if (!hasAllOptions && isCI) {
-		console.error('Error: --id, --mcp-title, --tool-name, --tool-description, and --tool-title are required in CI mode');
-		process.exit(1);
-	}
+	const { output: outputDirectory, mcpId, mcpTitle, toolName, toolDescription, toolTitle } = options;
 
 	const directoriesToRename: { oldPath: string; newPath: string }[] = [];
 
-	p.intro('Create MCP Server');
+	console.log('Creating MCP server...');
 
-	const outputDirectory = options.output || (await askOutputDirectory());
-	const mcpId = options.mcpId || (await askMcpId());
 	const localOutputFolder = join(outputDirectory, mcpId);
 
-	const folderAction = await getFolderAction(localOutputFolder);
-
-	if (folderAction === 'cancel') {
-		p.cancel('Operation cancelled.');
-		process.exit(0);
+	if (await folderExists(localOutputFolder)) {
+		console.log(`MCP server at "${localOutputFolder}" already exists, overwriting.`);
+		await rm(localOutputFolder, { recursive: true, force: true });
 	}
-
-	const mcpDetails = hasAllDetails
-		? (options as McpDetails)
-		: await askMcpDetails();
 
 	const fullDetails = {
 		mcpId,
-		...mcpDetails,
-		toolNamePascal: toPascalCase(mcpDetails.toolName),
+		mcpTitle,
+		toolName,
+		toolDescription,
+		toolTitle,
+		toolNamePascal: toPascalCase(toolName),
 	};
-
-	const spinner = p.spinner();
-	spinner.start('Creating MCP server...');
-
-	if (folderAction === 'overwrite') {
-		await rm(localOutputFolder, { recursive: true, force: true });
-	}
 
 	await mkdir(localOutputFolder, { recursive: true });
 
@@ -136,10 +120,7 @@ export async function createCommand(options: CreateCommandOptions) {
 		await rename(directory.oldPath, directory.newPath);
 	}
 
-	spinner.stop('MCP server created');
-
-	const installSpinner = p.spinner();
-	installSpinner.start('Installing dependencies...');
+	console.log('MCP server created. Installing dependencies...');
 
 	await new Promise<void>((resolve, reject) => {
 		exec('npm install', { cwd: localOutputFolder }, (error) => {
@@ -150,7 +131,5 @@ export async function createCommand(options: CreateCommandOptions) {
 		});
 	});
 
-	installSpinner.stop('Dependencies installed');
-
-	p.outro(`MCP server created at ${localOutputFolder}`);
+	console.log(`MCP server created at ${localOutputFolder}`);
 }

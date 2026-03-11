@@ -379,8 +379,6 @@ export default MyToolWidget;
 
 ## CLI Commands
 
-| Command                    | Purpose                              |
-| -------------------------- | ------------------------------------ |
-| `node cli/main.ts dev-mcp` | Watch + compile + deploy MCP to Eney |
-| `node cli/main.ts dev`     | Watch + bundle JSX extension to Eney |
-| `node cli/main.ts bundle`  | One-time bundle (extensions)         |
+| Command                | Purpose                              |
+| ---------------------- | ------------------------------------ |
+| `node cli/main.ts dev` | Watch + compile + deploy MCP to Eney |

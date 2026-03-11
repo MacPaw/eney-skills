@@ -121,7 +121,7 @@ It should print a "running on stdio" message to stderr.
 | Widget not registered                                 | Missing `uixServer.registerWidget()` in index.ts | Import and register the widget                                          |
 | Import paths wrong                                    | Missing `.js` extension in imports               | Use `.js` extensions for local imports (e.g., `./components/widget.js`) |
 | Deeplink doesn't open tool                            | Wrong `commandID`                                | Use the widget `name` from `defineWidget()`, not the manifest name      |
-| Tool not visible in Eney                              | Missing tool JSON in ~/.eney/tools/              | Run `dev-mcp` — it generates tool definitions automatically             |
+| Tool not visible in Eney                              | Missing tool JSON in ~/.eney/tools/              | Run `dev` — it generates tool definitions automatically                 |
 
 ## Debugging Checklist
 
