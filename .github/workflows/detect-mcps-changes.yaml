@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 2
 
       - name: Check for MCP changes
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
@@ -54,6 +56,9 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+
             const filePaths = JSON.parse('${{ steps.filter.outputs.mcps_files }}');
             const mcps = filePaths
               .filter(path => path.startsWith('mcps/'))
@@ -68,11 +73,28 @@ jobs:
               .filter((mcp, index, self) => self.indexOf(mcp) === index)
               .filter((mcp) => mcp !== null);
 
-            const fs = require('fs');
-            const swiftMcps = mcps.filter(mcp => fs.existsSync(`mcps/${mcp}/Package.swift`));
-            const nodeMcps = mcps.filter(mcp => !fs.existsSync(`mcps/${mcp}/Package.swift`));
+            function hasVersionChanged(mcp) {
+              try {
+                const curr = JSON.parse(fs.readFileSync(`mcps/${mcp}/manifest.json`, 'utf8')).version;
+                const prev = JSON.parse(execSync(
+                  `git show HEAD~1:mcps/${mcp}/manifest.json 2>/dev/null || echo '{}'`,
+                  { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+                )).version || '';
+                const changed = curr !== prev;
+                console.log(`${mcp}: ${prev} -> ${curr} (${changed ? 'changed' : 'unchanged'})`);
+                return changed;
+              } catch (e) {
+                console.log(`${mcp}: error checking version (${e.message}), including`);
+                return true;
+              }
+            }
 
-            console.log(JSON.stringify(mcps, null, 2));
+            const versionedMcps = mcps.filter(hasVersionChanged);
+
+            const swiftMcps = versionedMcps.filter(mcp => fs.existsSync(`mcps/${mcp}/Package.swift`));
+            const nodeMcps = versionedMcps.filter(mcp => !fs.existsSync(`mcps/${mcp}/Package.swift`));
+
+            console.log('All changed MCPs:', JSON.stringify(mcps, null, 2));
             core.setOutput('mcps', mcps);
             core.setOutput('has_changes', mcps.length > 0);
             core.setOutput('node_mcps', nodeMcps);

@@ -3,7 +3,7 @@ name: eney-create
 description: Create a new Eney MCP skill using the CLI scaffolding tool, then implement widget components with Eney UIX.
 metadata:
   author: macpaw
-  version: "2.0"
+  version: "3.0"
 ---
 
 # Create a New Eney MCP Skill
@@ -34,7 +34,7 @@ git checkout -b feat/<mcp-id>
 Run from the repo root:
 
 ```bash
-node cli/main.ts create \
+eney-skills-cli create \
   --id <mcp-id> \
   --mcp-title "<MCP Title>" \
   --tool-name <tool-name> \
@@ -43,45 +43,177 @@ node cli/main.ts create \
   -o ./mcps
 ```
 
-This creates the full MCP structure under `mcps/<mcp-id>/`:
+> If `eney-skills-cli` is not found, run `cd cli && npm link` first.
 
+This creates the full MCP structure under `mcps/<mcp-id>/` and installs base dependencies.
+
+## Step 4: Install Additional Dependencies
+
+If the widget needs third-party libraries (e.g., `qrcode`, `sharp`, `crypto-js`), install them in the MCP directory:
+
+```bash
+cd mcps/<mcp-id> && npm install <package-name>
 ```
-mcps/<mcp-id>/
-├── manifest.json          # MCP metadata (manifest_version: "0.3")
-├── package.json           # Dependencies including @modelcontextprotocol/sdk
-├── tsconfig.json          # TypeScript config
-├── index.ts               # Server entry — McpServer + setupUIXForMCP + registerWidget
-└── components/
-    └── <tool-name>.tsx    # Widget using defineWidget()
+
+For packages with TypeScript types, also install the types:
+
+```bash
+npm install <package-name> @types/<package-name>
 ```
 
-Dependencies are installed automatically by the CLI.
+## Step 5: Implement the Widget
 
-## Step 4: Implement the Widget
+Edit `mcps/<mcp-id>/components/<tool-name>.tsx`.
 
-Edit `mcps/<mcp-id>/components/<tool-name>.tsx`. For the full widget API, read `docs/widgets/`:
+### Widget Structure
 
-- `docs/widgets/index.mdx` — overview, rendering pipeline, full example
-- `docs/widgets/form.mdx` — Form container
-- `docs/widgets/form-fields.mdx` — TextField, NumberField, Checkbox, Dropdown, DatePicker, FilePicker, RichTextEditor
-- `docs/widgets/actions.mdx` — Action, SubmitForm, CopyToClipboard, ShowInFinder
-- `docs/widgets/action-panel.mdx` — ActionPanel layout
-- `docs/widgets/paper.mdx` — markdown display
-- `docs/widgets/card-header.mdx` — form header with icon
-- `docs/widgets/files.mdx` — file list display
+Every widget follows this pattern:
 
-Key patterns:
+```tsx
+import { useState } from "react";
+import { z } from "zod";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Paper,
+  CardHeader,
+  defineWidget,
+  useCloseWidget,
+} from "@macpaw/eney-api";
 
-- **defineWidget** — wraps the component with `{ name, description, schema, component }` and is the default export
-- **registerWidget** — each widget is imported in `index.ts` and registered with `uixServer.registerWidget()`
-- **Schema** — `z.object({...})`, every field needs `.describe()`, fields should be `.optional()`
-- **useCloseWidget** — signals completion, closes the widget
-- **Success state pattern** — swap UI after successful operations (return different JSX)
-- **Business logic** — extract into separate files (`components/utils.ts` or `helpers/`)
+// 1. Schema — all fields need .describe() and should be .optional()
+const schema = z.object({
+  input: z.string().optional().describe("The input value."),
+});
+
+type Props = z.infer<typeof schema>;
+
+// 2. Component — uses Form, Paper, ActionPanel primitives (NO HTML elements)
+function MyTool(props: Props) {
+  const closeWidget = useCloseWidget();
+  const [input, setInput] = useState(props.input ?? "");
+  const [result, setResult] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit() {
+    if (!input.trim()) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const output = await process(input);
+      setResult(output);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function onDone() {
+    closeWidget("Done.");
+  }
+
+  // Result state — swap UI after operation
+  if (result) {
+    return (
+      <Form
+        header={<CardHeader title="My Tool" />}
+        actions={
+          <ActionPanel layout="row">
+            <Action.SubmitForm
+              title="Start Over"
+              onSubmit={() => setResult("")}
+              style="secondary"
+            />
+            <Action title="Done" onAction={onDone} style="primary" />
+          </ActionPanel>
+        }
+      >
+        <Paper markdown={result} />
+        <Form.TextField
+          name="input"
+          label="Input"
+          value={input}
+          onChange={setInput}
+          isCopyable
+        />
+      </Form>
+    );
+  }
+
+  // Input state
+  return (
+    <Form
+      header={<CardHeader title="My Tool" />}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title={isLoading ? "Processing..." : "Process"}
+            onSubmit={onSubmit}
+            style="primary"
+            isLoading={isLoading}
+            isDisabled={!input.trim()}
+          />
+        </ActionPanel>
+      }
+    >
+      {error && <Paper markdown={`**Error:** ${error}`} />}
+      <Form.TextField
+        name="input"
+        label="Input"
+        value={input}
+        onChange={setInput}
+      />
+    </Form>
+  );
+}
+
+// 3. defineWidget — wraps component for registration
+const MyToolWidget = defineWidget({
+  name: "my-tool",
+  description: "Process the provided input",
+  schema,
+  component: MyTool,
+});
+
+export default MyToolWidget;
+```
+
+### Critical Rules
+
+- **`onChange` is REQUIRED** on all form fields — even display-only fields need it.
+- **`Form.NumberField` value is `number | null`**, not `number`.
+- **Use `.js` extensions** for local imports: `import X from "./foo.js"`.
+- **No HTML elements** — only Eney primitives (`Form`, `Paper`, `ActionPanel`, `Files`, `CardHeader`).
+- **No `<img>` tags** — display images via `<Paper markdown="![alt](dataUrl)" />` or `<Files><Files.Item path="..." /></Files>`.
+
+### Available Form Fields
+
+| Field                 | Required Props                | Optional Props                | Notes                            |
+| --------------------- | ----------------------------- | ----------------------------- | -------------------------------- |
+| `Form.TextField`      | `name`, `value`, `onChange`   | `label`, `isCopyable`         | Single-line text                 |
+| `Form.PasswordField`  | `name`, `value`, `onChange`   | `label`                       | Masked input                     |
+| `Form.NumberField`    | `name`, `value`, `onChange`   | `label`, `min`, `max`         | `value` is `number \| null`      |
+| `Form.Checkbox`       | `name`, `checked`, `onChange` | `label`, `variant`            | `"checkbox"` or `"switch"`       |
+| `Form.Dropdown`       | `name`, `value`, `onChange`   | `label`, `searchable`         | Children: `Form.Dropdown.Item`   |
+| `Form.DatePicker`     | `name`, `value`, `onChange`   | `label`, `type`               | `"date"`, `"time"`, `"datetime"` |
+| `Form.FilePicker`     | `name`, `value`, `onChange`   | `label`, `accept`, `multiple` | File selection dialog            |
+| `Form.RichTextEditor` | `value`, `onChange`           | `isInitiallyFocused`          | Rich text area                   |
+
+### Available Actions
+
+| Action                   | Key Props                                               | Notes                  |
+| ------------------------ | ------------------------------------------------------- | ---------------------- |
+| `Action`                 | `title`, `onAction`, `style`, `isLoading`, `isDisabled` | Generic button         |
+| `Action.SubmitForm`      | `title`, `onSubmit`, `style`, `isLoading`, `isDisabled` | Form submit            |
+| `Action.CopyToClipboard` | `content`, `title`                                      | Copy text to clipboard |
+| `Action.ShowInFinder`    | `path`, `title`                                         | Reveal file in Finder  |
 
 ### Adding Multiple Widgets
 
-To add more widgets to the same MCP, create additional files in `components/` and register each one in `index.ts`:
+Create additional files in `components/` and register each in `index.ts`:
 
 ```typescript
 import WidgetA from "./components/widget-a.js";
@@ -91,7 +223,7 @@ uixServer.registerWidget(WidgetA);
 uixServer.registerWidget(WidgetB);
 ```
 
-## Step 5: Verify
+## Step 6: Verify
 
 ```bash
 cd mcps/<mcp-id> && npm run build
@@ -99,12 +231,21 @@ cd mcps/<mcp-id> && npm run build
 
 > Always use `npm run build` to verify — never `npx tsc --noEmit` or `npx tsc` directly.
 
-## Reference: Existing MCPs
+### Common Build Errors
 
-Study these in the repo for real-world patterns:
+| Error                                                 | Cause                                     | Fix                                                  |
+| ----------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| `Property 'onChange' is missing`                      | `onChange` is required on all form fields | Add `onChange={setter}` even for display-only fields |
+| `Type 'number' is not assignable to 'number \| null'` | NumberField value is nullable             | Use `useState<number \| null>(defaultValue)`         |
+| `Cannot find module './foo'`                          | Missing `.js` extension in import         | Use `import X from "./foo.js"`                       |
 
-- `mcps/security-utilities-mcp/` — simple form with generation logic
-- `mcps/notes-utilities-mcp/` — Apple Notes integration with helpers, dropdowns, loading states
-- `mcps/pdf-utilities-mcp/` — file picker usage
-- `mcps/send-mail-mcp/` — email sending with multiple fields
-- `mcps/image-utilities-mcp/` — image processing patterns
+## Step 7: Publish
+
+To publish the extension, create a pull request to `main` with a short description of what the extension does:
+
+```bash
+git add mcps/<mcp-id>
+git commit -m "feat: add <mcp-id>"
+git push -u origin feat/<mcp-id>
+gh pr create --title "feat: add <MCP Title>" --body "Short description of the extension."
+```

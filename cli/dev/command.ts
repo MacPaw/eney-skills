@@ -57,7 +57,7 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
   return targetDir;
 }
 
-async function devMcp() {
+export async function devMcp() {
   let isInitialBuild = true;
   const currentFolder = process.cwd();
 
@@ -90,9 +90,4 @@ async function devMcp() {
 
     debouncedBuild(filename);
   });
-}
-
-export async function devMcpCommand() {
-  console.log("Starting MCP dev...");
-  await devMcp();
 }

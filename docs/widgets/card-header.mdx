@@ -4,22 +4,24 @@ title: Card Header
 
 ![CardHeader](../assets/card-header.png)
 
-Renders a header with a title and an optional application icon. Use this as the `header` prop on a `Form`.
+Renders a header with a title and an application icon. Use this as the `header` prop on a `Form`.
 
 ### Properties
 
-| Property       | Description                               | Type     | Default | Required |
-| -------------- | ----------------------------------------- | -------- | ------- | -------- |
-| `title`        | The header title text                     | `string` | —       | Yes      |
-| `iconBundleId` | macOS bundle identifier for the app icon  | `string` | —       | No       |
+| Property       | Description                              | Type     | Default | Required |
+| -------------- | ---------------------------------------- | -------- | ------- | -------- |
+| `title`        | The header title text                    | `string` | —       | Yes      |
+| `iconBundleId` | macOS bundle identifier for the app icon | `string` | —       | Yes      |
 
 ### Usage
 
 ```tsx
-import { Form, CardHeader, Action, ActionPanel } from '@eney/api';
+import { Form, CardHeader, Action, ActionPanel } from "@eney/api";
 
 function MyWidget() {
-  const header = <CardHeader title="Image Optimizer" iconBundleId="com.apple.Preview" />;
+  const header = (
+    <CardHeader title="Image Optimizer" iconBundleId="com.apple.Preview" />
+  );
 
   return (
     <Form
@@ -36,4 +38,4 @@ function MyWidget() {
 }
 ```
 
-The `iconBundleId` is a macOS application bundle identifier (e.g. `com.apple.Safari`, `com.apple.Preview`). When provided, the host application displays the corresponding app icon next to the title.
+The `iconBundleId` is a macOS application bundle identifier (e.g. `com.apple.Safari`, `com.apple.Preview`). Eney displays the corresponding app icon next to the title.

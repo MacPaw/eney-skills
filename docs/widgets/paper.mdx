@@ -8,11 +8,11 @@ Renders markdown content with an optional action panel. Use this component to di
 
 ### Properties
 
-| Property       | Description                              | Type              | Default | Required |
-| -------------- | ---------------------------------------- | ----------------- | ------- | -------- |
-| `markdown`     | Markdown string to render                | `string`          | —       | No       |
-| `actions`      | A reference to an ActionPanel            | `React.ReactNode` | —       | No       |
-| `isScrollable` | Whether the content area is scrollable   | `boolean`         | —       | No       |
+| Property       | Description                            | Type              | Default | Required |
+| -------------- | -------------------------------------- | ----------------- | ------- | -------- |
+| `markdown`     | Markdown string to render              | `string`          | —       | No       |
+| `actions`      | A reference to an ActionPanel          | `React.ReactNode` | —       | No       |
+| `isScrollable` | Whether the content area is scrollable | `boolean`         | —       | No       |
 
 ## Usage
 
@@ -33,7 +33,7 @@ For long content, enable scrolling:
 ### With actions
 
 ```tsx
-import { Paper, Action, ActionPanel } from '@eney/api';
+import { Paper, Action, ActionPanel } from "@eney/api";
 
 function ResultView(props: { result: string }) {
   const actions = (

@@ -3,8 +3,8 @@ title: Getting Started
 description: Create your first Eney extension in minutes
 ---
 
-import { Step, Steps } from 'fumadocs-ui/components/steps';
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Callout } from "fumadocs-ui/components/callout";
 
 Eney extensions are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@eney/api` widget library — the framework renders them as native macOS UI.
 
@@ -15,140 +15,68 @@ This guide walks you through creating a complete extension from scratch.
 - Node.js 24+
 - npm
 
+## Setup
+
+Link the CLI globally so you can run it from anywhere in the repo:
+
+```bash
+cd cli && npm link
+```
+
+This registers the `eney-skills-cli` command. You only need to do this once after cloning the repository.
+
 ## Create an Extension
 
 <Steps>
 
 <Step>
-### Scaffold the project
+### Set up your extension
 
-Create a new directory under `mcps/` and set up the files:
+There are two ways to scaffold a new extension:
+
+**Option A: Using Claude Code**
+
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, use the `/eney-create` skill — it will scaffold the extension, implement the widget, and build it for you interactively:
+
+```
+/eney-create
+```
+
+Claude Code will ask you for the extension details and handle the rest. You can skip ahead to [Run in dev mode](#run-in-dev-mode) once it's done.
+
+**Option B: Using CLI directly**
+
+Scaffold a new extension manually:
 
 ```bash
-mkdir -p mcps/my-first-mcp/components
-cd mcps/my-first-mcp
+eney-skills-cli create ...options
 ```
 
-Create `package.json`:
-
-```json
-{
-  "name": "my-first-mcp",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "My first Eney extension.",
-  "main": "index.js",
-  "scripts": {
-    "start": "npx tsx index.ts",
-    "clean": "rm -rf dist",
-    "prebuild": "npm run clean",
-    "test": "npx tsx --test tests/*.test.ts",
-    "build": "tsc",
-    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
-  },
-  "dependencies": {
-    "@eney/api": "^1.0.0",
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "react": "^18.3.1",
-    "zod": "^4.1.13"
-  },
-  "devDependencies": {
-    "@types/node": "^25.3.3",
-    "@types/react": "^18.3.27",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  }
-}
-```
-
-Create `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "jsx": "react-jsx",
-    "strict": true,
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
-    "types": ["@types/react", "@types/node"]
-  },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
-  "exclude": ["dist", "node_modules"]
-}
-```
-
-Create `manifest.json`:
-
-```json
-{
-  "manifest_version": "0.3",
-  "name": "my-first-mcp",
-  "version": "1.0.0",
-  "description": "My first Eney extension.",
-  "author": {
-    "name": "Your Name"
-  },
-  "server": {
-    "type": "node",
-    "entry_point": "index.js",
-    "mcp_config": {
-      "command": "node",
-      "args": ["${__dirname}/index.js"],
-      "env": {}
-    }
-  },
-  "license": "MIT"
-}
-```
-</Step>
-
-<Step>
-### Install dependencies
+Example of command call with all required options:
 
 ```bash
-npm install
+eney-skills-cli create --id weather-forecaster \
+  --mcp-title="Your town forecast" \
+  --tool-name="get-weather-forecast" \
+  --tool-description="Get Weather Forecast" \
+  --tool-title="Get Weather Forecast"
 ```
+
+This creates a new folder (by default inside `mcps/` folder) with boilerplate code for your extension. This includes:
+
+- manifest.json - defines your MCP metadata
+- package.json - your dependencies and scripts. **NOTE**: it is important to have `build` script as it is used by CLI commands.
+- tsconfig.json - TypeScript configuration
+- tests/ - folder for your tests
+- components/ - folder for your React components (widgets)
+- index.ts - entry point for your extension
+
 </Step>
 
 <Step>
-### Create the MCP server entry point
+### Implement your widget
 
-Create `index.ts` — this registers your widgets and starts the MCP server:
-
-```ts
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { setupUIXForMCP } from "@eney/api";
-import Greeting from "./components/greeting.js";
-
-const server = new McpServer(
-  { name: "my-first-mcp", version: "1.0.0" },
-  { capabilities: { logging: {}, resources: {} } },
-);
-
-const uixServer = setupUIXForMCP(server);
-uixServer.registerWidget(Greeting);
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("My First MCP running on stdio");
-}
-
-main().catch(console.error);
-```
-</Step>
-
-<Step>
-### Create a widget
-
-Create `components/greeting.tsx`:
+Using tool-name we have provided during creation, CLI has generated a boilerplate widget for us. It is located in `components/` folder.
 
 ```tsx
 import { useState } from "react";
@@ -167,66 +95,95 @@ const schema = z.object({
 });
 
 type Props = z.infer<typeof schema>;
+```
 
-function Greeting(props: Props) {
+<Callout type="warn">
+  It is important to define a schema for your widget's props. This allows Eney
+  to understand needed input for the widget and provide a better experience for
+  users when they run it.
+</Callout>
+
+```tsx
+function GetWeatherForecast(props: Props) {
   const closeWidget = useCloseWidget();
   const [name, setName] = useState(props.name ?? "");
-  const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState("");
 
   function onSubmit() {
-    setMessage(`Hello, ${name || "World"}!`);
+    setResult(`Hello, ${name}!`);
   }
 
   function onDone() {
-    closeWidget(message ?? "No greeting generated.");
+    closeWidget("Done");
   }
+```
 
+<Callout type="info">
+  `closeWidget` is used to finalize interaction for user and to pass context
+  back to Eney. Without calling it, the only way for user to close the widget is
+  to click "X" button in the corner, which cancels the operation.
+</Callout>
+
+```tsx
   const actions = (
-    <ActionPanel layout="row">
-      <Action.SubmitForm title="Greet" onSubmit={onSubmit} style="secondary" />
+    <ActionPanel>
+      <Action.SubmitForm title="Submit" onSubmit={onSubmit} style="secondary" />
       <Action title="Done" onAction={onDone} style="primary" />
     </ActionPanel>
   );
 
   return (
     <Form actions={actions}>
-      <Form.TextField name="name" label="Name" value={name} onChange={setName} />
-      {message && <Paper markdown={`**${message}**`} />}
+      {result && <Paper markdown={result} />}
+      <Form.TextField
+        name="name"
+        label="Name"
+        value={name}
+        onChange={setName}
+      />
     </Form>
   );
 }
 
-const GreetingWidget = defineWidget({
-  name: "greeting",
-  description: "Generate a friendly greeting",
+const GetWeatherForecastWidget = defineWidget({
+  name: "get-weather-forecast",
+  description: "Get Weather Forecast",
   schema,
-  component: Greeting,
+  component: GetWeatherForecast,
 });
 
-export default GreetingWidget;
+export default GetWeatherForecastWidget;
 ```
+
+<Callout type="info">
+  `defineWidget` is a function that defines your widget and its metadata. It is
+  used by Eney to understand when to call this widget and what props to provide.
+</Callout>
+
 </Step>
 
 <Step>
 ### Verify it compiles
 
 ```bash
-npx tsc --noEmit
+npm run build
 ```
 
 If there are no errors, your extension is ready.
+
 </Step>
 
 <Step>
 ### Run in dev mode
 
-The CLI `dev-mcp` command compiles, deploys locally, and watches for changes:
+The CLI `dev` command compiles, deploys locally, and watches for changes:
 
 ```bash
-node ../../cli/main.ts dev-mcp
+eney-skills-cli dev
 ```
 
 This deploys the compiled output to the Eney MCP folder and generates tool definitions so Eney discovers your widget.
+
 </Step>
 
 <Step>
@@ -235,10 +192,13 @@ This deploys the compiled output to the Eney MCP folder and generates tool defin
 Open the widget directly using a deeplink:
 
 ```bash
-open "eney://run?manifestID=eney_core&commandID=greeting"
+open "eney://run?manifestID=eney_core&commandID=get-weather-forecast"
 ```
 
 The `commandID` matches the `name` field from your `defineWidget()` call.
+
+You can also see `open` command at CLI `dev` command output.
+
 </Step>
 
 </Steps>

@@ -4,24 +4,23 @@ title: Action Panel
 
 ![ActionPanel](../assets/action-panel-column.png)
 
-
 Groups a set of [actions](/docs/widgets/actions) that the user can perform. Typically passed to a `Form` or `Paper` via the `actions` prop.
 
 ### Properties
 
-| Property   | Description          | Type                 | Default    | Required |
-| ---------- | -------------------- | -------------------- | ---------- | -------- |
-| `children` | Action elements      | `React.ReactNode`    | —          | Yes      |
-| `layout`   | Layout direction     | `"row" \| "column"`  | `"column"` | No       |
+| Property   | Description      | Type                | Default    | Required |
+| ---------- | ---------------- | ------------------- | ---------- | -------- |
+| `children` | Action elements  | `React.ReactNode`   | —          | Yes      |
+| `layout`   | Layout direction | `"row" \| "column"` | `"column"` | No       |
 
 ### Usage
 
 ```tsx
-import { useState } from 'react';
-import { Form, Action, ActionPanel } from '@eney/api';
+import { useState } from "react";
+import { Form, Action, ActionPanel } from "@eney/api";
 
 function MyWidget() {
-  const [file, setFile] = useState('');
+  const [file, setFile] = useState("");
 
   function onSubmit() {
     // process the file
@@ -36,7 +35,12 @@ function MyWidget() {
 
   return (
     <Form actions={actions}>
-      <Form.FilePicker name="file" label="Select file" value={file} onChange={setFile} />
+      <Form.FilePicker
+        name="file"
+        label="Select file"
+        value={file}
+        onChange={setFile}
+      />
     </Form>
   );
 }
