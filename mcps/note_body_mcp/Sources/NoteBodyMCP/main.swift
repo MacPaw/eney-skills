@@ -214,6 +214,24 @@ actor NotesSQLite {
     }
 }
 
+// MARK: - AppleScript Note Body
+
+func getNoteBody(id: String) async throws -> String {
+    let escapedID = id.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+    let script = """
+    tell application "Notes"
+        set theNote to note id "\(escapedID)"
+        return body of theNote
+    end tell
+    """
+    var error: NSDictionary?
+    guard let result = NSAppleScript(source: script)?.executeAndReturnError(&error) else {
+        let message = (error?["NSAppleScriptErrorMessage"] as? String) ?? "AppleScript execution failed"
+        throw NSError(domain: "AppleScript", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+    return result.stringValue ?? ""
+}
+
 // MARK: - Main Server
 
 LoggingSystem.bootstrap { label in
@@ -277,10 +295,12 @@ await server.withMethodHandler(CallTool.self) { params in
 
             logger.debug("did start get_note_summary tool execution, title - \(title)")
             if let note = try await notesSQLite.getNoteSummary(title: title) {
-                // Send snippet to summary API
+                let body = try await getNoteBody(id: note.id)
+
+                // Send body to summary API
                 if envConfig.isConfigured {
                     do {
-                        if let apiResponse = try await summaryClient.sendSummaryRequest(snippet: note.snippet) {
+                        if let apiResponse = try await summaryClient.sendSummaryRequest(snippet: body) {
                             logger.info("did end get_note_summary tool execution with success, title - \(title)")
                             return .init(
                                 content: [.text(apiResponse)],
@@ -295,11 +315,11 @@ await server.withMethodHandler(CallTool.self) { params in
                         )
                     }
                 }
-                
+
                 // Fallback if API not configured
                 logger.info("did end get_note_summary tool execution with success (no API), title - \(title)")
                 return .init(
-                    content: [.text(note.snippet)],
+                    content: [.text(body)],
                     isError: false
                 )
             } else {
