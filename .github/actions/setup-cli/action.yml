@@ -27,4 +27,6 @@ runs:
 
     - name: Link CLI globally
       shell: bash
-      run: npm link --prefix cli
+      run: |
+        cd cli
+        npm link
