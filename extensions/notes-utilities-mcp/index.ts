@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { setupUIXForMCP } from "@eney/api";
 import AppendToNote from "./components/append-to-note.js";
+import CreateNote from "./components/create-note.js";
 
 const server = new McpServer(
   {
@@ -19,6 +20,7 @@ const server = new McpServer(
 const uixServer = setupUIXForMCP(server);
 
 uixServer.registerWidget(AppendToNote);
+uixServer.registerWidget(CreateNote);
 
 async function main() {
   const transport = new StdioServerTransport();
