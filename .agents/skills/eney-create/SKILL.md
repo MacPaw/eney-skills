@@ -40,19 +40,19 @@ eney-skills-cli create \
   --tool-name <tool-name> \
   --tool-description "<Tool Description>" \
   --tool-title "<Tool Title>" \
-  -o ./mcps
+  -o ./extensions
 ```
 
 > If `eney-skills-cli` is not found, run `cd cli && npm link` first.
 
-This creates the full MCP structure under `mcps/<mcp-id>/` and installs base dependencies.
+This creates the full MCP structure under `extensions/<mcp-id>/` and installs base dependencies.
 
 ## Step 4: Install Additional Dependencies
 
 If the widget needs third-party libraries (e.g., `qrcode`, `sharp`, `crypto-js`), install them in the MCP directory:
 
 ```bash
-cd mcps/<mcp-id> && npm install <package-name>
+cd extensions/<mcp-id> && npm install <package-name>
 ```
 
 For packages with TypeScript types, also install the types:
@@ -63,7 +63,7 @@ npm install <package-name> @types/<package-name>
 
 ## Step 5: Implement the Widget
 
-Edit `mcps/<mcp-id>/components/<tool-name>.tsx`.
+Edit `extensions/<mcp-id>/components/<tool-name>.tsx`.
 
 ### Widget Structure
 
@@ -226,7 +226,7 @@ uixServer.registerWidget(WidgetB);
 ## Step 6: Verify
 
 ```bash
-cd mcps/<mcp-id> && npm run build
+cd extensions/<mcp-id> && npm run build
 ```
 
 > Always use `npm run build` to verify — never `npx tsc --noEmit` or `npx tsc` directly.
@@ -244,7 +244,7 @@ cd mcps/<mcp-id> && npm run build
 To publish the extension, create a pull request to `main` with a short description of what the extension does:
 
 ```bash
-git add mcps/<mcp-id>
+git add extensions/<mcp-id>
 git commit -m "feat: add <mcp-id>"
 git push -u origin feat/<mcp-id>
 gh pr create --title "feat: add <MCP Title>" --body "Short description of the extension."

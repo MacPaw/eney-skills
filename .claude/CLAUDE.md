@@ -6,7 +6,7 @@ Always use `npm run build` to build/verify extensions — never `npx tsc --noEmi
 
 ## Project Structure
 
-- `mcps/` — production MCP servers (each is a standalone Node.js server)
+- `extensions/` — production MCP servers (each is a standalone Node.js server)
 - `cli/` — scaffolding and dev tools
 - `.agents/skills/` — local developer skills (eney-create, eney-debug, eney-docs)
 - `docs/` — widget API reference docs (MDX)
@@ -14,9 +14,9 @@ Always use `npm run build` to build/verify extensions — never `npx tsc --noEmi
 ## MCP Creation Workflow
 
 1. `git checkout main && git pull && git checkout -b feat/<mcp-id>`
-2. `eney-skills-cli create --id <mcp-id> --mcp-title "..." --tool-name <name> --tool-description "..." --tool-title "..." -o ./mcps`
-3. Implement widgets in `mcps/<mcp-id>/components/`
-4. `cd mcps/<mcp-id> && npm run build`
+2. `eney-skills-cli create --id <mcp-id> --mcp-title "..." --tool-name <name> --tool-description "..." --tool-title "..." -o ./extensions`
+3. Implement widgets in `extensions/<mcp-id>/components/`
+4. `cd extensions/<mcp-id> && npm run build`
 
 ## Key Patterns
 
