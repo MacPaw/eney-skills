@@ -47,22 +47,22 @@ jobs:
           npm run build
           npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Extract MCP tools
         run: |
           npm i --os=linux --cpu=arm64 # Prepare environment for MCP tools extraction
           npm run build
           eney-skills-cli extract-mcp-tools --mcp-dir dist --output tools.json
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-mcp-${{ matrix.mcp }}
           path: |
-            mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
-            mcps/${{ matrix.mcp }}/tools.json
+            extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+            extensions/${{ matrix.mcp }}/tools.json
           retention-days: 1
 
   publish-node-mcp:
@@ -98,7 +98,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-mcp-${{ matrix.mcp }}
-          path: mcps/${{ matrix.mcp }}
+          path: extensions/${{ matrix.mcp }}
 
       - name: Resolve archive name
         id: archive
@@ -106,7 +106,7 @@ jobs:
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
           echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
@@ -116,12 +116,12 @@ jobs:
       - name: Upload MCP archive
         run: |
           eney-skills-cli upload-mcp-archive \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --mode staging
 
       - name: Publish MCP metadata
         run: |
           eney-skills-cli publish-mcp-metadata \
             --mode staging \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
-            --tools-json mcps/${{ matrix.mcp }}/tools.json
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --tools-json extensions/${{ matrix.mcp }}/tools.json

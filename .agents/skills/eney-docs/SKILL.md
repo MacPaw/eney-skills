@@ -30,7 +30,7 @@ You write React components using widget primitives from `@eney/api`. The runtime
 Each MCP is a standalone Node.js server communicating over stdio:
 
 ```
-mcps/<mcp-name>/
+extensions/<mcp-name>/
 ├── manifest.json          # MCP metadata (manifest_version: "0.3")
 ├── package.json           # Dependencies including @modelcontextprotocol/sdk
 ├── tsconfig.json          # TypeScript config

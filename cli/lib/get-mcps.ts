@@ -6,7 +6,7 @@ export type McpInfo = {
   version: string;
 };
 
-const mcpsDir = join(import.meta.dirname, "../../mcps");
+const mcpsDir = join(import.meta.dirname, "../../extensions");
 
 export function getMcpsInfo(): McpInfo[] {
   let directories;

@@ -21,7 +21,7 @@ program.name("eney-mcp-helper").description("CLI for Eney MCP Helper").version("
 program
   .command("create")
   .description("Create a new MCP server")
-  .option("-o, --output <path>", "Output directory", path.join(process.cwd(), "mcps"))
+  .option("-o, --output <path>", "Output directory", path.join(process.cwd(), "extensions"))
   .requiredOption("--id <id>", "MCP server ID")
   .requiredOption("--mcp-title <title>", "MCP server title")
   .requiredOption("--tool-name <name>", "Tool name")

@@ -15,13 +15,13 @@ Build MCP extensions, deploy locally, launch in Eney, and iterate based on user 
 Determine which MCP to debug — ask the user or infer from the current directory. Read its manifest:
 
 ```bash
-cat mcps/<mcp-name>/manifest.json
+cat extensions/<mcp-name>/manifest.json
 ```
 
 ## Step 2: Build
 
 ```bash
-cd mcps/<mcp-name> && npm run build
+cd extensions/<mcp-name> && npm run build
 ```
 
 Fix any TypeScript errors before proceeding.
@@ -31,7 +31,7 @@ Fix any TypeScript errors before proceeding.
 The CLI `dev` command watches for changes, compiles with tsc, and deploys to the Eney MCP folder:
 
 ```bash
-cd mcps/<mcp-name> && eney-skills-cli dev
+cd extensions/<mcp-name> && eney-skills-cli dev
 ```
 
 This does three things on every build:
@@ -51,7 +51,7 @@ It watches for file changes and rebuilds automatically (ignores `node_modules/`,
 For a one-time build without watching:
 
 ```bash
-cd mcps/<mcp-name> && npm run build
+cd extensions/<mcp-name> && npm run build
 ```
 
 ## Step 4: Launch in Eney
@@ -102,7 +102,7 @@ Expected: one `<widget-name>.json` file per tool in the MCP.
 Check the server can start:
 
 ```bash
-cd mcps/<mcp-name> && npm start
+cd extensions/<mcp-name> && npm start
 ```
 
 It should print a "running on stdio" message to stderr.

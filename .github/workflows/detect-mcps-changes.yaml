@@ -49,7 +49,7 @@ jobs:
           list-files: json
           filters: |
             mcps:
-              - 'mcps/**'
+              - 'extensions/**'
 
       - name: Get changed MCPs
         id: get-changes
@@ -61,7 +61,7 @@ jobs:
 
             const filePaths = JSON.parse('${{ steps.filter.outputs.mcps_files }}');
             const mcps = filePaths
-              .filter(path => path.startsWith('mcps/'))
+              .filter(path => path.startsWith('extensions/'))
               .map(path => {
                 const segments = path.split('/');
                 if (segments.length < 2) {
@@ -75,9 +75,9 @@ jobs:
 
             function hasVersionChanged(mcp) {
               try {
-                const curr = JSON.parse(fs.readFileSync(`mcps/${mcp}/manifest.json`, 'utf8')).version;
+                const curr = JSON.parse(fs.readFileSync(`extensions/${mcp}/manifest.json`, 'utf8')).version;
                 const prev = JSON.parse(execSync(
-                  `git show HEAD~1:mcps/${mcp}/manifest.json 2>/dev/null || echo '{}'`,
+                  `git show HEAD~1:extensions/${mcp}/manifest.json 2>/dev/null || echo '{}'`,
                   { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
                 )).version || '';
                 const changed = curr !== prev;
@@ -91,8 +91,8 @@ jobs:
 
             const versionedMcps = mcps.filter(hasVersionChanged);
 
-            const swiftMcps = versionedMcps.filter(mcp => fs.existsSync(`mcps/${mcp}/Package.swift`));
-            const nodeMcps = versionedMcps.filter(mcp => !fs.existsSync(`mcps/${mcp}/Package.swift`));
+            const swiftMcps = versionedMcps.filter(mcp => fs.existsSync(`extensions/${mcp}/Package.swift`));
+            const nodeMcps = versionedMcps.filter(mcp => !fs.existsSync(`extensions/${mcp}/Package.swift`));
 
             console.log('All changed MCPs:', JSON.stringify(mcps, null, 2));
             core.setOutput('mcps', mcps);

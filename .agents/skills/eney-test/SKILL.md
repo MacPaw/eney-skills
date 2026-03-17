@@ -15,7 +15,7 @@ Add widget and unit tests to an MCP extension using `@eney/api/testing` and `nod
 Determine which MCP to test — ask the user or infer from the current directory. Read its components:
 
 ```bash
-ls mcps/<mcp-name>/components/
+ls extensions/<mcp-name>/components/
 ```
 
 ## Step 2: Check Test Setup
@@ -134,7 +134,7 @@ describe("generatePassword", () => {
 ## Step 4: Run Tests
 
 ```bash
-cd mcps/<mcp-name> && npm test
+cd extensions/<mcp-name> && npm test
 ```
 
 Fix any failures before proceeding.
@@ -144,7 +144,7 @@ Fix any failures before proceeding.
 Tests should not break the build. Confirm:
 
 ```bash
-cd mcps/<mcp-name> && npm run build
+cd extensions/<mcp-name> && npm run build
 ```
 
 ## Common Issues
