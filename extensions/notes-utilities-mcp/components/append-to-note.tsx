@@ -7,12 +7,12 @@ import {
   Paper,
   CardHeader,
   useCloseWidget,
+  useAppleScript,
 } from "@eney/api";
 import { z } from "zod";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 
-import { runScript } from "../helpers/run-script.js";
 import { useNotes } from "../helpers/use-notes.js";
 
 const props = z.object({
@@ -40,6 +40,7 @@ async function appendToNote(
   noteName: string,
   content: string,
 ): Promise<string> {
+  const runScript = useAppleScript();
   const md = markdownit({
     breaks: true,
   });
