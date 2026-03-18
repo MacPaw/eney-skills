@@ -1,13 +1,5 @@
-import { useState, useEffect } from "react";
-import {
-  Action,
-  ActionPanel,
-  defineWidget,
-  Form,
-  Paper,
-  useCloseWidget,
-} from "@eney/api";
-import { spawn } from "node:child_process";
+import { useState } from "react";
+import { Action, ActionPanel, defineWidget, Form, Paper, useAppleScript, useCloseWidget } from "@eney/api";
 import { statSync } from "node:fs";
 import { basename } from "node:path";
 import { z } from "zod";
@@ -44,10 +36,7 @@ const props = z.object({
   recipient: z.string().optional().describe("Email recipient address"),
   subject: z.string().optional().describe("Email subject"),
   body: z.string().optional().describe("Email body text"),
-  attachments: z
-    .array(z.string())
-    .optional()
-    .describe("Array of file paths to attach"),
+  attachments: z.array(z.string()).optional().describe("Array of file paths to attach"),
 });
 
 type Props = z.infer<typeof props>;
@@ -56,17 +45,24 @@ function escapeAppleScript(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-async function sendMail(
-  recipient: string,
-  subject: string,
-  body: string,
-  attachments: string[],
-): Promise<string> {
-  const attachmentsList = attachments
-    .map((path) => `"${escapeAppleScript(path)}"`)
-    .join(", ");
+export function SendMail(props: Props) {
+  const runScript = useAppleScript();
+  const closeWidget = useCloseWidget();
+  const [recipient, setRecipient] = useState(props.recipient ?? "");
+  const [subject, setSubject] = useState(props.subject ?? "");
+  const [body, setBody] = useState(props.body ?? "");
+  const [attachments, setAttachments] = useState<string[]>(props.attachments ?? []);
+  const oversizedFiles = getOversizedFiles(attachments);
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
-  const script = `
+  async function sendMail(recipient: string, subject: string, body: string, attachments: string[]): Promise<string> {
+    const attachmentsList = attachments.map((path) => `"${escapeAppleScript(path)}"`).join(", ");
+
+    const script = `
 tell application "Mail"
 	set theMessage to make new outgoing message with properties {subject:"${escapeAppleScript(subject)}", content:"${escapeAppleScript(body)}", visible:false}
 	tell theMessage
@@ -87,48 +83,8 @@ tell application "Mail"
 end tell
 `;
 
-  return new Promise((resolve, reject) => {
-    const osascript = spawn("osascript", ["-e", script]);
-    let stderr = "";
-
-    osascript.stderr?.on("data", (data) => {
-      stderr += data.toString();
-    });
-
-    osascript.on("error", (error) => {
-      reject(new Error(`Failed to execute AppleScript: ${error.message}`));
-    });
-
-    osascript.on("close", (code) => {
-      if (code !== 0) {
-        reject(
-          new Error(stderr.trim() || `osascript exited with code ${code}`),
-        );
-        return;
-      }
-      resolve("Email sent successfully");
-    });
-  });
-}
-
-export function SendMail(props: Props) {
-  const closeWidget = useCloseWidget();
-  const [recipient, setRecipient] = useState(props.recipient ?? "");
-  const [subject, setSubject] = useState(props.subject ?? "");
-  const [body, setBody] = useState(props.body ?? "");
-  const [attachments, setAttachments] = useState<string[]>(
-    props.attachments ?? [],
-  );
-  const [status, setStatus] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [isSending, setIsSending] = useState(false);
-  const [oversizedFiles, setOversizedFiles] = useState<OversizedFile[]>([]);
-
-  useEffect(() => {
-    setOversizedFiles(getOversizedFiles(attachments));
-  }, [attachments]);
+    return runScript(script);
+  }
 
   async function onSubmit() {
     setIsSending(true);
@@ -136,13 +92,9 @@ export function SendMail(props: Props) {
 
     try {
       await sendMail(recipient, subject, body, attachments);
-      closeWidget(
-        `Message sent successfully to **${recipient}** with subject **${subject}**`,
-      );
+      closeWidget(`Message sent successfully to **${recipient}** with subject **${subject}**`);
     } catch (error) {
-      closeWidget(
-        `Failed to send email: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      closeWidget(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -162,40 +114,17 @@ export function SendMail(props: Props) {
 
   return (
     <Form actions={actions}>
-      {status?.type && status.type === "error" && (
-        <Paper markdown={`❌ ${status.message}`} />
-      )}
+      {status?.type && status.type === "error" && <Paper markdown={`❌ ${status.message}`} />}
       {oversizedFiles.map((file) => (
         <Paper
           key={file.path}
           markdown={`❌ File "${file.name}" is too large (${file.sizeMB} MB). Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`}
         />
       ))}
-      <Form.TextField
-        name="recipient"
-        label="To"
-        value={recipient}
-        onChange={setRecipient}
-      />
-      <Form.TextField
-        name="subject"
-        label="Subject"
-        value={subject}
-        onChange={setSubject}
-      />
-      <Form.TextField
-        name="body"
-        label="Message"
-        value={body}
-        onChange={setBody}
-      />
-      <Form.FilePicker
-        name="attachments"
-        label="Attachments"
-        value={attachments}
-        onChange={setAttachments}
-        multiple
-      />
+      <Form.TextField name="recipient" label="To" value={recipient} onChange={setRecipient} />
+      <Form.TextField name="subject" label="Subject" value={subject} onChange={setSubject} />
+      <Form.TextField name="body" label="Message" value={body} onChange={setBody} />
+      <Form.FilePicker name="attachments" label="Attachments" value={attachments} onChange={setAttachments} multiple />
     </Form>
   );
 }

@@ -31,6 +31,8 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
   const targetDir = resolve(outFolder, mcpName);
 
   if (isInitialBuild) {
+    execSync("npm run build", { cwd: mcpDir, stdio: "inherit" });
+
     const isAlreadyLinked = await lstat(targetDir)
       .then((stats) => stats.isSymbolicLink())
       .catch(() => false);
