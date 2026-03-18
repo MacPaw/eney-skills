@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Action,
-  ActionPanel,
-  defineWidget,
-  Paper,
-  useCloseWidget,
-} from "@eney/api";
+import { Action, ActionPanel, defineWidget, Paper, useCloseWidget } from "@eney/api";
 import { spawn } from "node:child_process";
 
 interface SystemInfo {
@@ -68,8 +62,7 @@ async function fetchSystemInfo(): Promise<SystemInfo> {
   ]);
 
   return {
-    productDescription:
-      productDescription ?? extractValue(hardware, "Model Name"),
+    productDescription: productDescription ?? extractValue(hardware, "Model Name"),
     chip: extractValue(hardware, "Chip"),
     memory: extractValue(hardware, "Memory"),
     serialNumber: extractValue(hardware, "Serial Number (system)"),
@@ -99,11 +92,7 @@ function GetSystemInfo() {
     fetchSystemInfo()
       .then(setInfo)
       .catch((err) => {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load system information.",
-        );
+        setError(err instanceof Error ? err.message : "Failed to load system information.");
       })
       .finally(() => setIsLoading(false));
   }, []);
