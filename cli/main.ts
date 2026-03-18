@@ -16,7 +16,7 @@ dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const program = new Command();
 
-program.name("eney-mcp-helper").description("CLI for Eney MCP Helper").version("1.0.0");
+program.name("eney-skills-cli").description("CLI for Eney Skills").version("1.0.0");
 
 program
   .command("create")
