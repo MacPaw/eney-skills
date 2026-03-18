@@ -10,6 +10,14 @@ metadata:
 
 Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@eney/api`. Each MCP runs as a standalone Node.js process communicating over stdio.
 
+## Step 0: Setup CLI
+
+Make sure you have the CLI installed and linked globally:
+
+```bash
+npm run setup
+```
+
 ## Step 1: Gather Requirements
 
 Ask the user for (skip what's already provided):
@@ -72,15 +80,7 @@ Every widget follows this pattern:
 ```tsx
 import { useState } from "react";
 import { z } from "zod";
-import {
-  Action,
-  ActionPanel,
-  Form,
-  Paper,
-  CardHeader,
-  defineWidget,
-  useCloseWidget,
-} from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, Paper, CardHeader, defineWidget, useCloseWidget } from "@macpaw/eney-api";
 
 // 1. Schema — all fields need .describe() and should be .optional()
 const schema = z.object({
@@ -122,23 +122,13 @@ function MyTool(props: Props) {
         header={<CardHeader title="My Tool" />}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm
-              title="Start Over"
-              onSubmit={() => setResult("")}
-              style="secondary"
-            />
+            <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
             <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
         <Paper markdown={result} />
-        <Form.TextField
-          name="input"
-          label="Input"
-          value={input}
-          onChange={setInput}
-          isCopyable
-        />
+        <Form.TextField name="input" label="Input" value={input} onChange={setInput} isCopyable />
       </Form>
     );
   }
@@ -160,12 +150,7 @@ function MyTool(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.TextField
-        name="input"
-        label="Input"
-        value={input}
-        onChange={setInput}
-      />
+      <Form.TextField name="input" label="Input" value={input} onChange={setInput} />
     </Form>
   );
 }

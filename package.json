@@ -4,6 +4,6 @@
     "node": ">=24"
   },
   "scripts": {
-    "setup": "cd cli && npm install && npm link"
+    "setup": "cd cli && npm install && npm link && echo '\n\\033[32mSetup complete! You can now start creating extensions.\\033[0m'"
   }
 }
