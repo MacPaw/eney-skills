@@ -12,9 +12,19 @@ Monorepo for Eney extensions — MCP servers that expose interactive widgets to 
 
 ## Getting Started
 
-See the [Getting Started](/docs/getting-started) guide for a full walkthrough on creating your first extension.
+### Prerequisites
 
-## Prerequisites
-
-- Node.js 24+
+- Node.js 24+ (use `.node-version` with nvm/fnm for automatic switching)
 - npm
+
+### Setup
+
+```bash
+git clone https://github.com/MacPaw/eney-skills
+cd eney-skills
+npm run setup
+```
+
+This installs the CLI and makes the `eney-skills-cli` command available globally.
+
+See the [Getting Started](/docs/getting-started) guide for a full walkthrough on creating your first extension.

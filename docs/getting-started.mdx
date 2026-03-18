@@ -17,22 +17,15 @@ This guide walks you through creating a complete extension from scratch.
 
 ## Setup
 
-Clone the repository and install dependencies:
+Clone the repository and run the setup script:
 
 ```bash
 git clone https://github.com/MacPaw/eney-skills
 cd eney-skills
-cd cli && npm install
+npm run setup
 ```
 
-Link the CLI globally so you can run it from anywhere in the repo:
-
-```bash
-# Inside the cli/ folder
-npm link
-```
-
-This registers the `eney-skills-cli` command. You only need to do this once after cloning the repository.
+This installs the CLI dependencies and registers the `eney-skills-cli` command globally. You only need to do this once after cloning the repository.
 
 ## Create an Extension
 
