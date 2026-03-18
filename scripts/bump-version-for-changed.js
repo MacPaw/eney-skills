@@ -16,7 +16,7 @@ import {
   closeSync,
 } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -36,15 +36,18 @@ if (baseSha) {
 
 function hasChanges(extPath) {
   if (baseSha) {
-    const diff = execSync(
-      `git diff --name-only ${baseSha} HEAD -- "${extPath}"`,
+    const diff = execFileSync(
+      "git",
+      ["diff", "--name-only", baseSha, "HEAD", "--", extPath],
       { encoding: "utf8" },
     );
     return diff.trim().length > 0;
   } else {
-    const status = execSync(`git status --porcelain "${extPath}"`, {
-      encoding: "utf8",
-    });
+    const status = execFileSync(
+      "git",
+      ["status", "--porcelain", extPath],
+      { encoding: "utf8" },
+    );
     return status.trim().length > 0;
   }
 }
