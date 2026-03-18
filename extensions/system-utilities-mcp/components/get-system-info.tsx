@@ -72,7 +72,7 @@ async function fetchSystemInfo(): Promise<SystemInfo> {
       productDescription ?? extractValue(hardware, "Model Name"),
     chip: extractValue(hardware, "Chip"),
     memory: extractValue(hardware, "Memory"),
-    serialNumber: extractValue(hardware, "Serial Number \(system\)"),
+    serialNumber: extractValue(hardware, "Serial Number (system)"),
     osVersion: extractValue(software, "System Version"),
   };
 }
