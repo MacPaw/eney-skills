@@ -1,0 +1,82 @@
+---
+title: useLogger
+description: Write structured log messages from within a widget component
+---
+
+`useLogger` returns a logger object you can use to emit debug, info, warn, and error messages. Logs appear in the Eney developer console and are useful for diagnosing issues without cluttering the widget UI.
+
+## Import
+
+```typescript
+import { useLogger } from "@eney/api";
+```
+
+## Usage
+
+```typescript
+const logger = useLogger();
+
+logger.debug("message");
+logger.info("message");
+logger.warn("message");
+logger.error("message");
+```
+
+Each method accepts a message string followed by optional format arguments (printf-style):
+
+```typescript
+logger.debug("Fetched %d items from %s", items.length, dbPath);
+logger.error("Failed to append note: %s", error.message);
+```
+
+You can also pass a context object as the last argument:
+
+```typescript
+logger.debug("Generated password", { length, symbols, numbers });
+```
+
+## Example
+
+From `security-utilities-mcp`:
+
+```typescript
+import { useLogger, defineWidget } from "@eney/api";
+
+function NewPassword(props: Props) {
+  const logger = useLogger();
+
+  useEffect(() => {
+    const value = generatePassword({ length, symbols, numbers });
+    logger.debug("Generated password: %s on mount or options change", value, {
+      length,
+      symbols,
+      numbers,
+    });
+    setPassword(value);
+  }, [length, symbols, numbers]);
+
+  // ...
+}
+```
+
+From `notes-utilities-mcp`:
+
+```typescript
+export const useNotes = () => {
+  const logger = useLogger();
+  const { data } = useSQL<NoteItem[]>(NOTES_DB, query);
+
+  logger.debug(`Fetched ${data?.length ?? 0} notes from the database`);
+
+  // ...
+};
+```
+
+## Log levels
+
+| Method | When to use |
+|---|---|
+| `debug` | Verbose tracing, values during development |
+| `info` | Notable events (user submitted form, operation succeeded) |
+| `warn` | Unexpected but handled conditions |
+| `error` | Failures that affect the user |

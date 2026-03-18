@@ -1,0 +1,125 @@
+---
+title: useSQL
+description: Query a local SQLite database and return typed results as React state
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+`useSQL` is a React hook that executes a SQL query against a local SQLite file and returns the results as reactive state. The query runs asynchronously in the background — the component re-renders when data arrives.
+
+## Import
+
+```typescript
+import { useSQL } from "@eney/api";
+```
+
+## Signature
+
+```typescript
+function useSQL<T>(
+  databasePath: string,
+  query: string,
+  options?: {
+    execute?: boolean;
+    onError?: (error: Error) => void;
+  }
+): {
+  data: T | undefined;
+  isLoading: boolean;
+  error: Error | undefined;
+}
+```
+
+## Parameters
+
+| Parameter | Description |
+|---|---|
+| `databasePath` | Absolute path to the `.sqlite` file |
+| `query` | SQL `SELECT` query to execute |
+| `options.execute` | Set to `false` to skip the query until a condition is met. Defaults to `true` |
+| `options.onError` | Called if the query fails. Use this to handle expected errors (e.g. missing tables) without crashing |
+
+## Return value
+
+| Field | Description |
+|---|---|
+| `data` | Query results typed as `T`, or `undefined` while loading |
+| `isLoading` | `true` while the query is in flight |
+| `error` | Set if the query threw an error |
+
+## Basic example
+
+```typescript
+import { homedir } from "os";
+import { resolve } from "path";
+import { useSQL } from "@eney/api";
+
+const DB_PATH = resolve(homedir(), "Library/Application Support/MyApp/data.sqlite");
+
+type Row = { id: number; name: string; createdAt: string };
+
+function MyWidget() {
+  const { data, isLoading } = useSQL<Row[]>(DB_PATH, "SELECT id, name, createdAt FROM items");
+
+  if (isLoading) return <Paper markdown="Loading..." />;
+
+  return <Paper markdown={data?.map((r) => `- ${r.name}`).join("\n") ?? "No items"} />;
+}
+```
+
+## Conditional execution
+
+Use `execute: false` to defer a query until a prerequisite is ready:
+
+```typescript
+const { data: notes } = useSQL<Note[]>(DB_PATH, notesQuery);
+
+// Only fetch links once notes are loaded
+const { data: links } = useSQL<Link[]>(DB_PATH, linksQuery, {
+  execute: notes !== undefined && notes.length > 0,
+});
+```
+
+## Error handling
+
+Pass `onError` to handle expected failures silently:
+
+```typescript
+const { data } = useSQL<Invitation[]>(DB_PATH, invitationQuery, {
+  execute: hasNotes,
+  onError() {
+    logger.debug("Invitation table not found — skipping");
+  },
+});
+```
+
+## Real-world example
+
+The `notes-utilities-mcp` extension queries the Apple Notes SQLite database:
+
+```typescript
+const NOTES_DB = resolve(
+  homedir(),
+  "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
+);
+
+const query = `
+  SELECT
+    note.ztitle1 AS title,
+    folder.ztitle2 AS folder,
+    datetime(note.zmodificationdate1 + 978307200, 'unixepoch') AS modifiedAt
+  FROM ziccloudsyncingobject AS note
+  INNER JOIN ziccloudsyncingobject AS folder ON note.zfolder = folder.z_pk
+  WHERE note.ztitle1 IS NOT NULL AND note.zmarkedfordeletion != 1
+  ORDER BY note.zmodificationdate1 DESC
+`;
+
+const { data: notes, isLoading } = useSQL<{ title: string; folder: string; modifiedAt: string }[]>(
+  NOTES_DB,
+  query,
+);
+```
+
+<Callout type="info">
+  `useSQL` is read-only. For write operations (creating or updating records), use AppleScript or the app's native API.
+</Callout>

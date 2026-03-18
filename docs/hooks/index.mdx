@@ -1,0 +1,37 @@
+---
+title: Overview of hooks
+description: React hooks provided by @eney/api for data access and widget lifecycle
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+
+The `@eney/api` package exports several hooks for use inside widget components. All hooks must be called at the top level of a React function component or a custom hook.
+
+## Available hooks
+
+<Cards>
+  <Card title="useSQL" href="/docs/hooks/use-sql">
+    Query a local SQLite database and return typed results as React state.
+  </Card>
+  <Card title="useLogger" href="/docs/hooks/use-logger">
+    Write debug, info, warn, and error messages to the Eney log.
+  </Card>
+  <Card title="useCloseWidget" href="/docs/hooks/use-close-widget">
+    Finalize a widget interaction and pass context back to Claude.
+  </Card>
+  <Card title="useAppleScript" href="/docs/hooks/use-apple-script">
+    Run AppleScript via osascript and return the output as a string.
+  </Card>
+</Cards>
+
+## Import
+
+```typescript
+import { useSQL, useLogger, useCloseWidget } from "@eney/api";
+```
+
+`useAppleScript` is a shared utility in this repository, not part of `@eney/api`:
+
+```typescript
+import { useAppleScript } from "../shared/use-apple-script.js";
+```

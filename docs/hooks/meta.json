@@ -1,0 +1,10 @@
+{
+  "title": "Hooks",
+  "pages": [
+    "index",
+    "use-sql",
+    "use-logger",
+    "use-close-widget",
+    "use-apple-script"
+  ]
+}
