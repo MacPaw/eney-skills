@@ -34,8 +34,6 @@ jobs:
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
-        with:
-          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Pack MCP archive
         id: pack
@@ -110,8 +108,6 @@ jobs:
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
-        with:
-          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Upload MCP archive
         run: |
