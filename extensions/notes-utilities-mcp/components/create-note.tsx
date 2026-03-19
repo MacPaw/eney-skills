@@ -1,32 +1,15 @@
 import { useState } from "react";
-import {
-  Action,
-  ActionPanel,
-  defineWidget,
-  Form,
-  Paper,
-  CardHeader,
-  useCloseWidget,
-} from "@eney/api";
+import { Action, ActionPanel, defineWidget, Form, Paper, CardHeader, useCloseWidget, useAppleScript } from "@eney/api";
 import { z } from "zod";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 
-import { runScript } from "../helpers/run-script.js";
 import { useNotes } from "../helpers/use-notes.js";
 
 const props = z.object({
-  folder: z
-    .string()
-    .optional()
-    .describe(
-      "The folder to create the note in. If not provided, uses the default folder.",
-    ),
+  folder: z.string().optional().describe("The folder to create the note in. If not provided, uses the default folder."),
   name: z.string().optional().describe("The name/title for the new note."),
-  content: z
-    .string()
-    .optional()
-    .describe("The initial content for the new note."),
+  content: z.string().optional().describe("The initial content for the new note."),
 });
 
 type Props = z.infer<typeof props>;
@@ -35,30 +18,8 @@ function escapeDoubleQuotes(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-async function createNote(
-  folder: string,
-  name: string,
-  content: string,
-): Promise<string> {
-  const md = markdownit({ breaks: true });
-  const htmlContent = md.render(content);
-  const sanitizedHtml = sanitizeHtml(htmlContent);
-  const escapedFolder = escapeDoubleQuotes(folder);
-
-  const nameHtml = name.trim()
-    ? `<h1>${escapeDoubleQuotes(sanitizeHtml(name))}</h1>`
-    : "";
-  const bodyHtml = escapeDoubleQuotes(`${nameHtml}${sanitizedHtml}`);
-
-  return runScript(`
-    tell application "Notes"
-      set targetFolder to first folder whose name is "${escapedFolder}"
-      make new note at targetFolder with properties {body:"${bodyHtml}"}
-    end tell
-  `);
-}
-
 function CreateNote(props: Props) {
+  const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
   const { data: notes, isLoading: isLoadingNotes } = useNotes();
 
@@ -69,6 +30,23 @@ function CreateNote(props: Props) {
   const [content, setContent] = useState(props.content ?? "");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+
+  async function createNote(folder: string, name: string, content: string): Promise<string> {
+    const md = markdownit({ breaks: true });
+    const htmlContent = md.render(content);
+    const sanitizedHtml = sanitizeHtml(htmlContent);
+    const escapedFolder = escapeDoubleQuotes(folder);
+
+    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(sanitizeHtml(name))}</h1>` : "";
+    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${sanitizedHtml}`);
+
+    return runScript(`
+    tell application "Notes"
+      set targetFolder to first folder whose name is "${escapedFolder}"
+      make new note at targetFolder with properties {body:"${bodyHtml}"}
+    end tell
+  `);
+  }
 
   async function onSubmit() {
     if (!content.trim()) return;
@@ -97,7 +75,7 @@ function CreateNote(props: Props) {
     </ActionPanel>
   );
 
-  const header = <CardHeader title="Notes" iconBundleId="com.apple.Notes" />;
+  const header = <CardHeader title="Create Note" iconBundleId="com.apple.Notes" />;
 
   if (isLoadingNotes) {
     return (
@@ -110,27 +88,13 @@ function CreateNote(props: Props) {
   return (
     <Form header={header} actions={actions}>
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.Dropdown
-        name="folder"
-        label="Folder"
-        value={folder}
-        onChange={setFolder}
-      >
+      <Form.Dropdown name="folder" label="Folder" value={folder} onChange={setFolder}>
         {folders.map((f) => (
           <Form.Dropdown.Item key={f} title={f} value={f} />
         ))}
       </Form.Dropdown>
-      <Form.TextField
-        name="name"
-        label="Note Name"
-        value={name}
-        onChange={setName}
-      />
-      <Form.RichTextEditor
-        value={content}
-        onChange={setContent}
-        isInitiallyFocused
-      />
+      <Form.TextField name="name" label="Note Name" value={name} onChange={setName} />
+      <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
     </Form>
   );
 }
