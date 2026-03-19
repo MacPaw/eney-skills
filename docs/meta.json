@@ -3,6 +3,7 @@
   "pages": [
     "getting-started",
     "extension-structure",
+    "releasing-extension-updates",
     "examples",
     "tools",
     "widgets",
