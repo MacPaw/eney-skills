@@ -69,7 +69,7 @@ function CreateNote(props: Props) {
         title={isCreating ? "Creating..." : "Create Note"}
         onSubmit={onSubmit}
         style="primary"
-        isDisabled={!content.trim()}
+        isDisabled={!content.trim() || !name.trim()}
         isLoading={isCreating}
       />
     </ActionPanel>
@@ -88,11 +88,13 @@ function CreateNote(props: Props) {
   return (
     <Form header={header} actions={actions}>
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.Dropdown name="folder" label="Folder" value={folder} onChange={setFolder}>
-        {folders.map((f) => (
-          <Form.Dropdown.Item key={f} title={f} value={f} />
-        ))}
-      </Form.Dropdown>
+      {folders.length > 1 && (
+        <Form.Dropdown name="folder" label="Folder" value={folder} onChange={setFolder}>
+          {folders.map((f) => (
+            <Form.Dropdown.Item key={f} title={f} value={f} />
+          ))}
+        </Form.Dropdown>
+      )}
       <Form.TextField name="name" label="Note Name" value={name} onChange={setName} />
       <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
     </Form>
