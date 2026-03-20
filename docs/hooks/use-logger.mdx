@@ -64,9 +64,8 @@ From `notes-utilities-mcp`:
 ```typescript
 export const useNotes = () => {
   const logger = useLogger();
-  const { data } = useSQL<NoteItem[]>(NOTES_DB, query);
 
-  logger.debug(`Fetched ${data?.length ?? 0} notes from the database`);
+  logger.debug("Fetching notes from the database");
 
   // ...
 };

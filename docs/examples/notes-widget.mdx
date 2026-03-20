@@ -1,16 +1,15 @@
 ---
 title: Notes Widget
-description: Append content to Apple Notes using AppleScript and SQLite
+description: Append content to Apple Notes using AppleScript
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 **Source:** `extensions/notes-utilities-mcp/`
 
-This extension demonstrates two powerful patterns:
+This extension demonstrates:
 
-1. **Reading macOS system data** with [`useSQL`](/docs/hooks/use-sql) — querying the Apple Notes SQLite database
-2. **Writing to macOS apps** with [`useAppleScript`](/docs/hooks/use-apple-script) — appending content through AppleScript
+1. **Writing to macOS apps** with [`useAppleScript`](/docs/hooks/use-apple-script) — appending content through AppleScript
 
 ![NotesWidget](../assets/append-note-widget.png)
 
@@ -19,50 +18,6 @@ This extension demonstrates two powerful patterns:
 ## What it does
 
 The widget lets the user select a note from a dropdown (populated from the Notes database) and append rich text content to it using a rich text editor. Content is converted from Markdown to HTML before being written to Notes.
-
----
-
-## Reading notes with useSQL
-
-The `helpers/use-notes.ts` file queries the Apple Notes SQLite database directly:
-
-```typescript
-import { homedir } from "os";
-import { resolve } from "path";
-import { useSQL, useLogger } from "@eney/api";
-
-const NOTES_DB = resolve(
-  homedir(),
-  "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
-);
-
-const query = `
-  SELECT
-    note.ztitle1 AS title,
-    note.z_pk AS pk,
-    folder.ztitle2 AS folder
-  FROM ziccloudsyncingobject AS note
-  INNER JOIN ziccloudsyncingobject AS folder ON note.zfolder = folder.z_pk
-  WHERE note.ztitle1 IS NOT NULL AND note.zmarkedfordeletion != 1
-  ORDER BY note.zmodificationdate1 DESC
-`;
-
-export const useNotes = () => {
-  const logger = useLogger();
-  const { data, isLoading } = useSQL<{ title: string; pk: number; folder: string }[]>(
-    NOTES_DB,
-    query,
-  );
-
-  logger.debug(`Fetched ${data?.length ?? 0} notes`);
-
-  return { data: data ?? [], isLoading };
-};
-```
-
-<Callout type="info">
-  `useSQL` is a React hook — call it inside your widget component or a custom hook, not at the module level.
-</Callout>
 
 ---
 
@@ -202,6 +157,5 @@ function AppendToNote(props: Props) {
 
 - Call `useAppleScript()` at the top of the component like any other hook — use the returned `runScript` function inside async helpers defined within the component
 - Convert Markdown to sanitized HTML before writing to Notes — the Notes app stores HTML, not plain text
-- Use `useSQL` + a separate helper file to keep database logic out of components
 - Use `useLogger` inside hooks for debug output that doesn't pollute the UI
 - Always call `closeWidget(context)` with a meaningful context string so Eney knows what happened
