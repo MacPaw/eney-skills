@@ -17,6 +17,7 @@ const props = z.object({
 type Props = z.infer<typeof props>;
 
 const NEW_NOTE_VALUE = "__new_note__";
+const TITLE_MAX_LENGTH = 42;
 
 function escapeDoubleQuotes(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -36,6 +37,10 @@ function AppendToNote(props: Props) {
       setNoteName(NEW_NOTE_VALUE);
     }
   }, [notes.allNotes.length, isLoadingNotes, props.noteName]);
+
+  function formatTitle(title: string): string {
+    return title.length > TITLE_MAX_LENGTH ? `${title.slice(0, TITLE_MAX_LENGTH)}...` : title;
+  }
 
   async function appendToNote(noteName: string, content: string): Promise<string> {
     const md = markdownit({
@@ -118,7 +123,7 @@ function AppendToNote(props: Props) {
             return 0;
           })
           .map((note) => (
-            <Form.Dropdown.Item key={note.id} title={note.title} value={note.title} />
+            <Form.Dropdown.Item key={note.id} title={formatTitle(note.title)} value={note.title} />
           ))}
       </Form.Dropdown>
       <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
