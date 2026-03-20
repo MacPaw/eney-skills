@@ -1,69 +1,127 @@
-import { homedir } from "os";
-import { resolve } from "path";
+import { useEffect, useState } from "react";
 
-import { useLogger, useSQL } from "@eney/api";
+import { useAppleScript, useLogger } from "@eney/api";
 
 export type NoteItem = {
   id: string;
-  pk: number;
-  UUID: string;
   title: string;
-  modifiedAt?: Date;
   folder: string;
-  snippet: string;
-  account: string;
 };
 
-const NOTES_DB = resolve(
-  homedir(),
-  "Library/Group Containers/group.com.apple.notes/NoteStore.sqlite",
-);
+const NOTE_SEPARATOR = "|";
 
-const query = `
-    SELECT
-        'x-coredata://' || zmd.z_uuid || '/ICNote/p' || note.z_pk AS id,
-        note.z_pk AS pk,
-        note.ztitle1 AS title,
-        folder.ztitle2 AS folder,
-        datetime(note.zmodificationdate1 + 978307200, 'unixepoch') AS modifiedAt,
-        note.zsnippet AS snippet,
-        acc.zname AS account,
-        note.zidentifier AS UUID
-    FROM
-        ziccloudsyncingobject AS note
-    INNER JOIN ziccloudsyncingobject AS folder
-        ON note.zfolder = folder.z_pk
-    LEFT JOIN ziccloudsyncingobject AS acc
-        ON note.zaccount4 = acc.z_pk
-    LEFT JOIN z_metadata AS zmd ON 1=1
-    WHERE
-        note.ztitle1 IS NOT NULL AND
-        note.zmodificationdate1 IS NOT NULL AND
-        note.z_pk IS NOT NULL AND
-        note.zmarkedfordeletion != 1 AND
-        folder.zmarkedfordeletion != 1 AND
-        folder.ztitle2 != 'Recently Deleted'
-    ORDER BY
-        note.zmodificationdate1 DESC
+const DELETED_TRANSLATIONS = [
+  "Recently Deleted",
+  "Nylig slettet",
+  "Senast raderade",
+  "Senest slettet",
+  "Zuletzt gelöscht",
+  "Supprimés récemment",
+  "Eliminados recientemente",
+  "Eliminati di recente",
+  "Recent verwijderd",
+  "Ostatnio usunięte",
+  "Apagados recentemente",
+  "Apagadas recentemente",
+  "最近删除",
+  "最近刪除",
+  "最近削除した項目",
+  "최근 삭제된 항목",
+  "Son Silinenler",
+  "Äskettäin poistetut",
+  "Nedávno smazané",
+  "Πρόσφατα διαγραμμένα",
+  "Nemrég töröltek",
+  "Șterse recent",
+  "Nedávno vymazané",
+  "เพิ่งลบ",
+  "Đã xóa gần đây",
+  "Нещодавно видалені",
+];
+
+const deletedSet = `{${DELETED_TRANSLATIONS.map((t) => `"${t}"`).join(", ")}}`;
+
+const notesScript = `
+set deletedTranslations to ${deletedSet}
+
+tell application "Notes"
+    set notesList to {}
+    repeat with eachFolder in folders
+        set folderName to name of eachFolder
+        if folderName is not in deletedTranslations then
+            set folderNotes to notes of eachFolder
+            if (count of folderNotes) > 0 then
+                set noteIDs to id of every note of eachFolder
+                set noteNames to name of every note of eachFolder
+                repeat with i from 1 to count of noteIDs
+                    set end of notesList to (item i of noteIDs) & "${NOTE_SEPARATOR}" & folderName & "${NOTE_SEPARATOR}" & (item i of noteNames)
+                end repeat
+            end if
+        end if
+    end repeat
+    set AppleScript's text item delimiters to "\n"
+    set output to notesList as string
+    set AppleScript's text item delimiters to ""
+    return output
+end tell
 `;
+
+export function parseNotes(raw: string): NoteItem[] {
+  if (!raw.trim()) return [];
+
+  const seen = new Set<string>();
+  const notes: NoteItem[] = [];
+
+  for (const line of raw.split("\n")) {
+    if (!line) continue;
+    const parts = line.split(NOTE_SEPARATOR, 3);
+    if (parts.length < 3) continue;
+
+    const [id, folder, title] = parts;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    notes.push({ id: id.trim(), folder: folder.trim(), title: title.trim() });
+  }
+
+  return notes;
+}
 
 export const useNotes = () => {
   const logger = useLogger();
+  const runScript = useAppleScript();
 
-  const { data, ...rest } = useSQL<NoteItem[]>(NOTES_DB, query);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [error, setError] = useState<Error | undefined>();
 
-  logger.debug(`Fetched ${data?.length ?? 0} notes from the database`);
+  useEffect(() => {
+    let cancelled = false;
 
-  const seen = new Set<string>();
-  const notes =
-    data?.filter((x) => {
-      if (seen.has(x.id)) return false;
-      seen.add(x.id);
-      return true;
-    }) ?? [];
+    runScript(notesScript)
+      .then((raw) => {
+        if (cancelled) return;
+        const parsed = parseNotes(raw);
+        logger.debug(`Fetched ${parsed.length} notes via AppleScript`);
+        setNotes(parsed);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err : new Error(String(err)));
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return {
     data: { allNotes: notes },
-    ...rest,
+    isLoading,
+    error,
   };
 };
