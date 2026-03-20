@@ -59,7 +59,7 @@ tell application "Notes"
             end if
         end if
     end repeat
-    set AppleScript's text item delimiters to "\\n"
+    set AppleScript's text item delimiters to "\n"
     set output to notesList as string
     set AppleScript's text item delimiters to ""
     return output
