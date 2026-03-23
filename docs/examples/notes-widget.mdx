@@ -1,6 +1,6 @@
 ---
 title: Notes Widget
-description: Append content to Apple Notes using AppleScript
+description: Create notes in Apple Notes using AppleScript
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -9,7 +9,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 This extension demonstrates:
 
-1. **Writing to macOS apps** with [`useAppleScript`](/docs/hooks/use-apple-script) — appending content through AppleScript
+1. **Writing to macOS apps** with [`useAppleScript`](/docs/hooks/use-apple-script) — creating notes through AppleScript
 
 ![NotesWidget](../assets/append-note-widget.png)
 
@@ -17,31 +17,36 @@ This extension demonstrates:
 
 ## What it does
 
-The widget lets the user select a note from a dropdown (populated from the Notes database) and append rich text content to it using a rich text editor. Content is converted from Markdown to HTML before being written to Notes.
+The widget lets the user select a folder from a dropdown (populated from the Notes database), enter a note name, and write rich text content using a rich text editor. Content is converted from Markdown to HTML before being written to Notes as a new note in the selected folder.
 
 ---
 
 ## Writing notes with useAppleScript
 
-`useAppleScript` is called at the top of the component like any other hook, and `runScript` is used inside the async `appendToNote` helper defined within the component:
+`useAppleScript` is called at the top of the component like any other hook, and `runScript` is used inside the async `createNote` helper defined within the component:
 
 ```typescript
 import { useAppleScript } from "@eney/api";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
 
-function AppendToNote(props: Props) {
+function CreateNote(props: Props) {
   const runScript = useAppleScript();
 
-  async function appendToNote(noteName: string, content: string) {
+  async function createNote(folder: string, name: string, content: string) {
     // Convert Markdown to sanitized HTML before writing to Notes
-    const html = sanitizeHtml(markdownit({ breaks: true }).render(content));
-    const escaped = escapeDoubleQuotes(html);
+    const md = markdownit({ breaks: true });
+    const htmlContent = md.render(content);
+    const sanitizedHtml = sanitizeHtml(htmlContent);
+    const escapedFolder = escapeDoubleQuotes(folder);
+
+    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(sanitizeHtml(name))}</h1>` : "";
+    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${sanitizedHtml}`);
 
     return runScript(`
       tell application "Notes"
-        set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
-        set body of targetNote to (body of targetNote) & "${escaped}"
+        set targetFolder to first folder whose name is "${escapedFolder}"
+        make new note at targetFolder with properties {body:"${bodyHtml}"}
       end tell
     `);
   }
@@ -59,7 +64,7 @@ function AppendToNote(props: Props) {
 ## Widget component
 
 ```tsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Action,
   ActionPanel,
@@ -69,82 +74,93 @@ import {
   CardHeader,
   useCloseWidget,
   useAppleScript,
+  Divider,
 } from "@eney/api";
 import { useNotes } from "../helpers/use-notes.js";
-
-const NEW_NOTE_VALUE = "__new_note__";
 
 function escapeDoubleQuotes(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-function AppendToNote(props: Props) {
-  const closeWidget = useCloseWidget();
+function CreateNote(props: Props) {
   const runScript = useAppleScript();
-  const { data: notes, isLoading: isLoadingNotes } = useNotes();
+  const closeWidget = useCloseWidget();
+  const { data, isLoading: isLoadingNotes } = useNotes();
 
-  const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);
+  const folders = [...new Set(data.allFolders.map((f) => f.name))].sort();
+
+  const [folder, setFolder] = useState(props.folder ?? folders[0] ?? "Notes");
+  const [name, setName] = useState(props.name ?? "");
   const [content, setContent] = useState(props.content ?? "");
-  const [isAppending, setIsAppending] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState("");
 
-  async function appendToNote(noteName: string, content: string) {
-    const html = sanitizeHtml(markdownit({ breaks: true }).render(content));
-    const escaped = escapeDoubleQuotes(html);
+  async function createNote(folder: string, name: string, content: string) {
+    const md = markdownit({ breaks: true });
+    const htmlContent = md.render(content);
+    const sanitizedHtml = sanitizeHtml(htmlContent);
+    const escapedFolder = escapeDoubleQuotes(folder);
 
-    if (noteName === NEW_NOTE_VALUE) {
-      return runScript(`
-        tell application "Notes"
-          set newNote to make new note
-          set body of newNote to "${escaped}"
-        end tell
-      `);
-    }
+    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(sanitizeHtml(name))}</h1>` : "";
+    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${sanitizedHtml}`);
 
     return runScript(`
       tell application "Notes"
-        set targetNote to first note whose name is "${escapeDoubleQuotes(noteName)}"
-        set body of targetNote to (body of targetNote) & "${escaped}"
+        set targetFolder to first folder whose name is "${escapedFolder}"
+        make new note at targetFolder with properties {body:"${bodyHtml}"}
       end tell
     `);
   }
 
   async function onSubmit() {
     if (!content.trim()) return;
-    setIsAppending(true);
-    let finalContext = "";
+
+    setIsCreating(true);
+    setError("");
+
     try {
-      await appendToNote(noteName, content);
-      const noteDisplay = noteName === NEW_NOTE_VALUE ? "a new note" : `the note "${noteName}"`;
-      finalContext = `Content appended successfully to ${noteDisplay}`;
-    } catch (error) {
-      finalContext = error instanceof Error ? error.message : "Failed to append to note";
-    } finally {
-      setIsAppending(false);
-      closeWidget(finalContext);
+      await createNote(folder, name, content);
+      closeWidget(`Note created successfully in folder "${folder}".`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setIsCreating(false);
     }
   }
 
+  const actions = (
+    <ActionPanel>
+      <Divider />
+      <Action.SubmitForm
+        title={isCreating ? "Creating..." : "Create Note"}
+        onSubmit={onSubmit}
+        style="primary"
+        isDisabled={!content.trim() || !name.trim()}
+        isLoading={isCreating}
+      />
+    </ActionPanel>
+  );
+
+  const header = <CardHeader title="Create Note" iconBundleId="com.apple.Notes" />;
+
+  if (isLoadingNotes) {
+    return (
+      <Form header={header} actions={actions}>
+        <Paper markdown="Loading notes..." />
+      </Form>
+    );
+  }
+
   return (
-    <Form
-      header={<CardHeader title="Notes" iconBundleId="com.apple.Notes" />}
-      actions={
-        <ActionPanel>
-          <Action.SubmitForm
-            title={isAppending ? "Appending..." : "Append to Note"}
-            onSubmit={onSubmit}
-            style="primary"
-            isDisabled={!content.trim()}
-            isLoading={isAppending}
-          />
-        </ActionPanel>
-      }
-    >
-      <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
-        <Form.Dropdown.Item title="New Note" value={NEW_NOTE_VALUE} />
-        {notes.allNotes.map((note) => (
-          <Form.Dropdown.Item key={note.id} title={note.title} value={note.title} />
-        ))}
-      </Form.Dropdown>
+    <Form header={header} actions={actions}>
+      {error && <Paper markdown={`**Error:** ${error}`} />}
+      {folders.length > 1 && (
+        <Form.Dropdown name="folder" label="Folder" value={folder} onChange={setFolder}>
+          {folders.map((f) => (
+            <Form.Dropdown.Item key={f} title={f} value={f} />
+          ))}
+        </Form.Dropdown>
+      )}
+      <Form.TextField name="name" label="Note Name" value={name} onChange={setName} />
       <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
     </Form>
   );
@@ -155,7 +171,7 @@ function AppendToNote(props: Props) {
 
 ## Key patterns to copy
 
-- Call `useAppleScript()` at the top of the component like any other hook — use the returned `runScript` function inside async helpers defined within the component
 - Convert Markdown to sanitized HTML before writing to Notes — the Notes app stores HTML, not plain text
 - Use `useLogger` inside hooks for debug output that doesn't pollute the UI
 - Always call `closeWidget(context)` with a meaningful context string so Eney knows what happened
+- Show a loading state while fetching data, and display inline errors instead of closing the widget on failure
