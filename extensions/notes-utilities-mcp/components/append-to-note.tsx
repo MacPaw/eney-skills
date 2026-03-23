@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { Action, ActionPanel, defineWidget, Form, Paper, CardHeader, useCloseWidget, useAppleScript } from "@eney/api";
+import {
+  Action,
+  ActionPanel,
+  defineWidget,
+  Form,
+  Paper,
+  CardHeader,
+  useCloseWidget,
+  useAppleScript,
+  Divider,
+} from "@eney/api";
 import { z } from "zod";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
@@ -90,6 +100,7 @@ function AppendToNote(props: Props) {
 
   const actions = (
     <ActionPanel>
+      <Divider />
       <Action.SubmitForm
         title={isAppending ? "Appending..." : "Append to Note"}
         onSubmit={onSubmit}

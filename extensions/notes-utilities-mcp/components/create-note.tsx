@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Action, ActionPanel, defineWidget, Form, Paper, CardHeader, useCloseWidget, useAppleScript } from "@eney/api";
+import {
+  Action,
+  ActionPanel,
+  defineWidget,
+  Form,
+  Paper,
+  CardHeader,
+  useCloseWidget,
+  useAppleScript,
+  Divider,
+} from "@eney/api";
 import { z } from "zod";
 import markdownit from "markdown-it";
 import sanitizeHtml from "sanitize-html";
@@ -21,9 +31,9 @@ function escapeDoubleQuotes(value: string) {
 function CreateNote(props: Props) {
   const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
-  const { data: notes, isLoading: isLoadingNotes } = useNotes();
+  const { data, isLoading: isLoadingNotes } = useNotes();
 
-  const folders = [...new Set(notes.allNotes.map((n) => n.folder))].sort();
+  const folders = [...new Set(data.allFolders.map((f) => f.name))].sort();
 
   const [folder, setFolder] = useState(props.folder ?? folders[0] ?? "Notes");
   const [name, setName] = useState(props.name ?? "");
@@ -65,6 +75,7 @@ function CreateNote(props: Props) {
 
   const actions = (
     <ActionPanel>
+      <Divider />
       <Action.SubmitForm
         title={isCreating ? "Creating..." : "Create Note"}
         onSubmit={onSubmit}
@@ -80,7 +91,7 @@ function CreateNote(props: Props) {
   if (isLoadingNotes) {
     return (
       <Form header={header} actions={actions}>
-        <Paper markdown="Loading folders..." />
+        <Paper markdown="Loading notes..." />
       </Form>
     );
   }
