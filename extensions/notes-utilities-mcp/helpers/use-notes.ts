@@ -8,6 +8,11 @@ export type NoteItem = {
   folder: string;
 };
 
+export type FolderItem = {
+  name: string;
+  parent: string;
+};
+
 const NOTE_SEPARATOR = "|";
 
 const DELETED_TRANSLATIONS = [
@@ -66,6 +71,47 @@ tell application "Notes"
 end tell
 `;
 
+const FOLDER_SEPARATOR = "|||";
+
+const foldersScript = `
+tell application "Notes"
+	set output to ""
+	repeat with f in every folder
+		set fName to name of f
+		try
+			set c to container of f
+			set cClass to class of c as text
+			if cClass is "folder" then
+				set parentName to name of c
+			else
+				set parentName to ""
+			end if
+		on error
+			set parentName to ""
+		end try
+		set output to output & fName & "${FOLDER_SEPARATOR}" & parentName & linefeed
+	end repeat
+	return output
+end tell
+`;
+
+export function parseFolders(raw: string): FolderItem[] {
+  if (!raw.trim()) return [];
+
+  const folders: FolderItem[] = [];
+
+  for (const line of raw.split("\n")) {
+    if (!line) continue;
+    const parts = line.split(FOLDER_SEPARATOR, 2);
+    if (parts.length < 2) continue;
+
+    const [name, parent] = parts;
+    folders.push({ name: name.trim(), parent: parent.trim() });
+  }
+
+  return folders;
+}
+
 export function parseNotes(raw: string): NoteItem[] {
   if (!raw.trim()) return [];
 
@@ -93,17 +139,19 @@ export const useNotes = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [error, setError] = useState<Error | undefined>();
 
   useEffect(() => {
     let cancelled = false;
 
-    runScript(notesScript)
-      .then((raw) => {
+    Promise.all([runScript(notesScript), runScript(foldersScript)])
+      .then(([notesRaw, foldersRaw]) => {
         if (cancelled) return;
-        const parsed = parseNotes(raw);
-        logger.debug(`Fetched ${parsed.length} notes via AppleScript`);
-        setNotes(parsed);
+        const parsedNotes = parseNotes(notesRaw);
+        const parsedFolders = parseFolders(foldersRaw);
+        setNotes(parsedNotes);
+        setFolders(parsedFolders);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -120,7 +168,7 @@ export const useNotes = () => {
   }, []);
 
   return {
-    data: { allNotes: notes },
+    data: { allNotes: notes, allFolders: folders },
     isLoading,
     error,
   };

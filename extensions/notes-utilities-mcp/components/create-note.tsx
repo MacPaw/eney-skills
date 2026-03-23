@@ -31,9 +31,9 @@ function escapeDoubleQuotes(value: string) {
 function CreateNote(props: Props) {
   const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
-  const { data: notes, isLoading: isLoadingNotes } = useNotes();
+  const { data, isLoading: isLoadingNotes } = useNotes();
 
-  const folders = [...new Set(notes.allNotes.map((n) => n.folder))].sort();
+  const folders = [...new Set(data.allFolders.map((f) => f.name))].sort();
 
   const [folder, setFolder] = useState(props.folder ?? folders[0] ?? "Notes");
   const [name, setName] = useState(props.name ?? "");
