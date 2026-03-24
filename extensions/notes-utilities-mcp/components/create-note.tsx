@@ -36,7 +36,7 @@ function CreateNote(props: Props) {
   const folders = [...new Set(data.allFolders.map((f) => f.name))].sort();
 
   const [folder, setFolder] = useState(props.folder ?? folders[0] ?? "Notes");
-  const [name, setName] = useState(props.name ?? "");
+  const [name, setName] = useState(props.name ?? "New Note");
   const [content, setContent] = useState(props.content ?? "");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");

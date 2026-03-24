@@ -115,7 +115,7 @@ function AppendToNote(props: Props) {
 
   if (isLoadingNotes) {
     return (
-      <Form actions={actions}>
+      <Form actions={actions} header={header}>
         <Paper markdown={props.noteName} />
         <Paper markdown="Loading notes..." />
       </Form>
