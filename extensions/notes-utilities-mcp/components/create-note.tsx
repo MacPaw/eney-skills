@@ -18,7 +18,6 @@ import { useNotes } from "../helpers/use-notes.js";
 
 const props = z.object({
   folder: z.string().optional().describe("The folder to create the note in. If not provided, uses the default folder."),
-  name: z.string().optional().describe("The name/title for the new note."),
   content: z.string().optional().describe("The initial content for the new note."),
 });
 
@@ -27,6 +26,12 @@ type Props = z.infer<typeof props>;
 function escapeDoubleQuotes(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
+
+const renderAndCleanContent = (content: string) => {
+  const md = markdownit({ breaks: true });
+  const rendered = md.render(content);
+  return sanitizeHtml(rendered);
+};
 
 function CreateNote(props: Props) {
   const runScript = useAppleScript();
@@ -41,16 +46,14 @@ function CreateNote(props: Props) {
   const [error, setError] = useState("");
 
   async function createNote(folder: string, content: string): Promise<string> {
-    const md = markdownit({ breaks: true });
-    const htmlContent = md.render(content);
-    const sanitizedHtml = sanitizeHtml(htmlContent);
     const escapedFolder = escapeDoubleQuotes(folder);
 
-    const [name, ...rest] = sanitizedHtml.split("\n");
-    const bodyWithoutName = rest.join("\n").trim();
+    const [firstLine, ...restLines] = content.split("\n");
+    const titleText = firstLine.trim();
 
-    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(name)}</h1>` : "";
-    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${bodyWithoutName}`);
+    const titleHtml = titleText ? `<h1>${renderAndCleanContent(titleText)}</h1>` : "";
+    const remainingHtml = renderAndCleanContent(titleText ? restLines.join("\n").trim() : content);
+    const bodyHtml = escapeDoubleQuotes(`${titleHtml}${remainingHtml}`);
 
     return runScript(`
     tell application "Notes"
