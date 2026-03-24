@@ -36,19 +36,21 @@ function CreateNote(props: Props) {
   const folders = [...new Set(data.allFolders.map((f) => f.name))].sort();
 
   const [folder, setFolder] = useState(props.folder ?? folders[0] ?? "Notes");
-  const [name, setName] = useState(props.name ?? "New Note");
   const [content, setContent] = useState(props.content ?? "");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
 
-  async function createNote(folder: string, name: string, content: string): Promise<string> {
+  async function createNote(folder: string, content: string): Promise<string> {
     const md = markdownit({ breaks: true });
     const htmlContent = md.render(content);
     const sanitizedHtml = sanitizeHtml(htmlContent);
     const escapedFolder = escapeDoubleQuotes(folder);
 
-    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(sanitizeHtml(name))}</h1>` : "";
-    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${sanitizedHtml}`);
+    const [name, ...rest] = sanitizedHtml.split("\n");
+    const bodyWithoutName = rest.join("\n").trim();
+
+    const nameHtml = name.trim() ? `<h1>${escapeDoubleQuotes(name)}</h1>` : "";
+    const bodyHtml = escapeDoubleQuotes(`${nameHtml}${bodyWithoutName}`);
 
     return runScript(`
     tell application "Notes"
@@ -65,7 +67,7 @@ function CreateNote(props: Props) {
     setError("");
 
     try {
-      await createNote(folder, name, content);
+      await createNote(folder, content);
       closeWidget(`Note created successfully in folder "${folder}".`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -80,7 +82,7 @@ function CreateNote(props: Props) {
         title={isCreating ? "Creating..." : "Create Note"}
         onSubmit={onSubmit}
         style="primary"
-        isDisabled={!content.trim() || !name.trim()}
+        isDisabled={!content.trim()}
         isLoading={isCreating}
       />
     </ActionPanel>
@@ -106,7 +108,6 @@ function CreateNote(props: Props) {
           ))}
         </Form.Dropdown>
       )}
-      <Form.TextField name="name" label="Note Name" value={name} onChange={setName} />
       <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
     </Form>
   );
