@@ -14,6 +14,11 @@ export type ToolWithSchema = {
 export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]> {
   const resolvedMcpDir = resolve(mcpDir);
 
+  // check for path traversal
+  if (resolvedMcpDir.indexOf(mcpDir) !== 0) {
+    throw new Error(`Invalid MCP directory path: ${mcpDir}`);
+  }
+
   // Node MCPs keep their manifest in dist/; binary (Swift) MCPs keep it at root
   let mcpPath: string;
   let manifest: Record<string, any>;

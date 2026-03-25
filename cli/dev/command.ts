@@ -23,6 +23,11 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
   execSync("npx tsc", { cwd: mcpDir, stdio: "inherit" });
 
   const manifestPath = resolve(mcpDir, "manifest.json");
+  // check for path traversal
+  if (manifestPath.indexOf(mcpDir) !== 0) {
+    throw new Error(`Invalid manifest path: ${manifestPath}`);
+  }
+
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const mcpName = manifest.name || basename(mcpDir);
   const mcpVersion = manifest.version || "1.0.0";

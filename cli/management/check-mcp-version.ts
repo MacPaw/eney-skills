@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, resolve } from "path";
 import fs from "fs/promises";
 import semver from "semver";
 
@@ -7,7 +7,14 @@ import { ApiClient } from "../lib/api.ts";
 export async function checkMcpVersion(cwd: string, mode: "staging" | "production" = "staging") {
   const api = new ApiClient(mode);
 
-  const manifest = JSON.parse(await fs.readFile(join(cwd, "manifest.json"), "utf8"));
+  const manifestPath = join(resolve(cwd), "manifest.json");
+
+  // check for path traversal
+  if (manifestPath.indexOf(cwd) !== 0) {
+    throw new Error(`Invalid manifest path: ${manifestPath}`);
+  }
+
+  const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
   const mcpName = manifest.name;
   const currentVersion = semver.coerce(manifest.version);
 

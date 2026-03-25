@@ -59,7 +59,7 @@ function ImagesToPdf(props: Props) {
           height,
         });
       } catch (error) {
-        console.error(`Error processing image ${imagePath}:`, error);
+        console.error("Error processing image %s:", imagePath, error);
         continue;
       }
     }
