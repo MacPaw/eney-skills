@@ -23,6 +23,11 @@ export function getMcpsInfo(): McpInfo[] {
     .map((d) => {
       const manifestPath = join(mcpsDir, d.name, "manifest.json");
 
+      if (manifestPath.indexOf(mcpsDir) !== 0) {
+        console.error(`Invalid manifest path: ${manifestPath}`);
+        return null;
+      }
+
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 

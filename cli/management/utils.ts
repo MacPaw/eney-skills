@@ -51,8 +51,8 @@ export async function fetchAnalytics(mode: "staging" | "production"): Promise<Ma
     return await cfClient.getMcpsDownloads(mode);
   } catch (error) {
     console.warn(
-      `Warning: failed to fetch Cloudflare analytics in ${mode} mode. ` +
-        `Download counts will be unavailable. Underlying error:`,
+      "Warning: failed to fetch Cloudflare analytics in %s mode. Download counts will be unavailable. Underlying error:",
+      mode,
       error,
     );
     return new Map();
