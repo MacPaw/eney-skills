@@ -2,6 +2,11 @@
   "title": "Eney",
   "pages": [
     "getting-started",
-    "widgets"
+    "extension-structure",
+    "releasing-extension-updates",
+    "examples",
+    "tools",
+    "widgets",
+    "hooks"
   ]
 }

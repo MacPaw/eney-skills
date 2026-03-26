@@ -2,9 +2,11 @@
 title: Card Header
 ---
 
-![CardHeader](../assets/card-header.png)
+import { Callout } from "fumadocs-ui/components/callout";
 
 Renders a header with a title and an application icon. Use this as the `header` prop on a `Form`.
+
+![CardHeader](../assets/card-header.png)
 
 ### Properties
 
@@ -14,6 +16,8 @@ Renders a header with a title and an application icon. Use this as the `header` 
 | `iconBundleId` | macOS bundle identifier for the app icon | `string` | —       | Yes      |
 
 ### Usage
+
+To display a header, define a `CardHeader` and pass it to the `header` prop of your `Form` component.
 
 ```tsx
 import { Form, CardHeader, Action, ActionPanel } from "@eney/api";
@@ -38,4 +42,6 @@ function MyWidget() {
 }
 ```
 
+<Callout type="info">
 The `iconBundleId` is a macOS application bundle identifier (e.g. `com.apple.Safari`, `com.apple.Preview`). Eney displays the corresponding app icon next to the title.
+</Callout>

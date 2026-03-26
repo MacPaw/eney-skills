@@ -2,7 +2,7 @@ import { resolve, basename, join } from "path";
 import { homedir } from "os";
 import { watch } from "fs";
 import { execSync } from "child_process";
-import { cp, readFile, mkdir, writeFile, rm } from "fs/promises";
+import { readFile, mkdir, writeFile, rm, symlink, lstat } from "fs/promises";
 import { styleText } from "node:util";
 import { debounce } from "es-toolkit";
 import { extractMcpTools } from "../management/extract-mcp-tools.ts";
@@ -11,16 +11,23 @@ import { getOpenLink, toolToManifest } from "./tool-to-manifest.ts";
 const MCPS_FOLDER = resolve(homedir(), "Library/Application Support/com.macpaw.assistant-macos.client-setapp/MCP");
 const TOOLS_FOLDER = resolve(homedir(), ".eney", "tools");
 
-async function copyFolder(src: string, dest: string) {
-  await rm(dest, { recursive: true, force: true });
-
-  return cp(src, dest, { recursive: true, force: true });
+async function ensureSymlink(target: string, linkPath: string) {
+  try {
+    await rm(linkPath, { recursive: true, force: true });
+  } catch {}
+  await symlink(target, linkPath);
+  console.log(styleText(["cyan", "bold"], `Linked: ${target} → ${linkPath}`));
 }
 
 async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild = false): Promise<string> {
   execSync("npx tsc", { cwd: mcpDir, stdio: "inherit" });
 
   const manifestPath = resolve(mcpDir, "manifest.json");
+  // check for path traversal
+  if (manifestPath.indexOf(mcpDir) !== 0) {
+    throw new Error(`Invalid manifest path: ${manifestPath}`);
+  }
+
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const mcpName = manifest.name || basename(mcpDir);
   const mcpVersion = manifest.version || "1.0.0";
@@ -28,14 +35,16 @@ async function buildAndDeploy(mcpDir: string, outFolder: string, isInitialBuild 
   const distDir = resolve(mcpDir, "dist");
   const targetDir = resolve(outFolder, mcpName);
 
-  await cp(distDir, targetDir, { recursive: true, force: true });
-  await cp(manifestPath, join(targetDir, "manifest.json"), { force: true });
-
   if (isInitialBuild) {
-    const nodeModules = resolve(mcpDir, "node_modules");
-    const targetNodeModules = join(targetDir, "node_modules");
+    execSync("npm run build", { cwd: mcpDir, stdio: "inherit" });
 
-    await copyFolder(nodeModules, targetNodeModules);
+    const isAlreadyLinked = await lstat(targetDir)
+      .then((stats) => stats.isSymbolicLink())
+      .catch(() => false);
+
+    if (!isAlreadyLinked) {
+      await ensureSymlink(distDir, targetDir);
+    }
   }
 
   console.log(styleText(["cyan", "bold"], "Extracting tools..."));

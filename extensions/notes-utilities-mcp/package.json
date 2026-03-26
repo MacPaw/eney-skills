@@ -1,0 +1,29 @@
+{
+  "name": "notes-utilities-mcp",
+  "type": "module",
+  "description": "Notes utilities MCP server",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "build": "tsc",
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules",
+    "test": "npx tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@eney/api": "^1.4.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "markdown-it": "^14.1.1",
+    "react": "^18.3.1",
+    "sanitize-html": "^2.17.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^25.3.3",
+    "@types/react": "^18.3.27",
+    "@types/sanitize-html": "^2.16.0",
+    "typescript": "^5.9.3"
+  }
+}

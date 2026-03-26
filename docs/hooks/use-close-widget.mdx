@@ -1,0 +1,75 @@
+---
+title: useCloseWidget
+description: Finalize a widget interaction and pass context back
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Returns a function that closes the widget and passes a context string back. Call it when the user has completed their interaction and you want to provide Eney with a summary of what happened.
+
+## Import
+
+Import the hook from the Eney API package:
+
+```typescript
+import { useCloseWidget } from "@eney/api";
+```
+
+## Usage
+
+Initialize the hook at the top of your component and call the returned function with a status message when the task is complete:
+
+```typescript
+const closeWidget = useCloseWidget();
+
+// Call with a context string when the interaction is complete
+closeWidget("Appended content to note 'Meeting Notes'");
+```
+
+## Signature
+
+```typescript
+function useCloseWidget(): (context: string) => void
+```
+
+The `context` string is passed back to Eney as the tool result. Eney uses it to continue the conversation — for example, to confirm the action or suggest a next step.
+
+## Example
+
+This example shows how to use a "Done" button to close the widget after an operation completes:
+
+```typescript
+import { useState } from "react";
+import { Form, Action, ActionPanel, useCloseWidget } from "@eney/api";
+
+function MyWidget(props: Props) {
+  const closeWidget = useCloseWidget();
+  const [result, setResult] = useState("");
+
+  async function onSubmit() {
+    const output = await doSomething();
+    setResult(output);
+  }
+
+  function onDone() {
+    closeWidget(`Operation complete: ${result}`);
+  }
+
+  const actions = (
+    <ActionPanel>
+      <Action.SubmitForm title="Run" onSubmit={onSubmit} style="secondary" />
+      <Action title="Done" onAction={onDone} style="primary" />
+    </ActionPanel>
+  );
+
+  return (
+    <Form actions={actions}>
+      {result && <Paper markdown={result} />}
+    </Form>
+  );
+}
+```
+
+<Callout type="info">
+  If the user closes the widget by clicking the X button, no context is passed back to Eney and the interaction is treated as cancelled. Always provide a "Done" or "Submit" button that calls `closeWidget` so Eney receives the result.
+</Callout>

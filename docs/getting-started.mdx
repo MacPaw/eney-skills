@@ -1,12 +1,12 @@
 ---
 title: Getting Started
-description: Create your first Eney extension in minutes
+description: Build your first Eney extension in minutes
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Eney extensions are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@eney/api` widget library — the framework renders them as native macOS UI.
+Eney extensions (also referred to as skills) are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the @eney/api widget library — the framework renders them as native macOS UI.
 
 This guide walks you through creating a complete extension from scratch.
 
@@ -17,13 +17,15 @@ This guide walks you through creating a complete extension from scratch.
 
 ## Setup
 
-Link the CLI globally so you can run it from anywhere in the repo:
+Clone the repository and run the setup script:
 
 ```bash
-cd cli && npm link
+git clone https://github.com/MacPaw/eney-skills
+cd eney-skills
+npm run setup
 ```
 
-This registers the `eney-skills-cli` command. You only need to do this once after cloning the repository.
+This installs the CLI dependencies and registers the `eney-skills-cli` command globally. You only need to do this once after cloning the repository.
 
 ## Create an Extension
 
@@ -36,7 +38,7 @@ There are two ways to scaffold a new extension:
 
 **Option A: Using Claude Code**
 
-If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, use the `/eney-create` skill — it will scaffold the extension, implement the widget, and build it for you interactively:
+If you have [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, use the `/eney-create` skill. It will scaffold the extension, implement the widget, and build it for you interactively:
 
 ```
 /eney-create
@@ -52,7 +54,8 @@ Scaffold a new extension manually:
 eney-skills-cli create ...options
 ```
 
-Example of command call with all required options:
+Example call with all required options:
+
 
 ```bash
 eney-skills-cli create --id weather-forecaster \
@@ -62,21 +65,21 @@ eney-skills-cli create --id weather-forecaster \
   --tool-title="Get Weather Forecast"
 ```
 
-This creates a new folder (by default inside `mcps/` folder) with boilerplate code for your extension. This includes:
+This creates a new folder—located in the extensions/ folder by default—containing boilerplate code for your extension. It includes:
 
-- manifest.json - defines your MCP metadata
-- package.json - your dependencies and scripts. **NOTE**: it is important to have `build` script as it is used by CLI commands.
-- tsconfig.json - TypeScript configuration
-- tests/ - folder for your tests
-- components/ - folder for your React components (widgets)
-- index.ts - entry point for your extension
+- `manifest.json` - defines your MCP metadata
+- `package.json` - your dependencies and scripts. **NOTE**: A build script is required for CLI commands to function.
+- `tsconfig.json` - TypeScript configuration
+- `tests/` - folder for your tests
+- `components/` - folder for your React components (widgets)
+- `index.ts` - entry point for your extension
 
 </Step>
 
 <Step>
 ### Implement your widget
 
-Using tool-name we have provided during creation, CLI has generated a boilerplate widget for us. It is located in `components/` folder.
+Using the `tool-name` we have provided during creation, the CLI has generated a boilerplate widget for us. It is located in the `components/` folder.
 
 ```tsx
 import { useState } from "react";
@@ -98,9 +101,7 @@ type Props = z.infer<typeof schema>;
 ```
 
 <Callout type="warn">
-  It is important to define a schema for your widget's props. This allows Eney
-  to understand needed input for the widget and provide a better experience for
-  users when they run it.
+  It is important to define a schema for your widget’s props. This allows Eney to understand the required input for the widget and provide a smoother experience for users.
 </Callout>
 
 ```tsx
@@ -119,9 +120,7 @@ function GetWeatherForecast(props: Props) {
 ```
 
 <Callout type="info">
-  `closeWidget` is used to finalize interaction for user and to pass context
-  back to Eney. Without calling it, the only way for user to close the widget is
-  to click "X" button in the corner, which cancels the operation.
+  `closeWidget` is used to finalize the interaction for the user and pass context back to Eney. Without calling it, the user’s only way to close the widget is by clicking the "X" button, which cancels the operation.
 </Callout>
 
 ```tsx
@@ -156,8 +155,7 @@ export default GetWeatherForecastWidget;
 ```
 
 <Callout type="info">
-  `defineWidget` is a function that defines your widget and its metadata. It is
-  used by Eney to understand when to call this widget and what props to provide.
+  `defineWidget` is the function that registers your widget and its metadata. Eney uses it to determine when to call the widget and which props to provide.
 </Callout>
 
 </Step>
@@ -165,11 +163,13 @@ export default GetWeatherForecastWidget;
 <Step>
 ### Verify it compiles
 
+Run the build script to ensure your project is configured correctly:
+
 ```bash
 npm run build
 ```
 
-If there are no errors, your extension is ready.
+A successful build with no errors means your extension is ready to go.
 
 </Step>
 
@@ -182,22 +182,22 @@ The CLI `dev` command compiles, deploys locally, and watches for changes:
 eney-skills-cli dev
 ```
 
-This deploys the compiled output to the Eney MCP folder and generates tool definitions so Eney discovers your widget.
+This command moves the compiled output to the Eney MCP folder and generates the tool definitions required for Eney to discover and load your widget.
 
 </Step>
 
 <Step>
 ### Launch in Eney
 
-Open the widget directly using a deeplink:
+Trigger the widget directly using a macOS deeplink:
 
 ```bash
 open "eney://run?manifestID=eney_core&commandID=get-weather-forecast"
 ```
 
-The `commandID` matches the `name` field from your `defineWidget()` call.
+The `commandID` matches the `name` field defined in your `defineWidget()` call (found in index.ts).
 
-You can also see `open` command at CLI `dev` command output.
+You can also find this specific `open` command printed in the terminal output of the `dev` command.
 
 </Step>
 
@@ -207,4 +207,4 @@ You can also see `open` command at CLI `dev` command output.
 
 - Read [Extension Structure](/docs/extension-structure) to understand each file's role
 - Browse the [Widgets](/docs/widgets) reference for all available UI components
-- Study existing extensions in `mcps/` for real-world patterns
+- Study existing extensions in `extensions/` for real-world patterns

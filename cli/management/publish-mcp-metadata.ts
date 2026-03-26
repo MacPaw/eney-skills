@@ -28,7 +28,14 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
   const tmpDir = await unpackMcpArchive(resolvedArchivePath);
 
   try {
-    const manifest = JSON.parse(await fs.readFile(join(tmpDir, "manifest.json"), "utf8"));
+    const manifestPath = join(tmpDir, "manifest.json");
+
+    // check for path traversal
+    if (manifestPath.indexOf(tmpDir) !== 0) {
+      throw new Error(`Invalid manifest path: ${manifestPath}`);
+    }
+
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
     const mcpName = manifest.name;
     const parsedVersion = semver.coerce(manifest.version).toString();
     const archiveName = `${mcpName}@v${parsedVersion}.mcpb`;
@@ -39,7 +46,13 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
     let tools;
     if (toolsJsonPath) {
       console.log(`Using pre-extracted tools from ${toolsJsonPath}`);
-      tools = JSON.parse(await fs.readFile(resolve(toolsJsonPath), "utf8"));
+      const currentDir = process.cwd();
+      const resolvedToolsPath = resolve(currentDir, toolsJsonPath);
+      // check for path traversal
+      if (resolvedToolsPath.indexOf(currentDir) !== 0) {
+        throw new Error(`Invalid tools path for ${resolvedToolsPath}: ${toolsJsonPath}`);
+      }
+      tools = JSON.parse(await fs.readFile(resolvedToolsPath, "utf8"));
     } else {
       tools = await extractMcpTools(tmpDir);
     }
@@ -65,7 +78,7 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
     };
 
     console.log("\nArtifact metadata:");
-    console.dir(artifactPayload, { depth: null });
+    console.log("%o", artifactPayload);
 
     try {
       const data = await api.publishMcp(metadataPayload);

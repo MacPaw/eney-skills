@@ -1,0 +1,24 @@
+{
+  "name": "send-mail-mcp",
+  "type": "module",
+  "description": "Send mail MCP server",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "build": "tsc",
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
+  },
+  "dependencies": {
+    "@eney/api": "^1.4.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "react": "^18.3.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@types/react": "^18.3.27",
+    "typescript": "^5.9.3"
+  }
+}

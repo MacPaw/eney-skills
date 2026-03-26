@@ -1,0 +1,87 @@
+---
+title: useLogger
+description: Write structured log messages from within a widget component
+---
+
+`useLogger` allows you to write structured messages, so you can track what’s happening in your code without cluttering the widget UI.
+
+## Import
+
+Import the logger from the Eney API package:
+
+```typescript
+import { useLogger } from "@eney/api";
+```
+
+## Usage
+
+Initialize the logger at the top of your component and call the appropriate method to log a message:
+
+```typescript
+const logger = useLogger();
+
+logger.debug("message");
+logger.info("message");
+logger.warn("message");
+logger.error("message");
+```
+
+Each method supports printf-style formatting for more descriptive strings:
+
+```typescript
+logger.debug("Fetched %d items from %s", items.length, dbPath);
+logger.error("Failed to append note: %s", error.message);
+```
+
+You can also include a context object as the last argument to capture structured data:
+
+```typescript
+logger.debug("Generated password", { length, symbols, numbers });
+```
+
+## Example
+
+This snippet from the `security-utilities-mcp` extension shows how to log results whenever a password is generated:
+
+```typescript
+import { useLogger, defineWidget } from "@eney/api";
+
+function NewPassword(props: Props) {
+  const logger = useLogger();
+
+  useEffect(() => {
+    const value = generatePassword({ length, symbols, numbers });
+    logger.debug("Generated password: %s on mount or options change", value, {
+      length,
+      symbols,
+      numbers,
+    });
+    setPassword(value);
+  }, [length, symbols, numbers]);
+
+  // ...
+}
+```
+
+In the `notes-utilities-mcp` extension, the logger tracks the start of a database operation:
+
+```typescript
+export const useNotes = () => {
+  const logger = useLogger();
+
+  logger.debug("Fetching notes from the database");
+
+  // ...
+};
+```
+
+## Log levels
+
+Use the appropriate level based on the importance of the message:
+
+| Method | When to use |
+|---|---|
+| `debug` | Verbose tracing, values during development |
+| `info` | Notable events, like a form submission or a successful operation. |
+| `warn` | Unexpected but handled conditions |
+| `error` | Failures that affect the user |

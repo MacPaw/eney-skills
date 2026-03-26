@@ -9,11 +9,15 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 
 Eney widgets provide a JSX-based interface for building native UI. You write standard React components using the widget library — the JSX renders into a JSON tree that the native Swift app interprets and displays as fully native UI elements.
 
-Your code never touches UIKit or SwiftUI directly. The runtime serializes your component tree into JSON messages, and the host app renders corresponding native views.
+Your code never touches UIKit or SwiftUI directly. The runtime serializes your component tree into JSON messages, and Eney handles the native rendering for you.
 
 ```
 JSX Component → JSON tree → Native Swift UI
 ```
+
+The following image shows a password generator widget built using native Eney components:
+
+![Widgets](../assets/widgets.png)
 
 ## Import
 

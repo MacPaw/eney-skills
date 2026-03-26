@@ -34,7 +34,7 @@ jobs:
 
       - name: Build Swift binary
         run: swift build -c release
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Prepare binary for packaging
         run: |
@@ -42,12 +42,10 @@ jobs:
           BINARY_NAME=$(swift package dump-package | jq -r '.targets[0].name')
           mkdir -p "$(dirname $ENTRY_POINT)"
           cp ".build/release/$BINARY_NAME" "$ENTRY_POINT"
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
-        with:
-          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Pack MCP archive
         id: pack
@@ -57,13 +55,13 @@ jobs:
           ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
           npx --yes @anthropic-ai/mcpb pack . "$ARCHIVE_NAME"
           echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Extract MCP tools
         run: |
           TEMP_DIR=$(mktemp -d)
-          npx --yes @anthropic-ai/mcpb unpack "mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
-          eney-skills-cli extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "mcps/${{ matrix.mcp }}/tools.json"
+          npx --yes @anthropic-ai/mcpb unpack "extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
+          eney-skills-cli extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "extensions/${{ matrix.mcp }}/tools.json"
           rm -rf "$TEMP_DIR"
 
       - name: Upload MCP archive artifact
@@ -71,8 +69,8 @@ jobs:
         with:
           name: swift-mcp-${{ matrix.mcp }}
           path: |
-            mcps/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
-            mcps/${{ matrix.mcp }}/tools.json
+            extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
+            extensions/${{ matrix.mcp }}/tools.json
           retention-days: 1
 
   publish-swift-mcp:
@@ -86,8 +84,7 @@ jobs:
     if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      ADMIN_AUTH_TOKEN_PRODUCTION: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
-      ADMIN_AUTH_TOKEN_STAGING: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +105,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: swift-mcp-${{ matrix.mcp }}
-          path: mcps/${{ matrix.mcp }}
+          path: extensions/${{ matrix.mcp }}
 
       - name: Resolve archive name
         id: archive
@@ -116,22 +113,20 @@ jobs:
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
           echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
-        working-directory: mcps/${{ matrix.mcp }}
+        working-directory: extensions/${{ matrix.mcp }}
 
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
-        with:
-          npm_token: ${{ secrets.ORG_GHA_TOKEN_NPMJS_PACKAGES_RO }}
 
       - name: Upload MCP archive
         run: |
           eney-skills-cli upload-mcp-archive \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --mode staging
 
       - name: Publish MCP metadata
         run: |
           eney-skills-cli publish-mcp-metadata \
             --mode staging \
-            --archive-path mcps/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
-            --tools-json mcps/${{ matrix.mcp }}/tools.json
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --tools-json extensions/${{ matrix.mcp }}/tools.json

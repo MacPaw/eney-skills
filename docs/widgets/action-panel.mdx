@@ -2,9 +2,9 @@
 title: Action Panel
 ---
 
-![ActionPanel](../assets/action-panel-column.png)
-
 Groups a set of [actions](/docs/widgets/actions) that the user can perform. Typically passed to a `Form` or `Paper` via the `actions` prop.
+
+![ActionPanel](../assets/action-panel-column.png)
 
 ### Properties
 
@@ -14,6 +14,8 @@ Groups a set of [actions](/docs/widgets/actions) that the user can perform. Typi
 | `layout`   | Layout direction | `"row" \| "column"` | `"column"` | No       |
 
 ### Usage
+
+To include actions, wrap your `Action` components inside an `ActionPanel` and assign it to the `actions` prop of your widget.
 
 ```tsx
 import { useState } from "react";
@@ -48,9 +50,9 @@ function MyWidget() {
 
 ### Row layout
 
-![ActionPanel](../assets/action-panel.png)
+By default, buttons are stacked vertically. To display actions side-by-side, use the layout="row" property.
 
-Use `layout="row"` to display actions side by side:
+![ActionPanel](../assets/action-panel.png)
 
 ```tsx
 <ActionPanel layout="row">

@@ -1,0 +1,162 @@
+---
+title: Extension Structure
+description: Every file in a scaffolded Eney extension and what it does
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The typical folder structure of a newly created extension looks like this:
+
+```bash
+my-extension/
+├── manifest.json
+├── package.json
+├── tsconfig.json
+├── index.ts
+├── components/
+│   └── my-widget.tsx
+└── tests/
+```
+
+## Sources
+
+The entry point is `index.ts` (at the root). It initializes the MCP server, registers all widgets, and starts the stdio transport. Each widget resides in a separate file within the `components/` folder and is imported by `index.ts`.
+
+
+## Support files
+
+* `manifest.json` is the extension manifest. It defines the name, version, author, and server launch details. See the [field reference](#manifestjson) below for a full list.
+* `package.json` is a standard npm package file. It must include a `build` script, which is used by the `eney-skills-cli dev` command. See [package.json](#packagejson) below for more details.
+* `tsconfig.json` configures TypeScript for ESM output, which is required by the MCP runtime. Most likely, you won't need to edit this file.
+* `tests/` is a folder containing basic boilerplate tests to help you get started with testing your extension.
+
+---
+
+## manifest.json
+
+Provides the essential metadata Eney and the MCP runtime need to identify and run your extension.
+
+```json
+{
+  "manifest_version": "0.3",
+  "name": "my-extension",
+  "version": "1.0.0",
+  "description": "What this extension does",
+  "author": {
+    "name": "Your Name"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
+```
+
+| Field | Description |
+|---|---|
+| `name` | Unique extension identifier (use **kebab-case**) |
+| `version` | Semantic version string |
+| `description` | Short description shown in Eney |
+| `author.name` | Extension author name |
+| `server.entry_point` | Entry point file (typically `index.js`) |
+| `server.mcp_config.command` | Command used to launch the server |
+| `server.mcp_config.args` | Arguments passed to the launch command. Use `${__dirname}` as a placeholder for the extension folder path; Eney resolves this at runtime |
+| `server.mcp_config.env` | Environment variables injected into the server process |
+
+---
+
+## package.json
+
+Standard npm package file. It manages your extension's dependencies and includes the `build` script required to compile TypeScript into JavaScript.
+
+```json
+{
+  "name": "my-extension",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@eney/api": "latest",
+    "@modelcontextprotocol/sdk": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
+```
+
+<Callout type="warn">
+  The script must be named exactly `"build"`. The CLI calls `npm run build` when running `eney-skills-cli dev`.
+</Callout>
+
+---
+
+## tsconfig.json
+
+Configured for ESM output, which is required by the MCP runtime.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": ".",
+    "strict": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@eney/api"
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+```
+
+<Callout type="info">
+  Because the module system is ESM, all local imports must use `.js` extensions even when the source file is `.ts`. For example: `import { runScript } from "./helpers/run-script.js"`.
+</Callout>
+
+---
+
+## index.ts
+
+The entry point for your extension. Initializes the MCP server, registers widgets, and starts the stdio transport.
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { setupUIXForMCP } from "@eney/api";
+import MyWidget from "./components/my-widget.js";
+
+const server = new McpServer(
+  { name: "my-extension", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
+);
+
+const uixServer = setupUIXForMCP(server);
+
+uixServer.registerWidget(MyWidget);
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch(console.error);
+```
+
+To register multiple widgets, import each one and call `uixServer.registerWidget()` for each.
+
+---
+
+## components/
+
+Contains React widget components. Each file exports a widget created with `defineWidget`. Use `.tsx` for components with JSX. See the [Widgets](/docs/widgets) reference for all available UI primitives.
+

@@ -2,13 +2,15 @@
 title: Files
 ---
 
-![Files](../assets/files.png)
+Shows output files after a task completes. Users can click each file to open it.
 
-Displays a list of files. Each file is rendered as a clickable item showing its path.
+![Files](../assets/files.png)
 
 ## Properties
 
 ### Files
+
+The main container for the file list.
 
 | Property   | Description             | Type              | Default | Required |
 | ---------- | ----------------------- | ----------------- | ------- | -------- |
@@ -16,11 +18,19 @@ Displays a list of files. Each file is rendered as a clickable item showing its 
 
 ### Files.Item
 
+Represents an individual file within the list.
+
 | Property | Description               | Type     | Default | Required |
 | -------- | ------------------------- | -------- | ------- | -------- |
 | `path`   | Absolute path to the file | `string` | —       | Yes      |
 
 ## Usage
+
+To display files, wrap individual `Files.Item` components inside the `Files` parent component.
+
+### Basic
+
+You can map through an array of file paths to generate the list dynamically:
 
 ```tsx
 import { Files } from "@eney/api";
@@ -37,6 +47,8 @@ function OutputFiles(props: { paths: string[] }) {
 ```
 
 ### Full example — file processing widget
+
+Ideal for showing results after a process, like an image optimizer. If files exist, the widget shows the file list; otherwise, it shows the upload form:
 
 ```tsx
 import { useState } from "react";

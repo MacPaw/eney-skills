@@ -1,0 +1,29 @@
+---
+title: Releasing extension updates
+description: How to release a new version of your extension
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+To update your extension, follow these steps:
+
+<Steps>
+
+<Step>
+### Update the version number
+The `manifest.json` file contains your extension's metadata, including its current version. Update the version field to reflect the new release.
+
+```json
+{
+  "name": "my-extension",
+  "version": "2.0.0",
+  ...
+}
+```
+
+</Step>
+<Step>
+### Push the changes to the repository
+Commit your version update and any code changes, then create a pull request. Once the pull request is merged, GitHub Actions will automatically trigger the release process.
+</Step>
+</Steps>

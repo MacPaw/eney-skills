@@ -2,9 +2,9 @@
 title: Paper
 ---
 
-![Paper](../assets/paper.png)
-
 Renders markdown content with an optional action panel. Use this component to display results, summaries, or any read-only content.
+
+![Paper](../assets/paper.png)
 
 ### Properties
 
@@ -16,7 +16,11 @@ Renders markdown content with an optional action panel. Use this component to di
 
 ## Usage
 
+To use the component, import it from the `@eney/api` library and pass your Markdown string to the `markdown` prop.
+
 ### Basic
+
+A simple way to display a single line of Markdown:
 
 ```tsx
 <Paper markdown="Hello **world**" />
@@ -31,6 +35,8 @@ For long content, enable scrolling:
 ```
 
 ### With actions
+
+Pair with an `ActionPanel` to let users interact with the displayed content, such as copying the result to their clipboard:
 
 ```tsx
 import { Paper, Action, ActionPanel } from "@eney/api";

@@ -16,12 +16,12 @@ dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
 const program = new Command();
 
-program.name("eney-mcp-helper").description("CLI for Eney MCP Helper").version("1.0.0");
+program.name("eney-skills-cli").description("CLI for Eney Skills").version("1.0.0");
 
 program
   .command("create")
   .description("Create a new MCP server")
-  .option("-o, --output <path>", "Output directory", path.join(process.cwd(), "mcps"))
+  .option("-o, --output <path>", "Output directory", path.join(process.cwd(), "extensions"))
   .requiredOption("--id <id>", "MCP server ID")
   .requiredOption("--mcp-title <title>", "MCP server title")
   .requiredOption("--tool-name <name>", "Tool name")

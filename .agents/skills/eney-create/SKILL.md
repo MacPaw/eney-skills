@@ -10,6 +10,14 @@ metadata:
 
 Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@eney/api`. Each MCP runs as a standalone Node.js process communicating over stdio.
 
+## Step 0: Setup CLI
+
+Make sure you have the CLI installed and linked globally:
+
+```bash
+npm run setup
+```
+
 ## Step 1: Gather Requirements
 
 Ask the user for (skip what's already provided):
@@ -40,19 +48,19 @@ eney-skills-cli create \
   --tool-name <tool-name> \
   --tool-description "<Tool Description>" \
   --tool-title "<Tool Title>" \
-  -o ./mcps
+  -o ./extensions
 ```
 
 > If `eney-skills-cli` is not found, run `cd cli && npm link` first.
 
-This creates the full MCP structure under `mcps/<mcp-id>/` and installs base dependencies.
+This creates the full MCP structure under `extensions/<mcp-id>/` and installs base dependencies.
 
 ## Step 4: Install Additional Dependencies
 
 If the widget needs third-party libraries (e.g., `qrcode`, `sharp`, `crypto-js`), install them in the MCP directory:
 
 ```bash
-cd mcps/<mcp-id> && npm install <package-name>
+cd extensions/<mcp-id> && npm install <package-name>
 ```
 
 For packages with TypeScript types, also install the types:
@@ -63,7 +71,7 @@ npm install <package-name> @types/<package-name>
 
 ## Step 5: Implement the Widget
 
-Edit `mcps/<mcp-id>/components/<tool-name>.tsx`.
+Edit `extensions/<mcp-id>/components/<tool-name>.tsx`.
 
 ### Widget Structure
 
@@ -72,15 +80,7 @@ Every widget follows this pattern:
 ```tsx
 import { useState } from "react";
 import { z } from "zod";
-import {
-  Action,
-  ActionPanel,
-  Form,
-  Paper,
-  CardHeader,
-  defineWidget,
-  useCloseWidget,
-} from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, Paper, CardHeader, defineWidget, useCloseWidget } from "@macpaw/eney-api";
 
 // 1. Schema — all fields need .describe() and should be .optional()
 const schema = z.object({
@@ -122,23 +122,13 @@ function MyTool(props: Props) {
         header={<CardHeader title="My Tool" />}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm
-              title="Start Over"
-              onSubmit={() => setResult("")}
-              style="secondary"
-            />
+            <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
             <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
         <Paper markdown={result} />
-        <Form.TextField
-          name="input"
-          label="Input"
-          value={input}
-          onChange={setInput}
-          isCopyable
-        />
+        <Form.TextField name="input" label="Input" value={input} onChange={setInput} isCopyable />
       </Form>
     );
   }
@@ -160,12 +150,7 @@ function MyTool(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.TextField
-        name="input"
-        label="Input"
-        value={input}
-        onChange={setInput}
-      />
+      <Form.TextField name="input" label="Input" value={input} onChange={setInput} />
     </Form>
   );
 }
@@ -226,7 +211,7 @@ uixServer.registerWidget(WidgetB);
 ## Step 6: Verify
 
 ```bash
-cd mcps/<mcp-id> && npm run build
+cd extensions/<mcp-id> && npm run build
 ```
 
 > Always use `npm run build` to verify — never `npx tsc --noEmit` or `npx tsc` directly.
@@ -244,7 +229,7 @@ cd mcps/<mcp-id> && npm run build
 To publish the extension, create a pull request to `main` with a short description of what the extension does:
 
 ```bash
-git add mcps/<mcp-id>
+git add extensions/<mcp-id>
 git commit -m "feat: add <mcp-id>"
 git push -u origin feat/<mcp-id>
 gh pr create --title "feat: add <MCP Title>" --body "Short description of the extension."

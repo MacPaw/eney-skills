@@ -1,0 +1,89 @@
+---
+title: Tools
+description: Expose plain MCP tools without a UI
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Eney extensions are MCP servers. In addition to (or instead of) widgets, you can register **plain MCP tools** — functions that return text or JSON directly to Eney without rendering a UI.
+
+You can find more details in the [official MCP documentation](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md#tools-resources-and-prompts).
+
+---
+
+## Registering a plain tool
+
+Use `server.tool()` on the `McpServer` instance:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const server = new McpServer(
+  { name: "my-extension", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
+);
+
+server.tool(
+  "get-system-info",
+  "Returns basic system information",
+  {
+    detail: z.enum(["basic", "full"]).optional().describe("Level of detail"),
+  },
+  async ({ detail }) => {
+    const info = detail === "full"
+      ? { platform: process.platform, arch: process.arch, node: process.version }
+      : { platform: process.platform };
+
+    return {
+      content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+    };
+  },
+);
+```
+
+---
+
+## Mixed extension (tools + widgets)
+
+You can register both plain tools and widgets in the same extension. First, create your server and call `setupUIXForMCP`. Then, use both `server.tool()` and `uixServer.registerWidget()`:
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { setupUIXForMCP } from "@eney/api";
+import { z } from "zod";
+import MyWidget from "./components/my-widget.js";
+
+const server = new McpServer(
+  { name: "my-extension", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
+);
+
+// Plain tool — returns text
+server.tool(
+  "summarize-file",
+  "Returns a plain-text summary of a file",
+  { path: z.string().describe("Absolute path to the file") },
+  async ({ path }) => {
+    // read and summarize...
+    return { content: [{ type: "text", text: "Summary: ..." }] };
+  },
+);
+
+// Widget — renders native UI in Eney
+const uixServer = setupUIXForMCP(server);
+uixServer.registerWidget(MyWidget);
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch(console.error);
+```
+
+<Callout type="info">
+  Both plain tools and widgets appear in the tool list. When a widget is triggered, Eney intercepts the call to render its UI instead of returning a text response.
+</Callout>

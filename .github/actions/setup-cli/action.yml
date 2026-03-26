@@ -1,11 +1,6 @@
 name: Setup CLI
 description: Configure Node.js and install CLI dependencies
 
-inputs:
-  npm_token:
-    description: "NPM auth token to access private packages"
-    required: true
-
 runs:
   using: composite
   steps:
@@ -16,15 +11,12 @@ runs:
         cache: npm
         cache-dependency-path: cli/package-lock.json
 
-    - name: Set deployment token
-      shell: bash
-      run: |
-        npm config set '//registry.npmjs.org/:_authToken' "${{ inputs.npm_token }}"
-
     - name: Install CLI dependencies
       shell: bash
       run: npm ci --prefix cli
 
     - name: Link CLI globally
       shell: bash
-      run: npm link --prefix cli
+      run: |
+        cd cli
+        npm link

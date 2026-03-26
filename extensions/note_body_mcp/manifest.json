@@ -1,0 +1,38 @@
+{
+  "manifest_version": "0.2",
+  "name": "note_body_mcp",
+  "version": "1.0.4",
+  "description": "MCP server to extract, get or fetch content of the note by using note's title ir id from the Notes app",
+  "author": {
+    "name": "Yehor Sobko"
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/get-note-body",
+    "mcp_config": {
+      "command": "",
+      "args": [],
+      "env": {
+        "AUTH_KEY": "${user_config.auth_key}",
+        "SUMMARY_URL": "${user_config.summary_url}"
+      }
+    }
+  },
+  "user_config": {
+    "auth_key": {
+      "type": "string",
+      "title": "internal usage",
+      "description": "internal usage",
+      "sensitive": true,
+      "required": true
+    },
+    "summary_url": {
+      "type": "string",
+      "title": "internal usage",
+      "description": "internal usage",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "license": "MIT"
+}

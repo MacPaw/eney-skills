@@ -5,20 +5,25 @@ title: Form
 The Form is the primary container for user input. It consists of three sections:
 
 1. **Header** — an optional header element (e.g. a `CardHeader`)
-2. **Form fields** — laid out in a column
+2. **Form fields** — input elements laid out in a column
 3. **ActionPanel** — a panel with [actions](/docs/widgets/action-panel) for the form
 
-All form fields are **controlled**. That means:
+All form fields are **controlled**. This means:
 
-- The component holds the source of truth (e.g. via `useState`)
-- The field's `value` comes from state
+- The component holds the “source of truth” in its state (e.g. `useState`)
+- The field's `value` comes from that state
 - The field's `onChange` updates that state
 
-| Property   | Description                   | Type              | Default | Required |
-| ---------- | ----------------------------- | ----------------- | ------- | -------- |
-| `children` | Form fields                   | `React.ReactNode` | —       | Yes      |
-| `actions`  | A reference to an ActionPanel | `React.ReactNode` | —       | No       |
-| `header`   | Header element                | `React.ReactNode` | —       | No       |
+
+| Property   | Description                     | Type              | Default | Required |
+| ---------- | ------------------------------- | ----------------- | ------- | -------- |
+| `children` | The form input fields           | `React.ReactNode` | —       | Yes      |
+| `actions`  | A reference to an `ActionPanel` | `React.ReactNode` | —       | No       |
+| `header`   | Header element                  | `React.ReactNode` | —       | No       |
+
+### Usage
+
+Wrap your input fields and actions within the `Form` component to create a structured interface:
 
 ```tsx
 import { useState } from "react";
@@ -54,9 +59,11 @@ function MyForm() {
 
 ## Form.TextField
 
+Use for single-line text input.
+
 ![TextField](../assets/text-field.png)
 
-Single-line text input.
+### Properties
 
 | Property     | Description                               | Type                      | Default | Required |
 | ------------ | ----------------------------------------- | ------------------------- | ------- | -------- |
@@ -64,7 +71,11 @@ Single-line text input.
 | `value`      | The current value of the field            | `string`                  | `""`    | No       |
 | `onChange`   | Callback triggered when the value changes | `(value: string) => void` | —       | Yes      |
 | `label`      | The label displayed for the field         | `string`                  | —       | No       |
-| `isCopyable` | Whether the field shows a copy button     | `boolean`                 | —       | No       |
+| `isCopyable` | Adds a copy button to the field           | `boolean`                 | —       | No       |
+
+### Usage
+
+Create a standard text input by linking the `value` and `onChange` props to your component's state:
 
 ```tsx
 import { useState } from "react";
@@ -90,18 +101,25 @@ function MyWidget() {
 
 ## Form.NumberField
 
-![NumberField](../assets/number-field.png)
-
 Numeric input with optional min/max bounds.
 
+![NumberField](../assets/number-field.png)
+
+### Properties
+
 | Property   | Description                               | Type                              | Default | Required |
-| ---------- | ----------------------------------------- | --------------------------------- | ------- | -------- | --- |
+| ---------- | ----------------------------------------- | --------------------------------- | ------- | -------- |
 | `name`     | Unique name of the form field             | `string`                          | —       | Yes      |
 | `value`    | The current value of the field            | `number \| null`                  | `0`     | No       |
 | `onChange` | Callback triggered when the value changes | `(value: number \| null) => void` | —       | Yes      |
 | `label`    | The label displayed for the field         | `string`                          | —       | No       |
 | `min`      | Minimum allowed value                     | `number`                          | —       | No       |
-| `max`      | Maximum allowed value                     | `number`                          | —       | No       | No  |
+| `max`      | Maximum allowed value                     | `number`                          | —       | No       |
+
+
+### Usage
+
+Set up a numeric input field with a defined range:
 
 ```tsx
 import { useState } from "react";
@@ -129,9 +147,11 @@ function MyWidget() {
 
 ## Form.PasswordField
 
+Masked text input for sensitive values.
+
 ![PasswordField](../assets/password-field.png)
 
-Masked text input for sensitive values.
+### Properties
 
 | Property   | Description                               | Type                      | Default | Required |
 | ---------- | ----------------------------------------- | ------------------------- | ------- | -------- |
@@ -139,6 +159,8 @@ Masked text input for sensitive values.
 | `value`    | The current value of the field            | `string`                  | `""`    | No       |
 | `onChange` | Callback triggered when the value changes | `(value: string) => void` | —       | Yes      |
 | `label`    | The label displayed for the field         | `string`                  | —       | No       |
+
+### Usage
 
 ```tsx
 import { useState } from "react";
@@ -164,29 +186,39 @@ function MyWidget() {
 
 ## Form.Dropdown
 
+Provides a selection menu for users. Functions as a standard drop-down list by default. When `searchable` is `true`, as a searchable autocomplete field.
+
 ![Dropdown](../assets/dropdown-1.png)
 
-Select or searchable autocomplete. Behaves like a `<select>` by default. When `searchable` is `true`, it works as a search field with suggestions (similar to `<datalist>`).
+### Properties
 
-| Property     | Description                                      | Type                      | Default | Required |
-| ------------ | ------------------------------------------------ | ------------------------- | ------- | -------- |
-| `name`       | Unique name of the form field                    | `string`                  | —       | Yes      |
-| `value`      | The current selected value                       | `string`                  | —       | No       |
-| `onChange`   | Callback triggered when the value changes        | `(value: string) => void` | —       | Yes      |
-| `label`      | The label displayed for the field                | `string`                  | —       | No       |
-| `searchable` | Whether to show a search field with autocomplete | `boolean`                 | `false` | No       |
-| `children`   | `Form.Dropdown.Item` elements                    | `React.ReactNode`         | —       | Yes      |
+| Property     | Description                                          | Type                      | Default | Required |
+| ------------ | ---------------------------------------------------- | ------------------------- | ------- | -------- |
+| `name`       | Unique name of the form field                        | `string`                  | —       | Yes      |
+| `value`      | The current selected value                           | `string`                  | —       | No       |
+| `onChange`   | Callback triggered when the value changes            | `(value: string) => void` | —       | Yes      |
+| `label`      | The label displayed for the field                    | `string`                  | —       | No       |
+| `searchable` | Enables a search field with autocomplete suggestions | `boolean`                 | `false` | No       |
+| `children`   | `Form.Dropdown.Item` elements                        | `React.ReactNode`         | —       | Yes      |
 
 ---
 
 ## Form.Dropdown.Item
 
+Use `Form.Dropdown.Item` to define individual selectable options within a `Form.Dropdown` list.
+
 ![Dropdown](../assets/dropdown-2.png)
+
+### Properties
 
 | Property | Description                       | Type     | Default | Required |
 | -------- | --------------------------------- | -------- | ------- | -------- |
 | `value`  | Unique value of the dropdown item | `string` | —       | Yes      |
 | `title`  | The title displayed for the item  | `string` | —       | Yes      |
+
+### Usage
+
+Populate your dropdown by adding multiple items with unique values:
 
 ```tsx
 import { useState } from "react";
@@ -217,17 +249,24 @@ function MyWidget() {
 
 ## Form.Checkbox
 
-![Checkbox](../assets/checkbox.png)
-
 Toggle input that can be displayed as a checkbox or a switch.
 
+![Checkbox](../assets/checkbox.png)
+
+### Properties
+
 | Property   | Description                               | Type                       | Default      | Required |
-| ---------- | ----------------------------------------- | -------------------------- | ------------ | -------- | --- |
+| ---------- | ----------------------------------------- | -------------------------- | ------------ | -------- |
 | `name`     | Unique name of the form field             | `string`                   | —            | Yes      |
 | `label`    | The label displayed for the field         | `string`                   | —            | Yes      |
 | `checked`  | The current state of the checkbox         | `boolean`                  | —            | Yes      |
 | `onChange` | Callback triggered when the value changes | `(value: boolean) => void` | —            | Yes      |
-| `variant`  | Display variant                           | `"checkbox" \| "switch"`   | `"checkbox"` | No       | No  |
+| `variant`  | Display variant                           | `"checkbox" \| "switch"`   | `"checkbox"` | No       |
+
+
+### Usage
+
+Add a simple switch to your form to handle boolean settings:
 
 ```tsx
 import { useState } from "react";
@@ -254,17 +293,21 @@ function MyWidget() {
 
 ## Form.DatePicker
 
+Allows users to select a specific date, time, or both.
+
 ![DatePicker](../assets/datepicker.png)
 
-Date, time, or datetime picker.
+### Properties
 
 | Property   | Description                                    | Type                             | Default      | Required |
-| ---------- | ---------------------------------------------- | -------------------------------- | ------------ | -------- | --- |
+| ---------- | ---------------------------------------------- | -------------------------------- | ------------ | -------- |
 | `name`     | Unique name of the form field                  | `string`                         | —            | Yes      |
 | `label`    | The label displayed for the field              | `string`                         | —            | Yes      |
 | `value`    | The current date value                         | `Date`                           | —            | Yes      |
 | `onChange` | Callback triggered when the value changes      | `(value: Date) => void`          | —            | Yes      |
-| `type`     | The types of date components the user can pick | `"date" \| "time" \| "datetime"` | `"datetime"` | No       | No  |
+| `type`     | The types of date components the user can pick | `"date" \| "time" \| "datetime"` | `"datetime"` | No       |
+
+### Usage
 
 ```tsx
 import { useState } from "react";
@@ -306,20 +349,24 @@ function CountdownWidget() {
 
 ## Form.FilePicker
 
+Allows users to select files from their Mac. Supports both single and multiple file selections.
+
+> Users may delete or move files after selecting them, but before the form is submitted. Always verify that files still exist before your extension acts on them.
+
 ![FilePicker](../assets/file-picker.png)
 
-File selection. Supports single or multiple file selection.
-
-> The user may delete or move selected files between picking them and submitting the form. Always verify that files exist before acting on them.
+### Properties
 
 | Property   | Description                                                                                                    | Type                                  | Default | Required |
 | ---------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------- | -------- |
 | `name`     | Unique name of the form field                                                                                  | `string`                              | —       | Yes      |
 | `label`    | The label displayed for the field                                                                              | `string`                              | —       | No       |
-| `value`    | Current file path(s). If `multiple` is `true`, expects an array                                                | `string \| string[]`                  | —       | No       |
+| `value`    | Current file path(s). Expects an array if `multiple` is `true`                                                | `string \| string[]`                  | —       | No       |
 | `onChange` | Callback triggered when selection changes                                                                      | `(value: string \| string[]) => void` | —       | Yes      |
 | `multiple` | Allow selecting multiple files                                                                                 | `boolean`                             | `false` | No       |
 | `accept`   | [Uniform Type Identifiers](https://developer.apple.com/documentation/uniformtypeidentifiers) to filter by type | `string[]`                            | —       | No       |
+
+### Usage
 
 ```tsx
 import { useState } from "react";
@@ -346,15 +393,19 @@ function MyWidget() {
 
 ## Form.RichTextEditor
 
+Provides a multi-line input field that supports rich text formatting, such as bolding, lists, and headers.
+
 ![RichTextEditor](../assets/rich-text-editor.png)
 
-Multi-line rich text editor.
+### Properties
 
 | Property             | Description                                 | Type                      | Default | Required |
-| -------------------- | ------------------------------------------- | ------------------------- | ------- | -------- | --- |
+| -------------------- | ------------------------------------------- | ------------------------- | ------- | -------- |
 | `value`              | The current text content                    | `string`                  | `""`    | No       |
 | `onChange`           | Callback triggered when the content changes | `(value: string) => void` | —       | Yes      |
-| `isInitiallyFocused` | Whether the editor receives focus on mount  | `boolean`                 | —       | No       | No  |
+| `isInitiallyFocused` | Whether the editor receives focus on mount  | `boolean`                 | —       | No       |
+
+### Usage
 
 ```tsx
 import { useState } from "react";
