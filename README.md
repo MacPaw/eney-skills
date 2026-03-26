@@ -1,4 +1,4 @@
-<img src=".github/assets/icon.png" alt="Eney" width="100" />
+<img src=".github/assets/icon.png" alt="Eney" width="128" />
 
 # Eney Skills
 
@@ -12,13 +12,16 @@ Monorepo for Eney extensions — MCP servers that expose interactive widgets to 
 - `website/` — documentation website (Next.js + Fumadocs)
 - `scripts/` — CI/CD and utility scripts
 
-<img src=".github/assets/banner.png" alt="Let's co-create the first computerbeing" />
+<img src=".github/assets/banner.png" alt="Let's co-create the first computerbeing" style="border-radius: 16px" />
 
 ## Getting Started
-Visit https://developers.eney.ai/docs/getting-started/  to get started with our API.
+
+Visit https://developers.eney.ai/docs/getting-started/ to get started with our API.
 
 ## Feedback
+
 Eney wouldn't be where it is without the feedback from our community, so we would be happy to hear what you think of the API and how we can improve. Please use GitHub issues for everything API related (bugs, improvements suggestions, developer experience, docs, etc).
 
 ## Community
+
 Join our [MacPaw community](https://discord.com/invite/chkBxmwpCz) to share your extension, debug nasty bugs or simply get to know like-minded folks.
