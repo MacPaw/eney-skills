@@ -1,19 +1,23 @@
 ---
 title: useAppleScript
-description: Run AppleScript via osascript from within a widget
+description: Run AppleScript commands directly from your widget
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-`useAppleScript` is an utility that wraps the `osascript` process into a hook-style API.
+The `useAppleScript` hook wraps the macOS `osascript` process into a simple API for your extension.
 
 ## Import
+
+Import the hook to start using AppleScript in your component:
 
 ```typescript
 import { useAppleScript } from "@eney/api";
 ```
 
 ## Usage
+
+Initialize the hook and execute a script to interact with a native macOS application:
 
 ```typescript
 const runAppleScript = useAppleScript();
@@ -31,9 +35,11 @@ const result = await runAppleScript(`
 function useAppleScript(): (script: string) => Promise<string>
 ```
 
-Returns an async function. Call that function with an AppleScript string. It resolves with the trimmed stdout of `osascript`, or rejects with an error if the script fails.
+This hook returns an asynchronous function. When called with an AppleScript string, it resolves with the trimmed output (stdout) of the script, or rejects if the script fails.
 
 ## Full example — send an email
+
+This complete example shows how to build a mail-sending widget using AppleScript automation:
 
 ```typescript
 import { useState } from "react";

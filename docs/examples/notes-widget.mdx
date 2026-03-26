@@ -9,7 +9,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 This extension demonstrates:
 
-1. **Writing to macOS apps** with [`useAppleScript`](/docs/hooks/use-apple-script) — creating notes through AppleScript
+1. **Interacting with macOS apps** using the [`useAppleScript`](/docs/hooks/use-apple-script) hook to create and manage content.
 
 ![NotesWidget](../assets/append-note-widget.png)
 
@@ -17,13 +17,13 @@ This extension demonstrates:
 
 ## What it does
 
-The widget lets the user select a folder from a dropdown (populated from the Notes database), enter a note name, and write rich text content using a rich text editor. Content is converted from Markdown to HTML before being written to Notes as a new note in the selected folder.
+This widget allows users to select an Apple Notes folder from a dropdown menu, enter a title, and compose content using a rich text editor. The extension automatically converts Markdown into HTML before saving the entry as a new note in the selected folder.
 
 ---
 
 ## Writing notes with useAppleScript
 
-`useAppleScript` is called at the top of the component like any other hook, and `runScript` is used inside the async `createNote` helper defined within the component:
+`useAppleScript` is initialized at the top of the component. The returned `runScript` function is then used within the async `createNote` helper to execute AppleScript commands:
 
 ```typescript
 import { useAppleScript } from "@eney/api";
@@ -56,7 +56,7 @@ function CreateNote(props: Props) {
 ```
 
 <Callout type="warn">
-  Always escape user-provided strings before interpolating them into AppleScript. Use a helper to replace `\` and `"` characters.
+  Always escape user-provided strings before interpolating them into AppleScript. Use a helper to replace special characters (like `\` and `"`) to prevent execution errors or injection.
 </Callout>
 
 ---
@@ -172,6 +172,6 @@ function CreateNote(props: Props) {
 ## Key patterns to copy
 
 - Convert Markdown to sanitized HTML before writing to Notes — the Notes app stores HTML, not plain text
-- Use `useLogger` inside hooks for debug output that doesn't pollute the UI
+- Use the `useLogger` inside hooks for debug output. This keeps your logs in the developer console and prevents them from cluttering the extension's UI.
 - Always call `closeWidget(context)` with a meaningful context string so Eney knows what happened
-- Show a loading state while fetching data, and display inline errors instead of closing the widget on failure
+- Show a loading state while fetching data. Display an inline error message if fetching fails, do not abruptly close the widget.

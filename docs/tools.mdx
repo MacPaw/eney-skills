@@ -1,19 +1,19 @@
 ---
 title: Tools
-description: Expose plain MCP tools (non-widget) from your extension
+description: Expose plain MCP tools without a UI
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 Eney extensions are MCP servers. In addition to (or instead of) widgets, you can register **plain MCP tools** — functions that return text or JSON directly to Eney without rendering a UI.
 
-Get more info about MCP tools in the [official MCP docs](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md#tools-resources-and-prompts).
+You can find more details in the [official MCP documentation](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/server.md#tools-resources-and-prompts).
 
 ---
 
 ## Registering a plain tool
 
-Use `server.tool()` from `@modelcontextprotocol/sdk` directly on the `McpServer` instance:
+Use `server.tool()` on the `McpServer` instance:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -47,7 +47,7 @@ server.tool(
 
 ## Mixed extension (tools + widgets)
 
-You can register both plain tools and widgets in the same extension. Call `setupUIXForMCP` after creating the server, then use both `server.tool()` and `uixServer.registerWidget()`:
+You can register both plain tools and widgets in the same extension. First, create your server and call `setupUIXForMCP`. Then, use both `server.tool()` and `uixServer.registerWidget()`:
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -85,5 +85,5 @@ main().catch(console.error);
 ```
 
 <Callout type="info">
-  Plain tools appear in tool list just like any other MCP tool. Widgets also appear as tools, but when they are called, Eney intercepts the call and renders the UI instead of returning a text response.
+  Both plain tools and widgets appear in the tool list. When a widget is triggered, Eney intercepts the call to render its UI instead of returning a text response.
 </Callout>
