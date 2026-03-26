@@ -46,10 +46,11 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
     let tools;
     if (toolsJsonPath) {
       console.log(`Using pre-extracted tools from ${toolsJsonPath}`);
-      const resolvedToolsPath = resolve(toolsJsonPath);
+      const currentDir = process.cwd();
+      const resolvedToolsPath = resolve(currentDir, toolsJsonPath);
       // check for path traversal
-      if (resolvedToolsPath.indexOf(toolsJsonPath) !== 0) {
-        throw new Error(`Invalid tools path: ${toolsJsonPath}`);
+      if (resolvedToolsPath.indexOf(currentDir) !== 0) {
+        throw new Error(`Invalid tools path for ${resolvedToolsPath}: ${toolsJsonPath}`);
       }
       tools = JSON.parse(await fs.readFile(resolvedToolsPath, "utf8"));
     } else {
