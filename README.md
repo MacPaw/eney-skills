@@ -12,7 +12,7 @@ Monorepo for Eney extensions — MCP servers that expose interactive widgets to 
 - `website/` — documentation website (Next.js + Fumadocs)
 - `scripts/` — CI/CD and utility scripts
 
-<img src=".github/assets/banner.png" alt="Let's co-create the first computerbeing" style="border-radius: 16px" />
+<img src=".github/assets/banner.png" alt="Let's co-create the first computerbeing"/>
 
 ## Getting Started
 
