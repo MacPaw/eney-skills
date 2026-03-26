@@ -5,7 +5,7 @@ description: Every file in a scaffolded Eney extension and what it does
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-The typical directory structure of a newly created extension looks like this:
+The typical folder structure of a newly created extension looks like this:
 
 ```bash
 my-extension/
@@ -20,20 +20,21 @@ my-extension/
 
 ## Sources
 
-The entry point is `index.ts` at the root of the extension. It creates the MCP server, registers all widgets, and starts the stdio transport. Each widget is a separate file in `components/` and is imported by `index.ts`.
+The entry point is `index.ts` (at the root). It initializes the MCP server, registers all widgets, and starts the stdio transport. Each widget resides in a separate file within the `components/` folder and is imported by `index.ts`.
+
 
 ## Support files
 
-* **manifest.json** is the extension manifest. It describes the extension to Eney: its name, version, author, and how to start the server. See the [field reference](#manifestjson) below.
-* **package.json** is a standard npm package file. It must include a `build` script — the CLI calls it when running `eney-skills-cli dev`. See [package.json](#packagejson) below.
-* **tsconfig.json** configures TypeScript for ESM output, which is required by the MCP runtime. Most likely, you don't need to edit this file.
-* **tests/** is a folder created by the scaffolder which holds few basic tests.
+* `manifest.json` is the extension manifest. It defines the name, version, author, and server launch details. See the [field reference](#manifestjson) below for a full list.
+* `package.json` is a standard npm package file. It must include a `build` script, which is used by the `eney-skills-cli dev` command. See [package.json](#packagejson) below for more details.
+* `tsconfig.json` configures TypeScript for ESM output, which is required by the MCP runtime. Most likely, you won't need to edit this file.
+* `tests/` is a folder containing basic boilerplate tests to help you get started with testing your extension.
 
 ---
 
 ## manifest.json
 
-Describes the extension to Eney and the MCP runtime.
+Provides the essential metadata Eney and the MCP runtime need to identify and run your extension.
 
 ```json
 {
@@ -59,20 +60,20 @@ Describes the extension to Eney and the MCP runtime.
 
 | Field | Description |
 |---|---|
-| `name` | Unique extension identifier (kebab-case) |
+| `name` | Unique extension identifier (use **kebab-case**) |
 | `version` | Semantic version string |
 | `description` | Short description shown in Eney |
-| `author.name` | Author name |
-| `server.entry_point` | Entry point file (usually `"index.js"`) |
-| `server.mcp_config.command` | Command used to start the server |
-| `server.mcp_config.args` | Arguments passed to the command. `${__dirname}` is a placeholder for the extension directory — Eney substitutes the real path at runtime |
-| `server.mcp_config.env` | Environment variables to inject into the server process |
+| `author.name` | Extension author name |
+| `server.entry_point` | Entry point file (typically `index.js`) |
+| `server.mcp_config.command` | Command used to launch the server |
+| `server.mcp_config.args` | Arguments passed to the launch command. Use `${__dirname}` as a placeholder for the extension folder path; Eney resolves this at runtime |
+| `server.mcp_config.env` | Environment variables injected into the server process |
 
 ---
 
 ## package.json
 
-Standard npm package file. The required `build` script compiles TypeScript to JavaScript.
+Standard npm package file. It manages your extension's dependencies and includes the `build` script required to compile TypeScript into JavaScript.
 
 ```json
 {
@@ -126,7 +127,7 @@ Configured for ESM output, which is required by the MCP runtime.
 
 ## index.ts
 
-The server entry point. Creates the MCP server, registers widgets, and starts the stdio transport.
+The entry point for your extension. Initializes the MCP server, registers widgets, and starts the stdio transport.
 
 ```typescript
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

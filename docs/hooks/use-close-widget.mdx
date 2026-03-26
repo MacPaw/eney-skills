@@ -5,15 +5,19 @@ description: Finalize a widget interaction and pass context back
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-`useCloseWidget` returns a function that closes the widget and passes a context string back. Call it when the user has completed their interaction and you want Eney** **to know what happened.
+Returns a function that closes the widget and passes a context string back. Call it when the user has completed their interaction and you want to provide Eney with a summary of what happened.
 
 ## Import
+
+Import the hook from the Eney API package:
 
 ```typescript
 import { useCloseWidget } from "@eney/api";
 ```
 
 ## Usage
+
+Initialize the hook at the top of your component and call the returned function with a status message when the task is complete:
 
 ```typescript
 const closeWidget = useCloseWidget();
@@ -31,6 +35,8 @@ function useCloseWidget(): (context: string) => void
 The `context` string is passed back to Eney as the tool result. Eney uses it to continue the conversation — for example, to confirm the action or suggest a next step.
 
 ## Example
+
+This example shows how to use a "Done" button to close the widget after an operation completes:
 
 ```typescript
 import { useState } from "react";
@@ -61,23 +67,6 @@ function MyWidget(props: Props) {
       {result && <Paper markdown={result} />}
     </Form>
   );
-}
-```
-
-## From security-utilities-mcp
-
-```typescript
-function onDone() {
-  closeWidget(`Generated password: ${password}`);
-}
-```
-
-## From notes-utilities-mcp
-
-```typescript
-async function onSubmit() {
-  await appendToNote(noteName, content);
-  closeWidget(`Content appended successfully to the note "${noteName}"`);
 }
 ```
 

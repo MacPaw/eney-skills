@@ -2,11 +2,11 @@
 title: Actions
 ---
 
-Actions are buttons that trigger behavior when clicked. The library includes several built-in action types for common operations. For custom behavior, use the base `Action` component.
+Use actions to perform tasks within your widget, such as submitting data, opening files, or copying text to the clipboard.
 
 ![Actions](../assets/action-panel.png)
 
-All actions share a common set of style props:
+### Properties
 
 | Property     | Description              | Type                       | Default       |
 | ------------ | ------------------------ | -------------------------- | ------------- |
@@ -25,7 +25,7 @@ A custom action button. Use this when the built-in action types don't cover your
 
 | Property     | Description                                   | Type                       | Default       | Required |
 | ------------ | --------------------------------------------- | -------------------------- | ------------- | -------- |
-| `title`      | The title displayed on the button             | `string`                   | —             | Yes      |
+| `title`      | Button label                                  | `string`                   | —             | Yes      |
 | `onAction`   | Callback triggered when the button is clicked | `() => void`               | —             | Yes      |
 | `style`      | Button style variation                        | `"primary" \| "secondary"` | `"secondary"` | No       |
 | `isLoading`  | Show a loading indicator                      | `boolean`                  | —             | No       |
@@ -59,7 +59,7 @@ Triggers a form submission handler. Typically used inside an `ActionPanel` that 
 
 | Property     | Description                       | Type                       | Default       | Required |
 | ------------ | --------------------------------- | -------------------------- | ------------- | -------- |
-| `title`      | The title displayed on the button | `string`                   | —             | Yes      |
+| `title`      | Button label                      | `string`                   | —             | Yes      |
 | `onSubmit`   | Callback triggered on form submit | `() => void`               | —             | Yes      |
 | `style`      | Button style variation            | `"primary" \| "secondary"` | `"secondary"` | No       |
 | `isLoading`  | Show a loading indicator          | `boolean`                  | —             | No       |
@@ -116,11 +116,13 @@ Opens a file or folder in macOS Finder.
 | Property     | Description                       | Type                       | Default            | Required |
 | ------------ | --------------------------------- | -------------------------- | ------------------ | -------- |
 | `path`       | The file path to reveal in Finder | `string`                   | —                  | Yes      |
-| `title`      | The title displayed on the button | `string`                   | `"Show in Finder"` | No       |
+| `title`      | Button label                      | `string`                   | `"Show in Finder"` | No       |
 | `style`      | Button style variation            | `"primary" \| "secondary"` | `"secondary"`      | No       |
 | `isDisabled` | Disable the button                | `boolean`                  | —                  | No       |
 
 ### Usage
+
+Provide a direct link for the user to locate a generated file on their Mac:
 
 ```tsx
 import { Action, ActionPanel } from "@eney/api";
@@ -140,8 +142,8 @@ Copies text content to the system clipboard.
 
 | Property     | Description                                   | Type                       | Default       | Required |
 | ------------ | --------------------------------------------- | -------------------------- | ------------- | -------- |
-| `content`    | The text that will be copied to the clipboard | `string`                   | —             | Yes      |
-| `title`      | The title displayed on the button             | `string`                   | `"Copy"`      | No       |
+| `content`    | Text to be copied                             | `string`                   | —             | Yes      |
+| `title`      | Button label                                  | `string`                   | `"Copy"`      | No       |
 | `style`      | Button style variation                        | `"primary" \| "secondary"` | `"secondary"` | No       |
 | `isDisabled` | Disable the button                            | `boolean`                  | —             | No       |
 

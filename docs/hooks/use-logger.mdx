@@ -3,15 +3,19 @@ title: useLogger
 description: Write structured log messages from within a widget component
 ---
 
-`useLogger` returns a logger object you can use to emit debug, info, warn, and error messages. Logs appear in the Eney developer console and are useful for diagnosing issues without cluttering the widget UI.
+`useLogger` allows you to write structured messages, so you can track what’s happening in your code without cluttering the widget UI.
 
 ## Import
+
+Import the logger from the Eney API package:
 
 ```typescript
 import { useLogger } from "@eney/api";
 ```
 
 ## Usage
+
+Initialize the logger at the top of your component and call the appropriate method to log a message:
 
 ```typescript
 const logger = useLogger();
@@ -22,14 +26,14 @@ logger.warn("message");
 logger.error("message");
 ```
 
-Each method accepts a message string followed by optional format arguments (printf-style):
+Each method supports printf-style formatting for more descriptive strings:
 
 ```typescript
 logger.debug("Fetched %d items from %s", items.length, dbPath);
 logger.error("Failed to append note: %s", error.message);
 ```
 
-You can also pass a context object as the last argument:
+You can also include a context object as the last argument to capture structured data:
 
 ```typescript
 logger.debug("Generated password", { length, symbols, numbers });
@@ -37,7 +41,7 @@ logger.debug("Generated password", { length, symbols, numbers });
 
 ## Example
 
-From `security-utilities-mcp`:
+This snippet from the `security-utilities-mcp` extension shows how to log results whenever a password is generated:
 
 ```typescript
 import { useLogger, defineWidget } from "@eney/api";
@@ -59,7 +63,7 @@ function NewPassword(props: Props) {
 }
 ```
 
-From `notes-utilities-mcp`:
+In the `notes-utilities-mcp` extension, the logger tracks the start of a database operation:
 
 ```typescript
 export const useNotes = () => {
@@ -73,9 +77,11 @@ export const useNotes = () => {
 
 ## Log levels
 
+Use the appropriate level based on the importance of the message:
+
 | Method | When to use |
 |---|---|
 | `debug` | Verbose tracing, values during development |
-| `info` | Notable events (user submitted form, operation succeeded) |
+| `info` | Notable events, like a form submission or a successful operation. |
 | `warn` | Unexpected but handled conditions |
 | `error` | Failures that affect the user |

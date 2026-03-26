@@ -15,6 +15,8 @@ Groups a set of [actions](/docs/widgets/actions) that the user can perform. Typi
 
 ### Usage
 
+To include actions, wrap your `Action` components inside an `ActionPanel` and assign it to the `actions` prop of your widget.
+
 ```tsx
 import { useState } from "react";
 import { Form, Action, ActionPanel } from "@eney/api";
@@ -48,9 +50,9 @@ function MyWidget() {
 
 ### Row layout
 
-![ActionPanel](../assets/action-panel.png)
+By default, buttons are stacked vertically. To display actions side-by-side, use the layout="row" property.
 
-Use `layout="row"` to display actions side by side:
+![ActionPanel](../assets/action-panel.png)
 
 ```tsx
 <ActionPanel layout="row">

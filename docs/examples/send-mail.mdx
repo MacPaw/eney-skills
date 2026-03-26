@@ -1,13 +1,13 @@
 ---
 title: Send Mail
-description: Compose and send an email via Apple Mail using AppleScript
+description: Compose and send emails via Apple Mail using AppleScript
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 **Source:** `extensions/send-mail-mcp/`
 
-This extension demonstrates sending email through Apple Mail using AppleScript. It also shows how to handle file attachments, including size validation before sending.
+This extension demonstrates how to trigger outgoing communication through Apple Mail. It also shows how to handle file attachments, including size validation logic.
 
 ![SendMailWidget](../assets/send-mail-widget.png)
 
@@ -15,11 +15,13 @@ This extension demonstrates sending email through Apple Mail using AppleScript. 
 
 ## What it does
 
-The widget presents a form with recipient, subject, body, and attachments fields. It validates that no attachment exceeds 20 MB, then sends the email via Apple Mail using AppleScript.
+The widget provides a form with fields for the recipient, subject, and message body. It includes a dedicated attachment field that automatically enforces a **20 MB size limit**. Once the form is complete, the extension generates and sends the email through the native Mail app using AppleScript.
 
 ---
 
 ## Widget schema
+
+All fields are `.optional()` — Eney fills what it knows from context, and the user completes the rest in the form.
 
 ```typescript
 const props = z.object({
@@ -30,13 +32,12 @@ const props = z.object({
 });
 ```
 
-All fields are `.optional()` — Eney fills what it knows from context and the user completes the rest in the form.
-
 ---
 
 ## Sending mail with useAppleScript
 
-`useAppleScript()` is called at the top of the component. The `sendMail` helper is defined inside the component and closes over `runScript`:
+Call `useAppleScript()` at the top of your component. Then, use the `runScript` function inside your `sendMail` helper to execute the script.
+
 
 ```typescript
 import { useAppleScript, useCloseWidget } from "@eney/api";
@@ -144,7 +145,7 @@ const hasOversizedFiles = oversizedFiles.length > 0;
 
 ## Key patterns
 
-- Call `useAppleScript()` at the top of the component — use `runScript` inside async helpers defined within the component
-- Validate files inline and disable the submit button rather than showing an error after the fact
+- Call `useAppleScript()` at the top of the component and use the returned `runScript` inside your async helpers
+- Validate files inline and disable the submit button to guide the user, rather than showing an error after they click send
 - Always call `closeWidget` in both success and error paths so Eney receives the result either way
 - AppleScript automation requires the user to grant permission in **System Settings → Privacy & Security → Automation** on first run
