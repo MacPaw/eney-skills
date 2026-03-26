@@ -84,7 +84,7 @@ jobs:
     if: needs.detect-changes.outputs.has_swift_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
     env:
       IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_STAGING }}
+      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
     strategy:
       fail-fast: false
       matrix:
@@ -122,11 +122,11 @@ jobs:
         run: |
           eney-skills-cli upload-mcp-archive \
             --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
-            --mode staging
+            --mode production
 
       - name: Publish MCP metadata
         run: |
           eney-skills-cli publish-mcp-metadata \
-            --mode staging \
+            --mode production \
             --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
             --tools-json extensions/${{ matrix.mcp }}/tools.json
