@@ -1,4 +1,4 @@
-<img src=".github/assets/icon.png" alt="Eney" width="80" />
+<img src=".github/assets/icon.png" alt="Eney" width="100" />
 
 # Eney Skills
 
@@ -21,4 +21,4 @@ Visit https://developers.eney.ai/docs/getting-started/  to get started with our 
 Eney wouldn't be where it is without the feedback from our community, so we would be happy to hear what you think of the API and how we can improve. Please use GitHub issues for everything API related (bugs, improvements suggestions, developer experience, docs, etc).
 
 ## Community
-Join our [Macpaw community](https://discord.com/invite/chkBxmwpCz) to share your extension, debug nasty bugs or simply get to know like-minded folks.
+Join our [MacPaw community](https://discord.com/invite/chkBxmwpCz) to share your extension, debug nasty bugs or simply get to know like-minded folks.
