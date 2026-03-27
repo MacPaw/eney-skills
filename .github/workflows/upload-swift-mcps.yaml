@@ -59,10 +59,8 @@ jobs:
 
       - name: Extract MCP tools
         run: |
-          TEMP_DIR=$(mktemp -d)
-          npx --yes @anthropic-ai/mcpb unpack "extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}" "$TEMP_DIR"
-          eney-skills-cli extract-mcp-tools --mcp-dir "$TEMP_DIR" --output "extensions/${{ matrix.mcp }}/tools.json"
-          rm -rf "$TEMP_DIR"
+          eney-skills-cli extract-mcp-tools --mcp-dir . --output tools.json
+          working-directory: extensions/${{ matrix.mcp }}
 
       - name: Upload MCP archive artifact
         uses: actions/upload-artifact@v4
