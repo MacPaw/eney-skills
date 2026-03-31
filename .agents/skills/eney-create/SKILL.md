@@ -15,7 +15,7 @@ Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@e
 Make sure you have the CLI installed and linked globally:
 
 ```bash
-npm run setup
+./setup.sh
 ```
 
 ## Step 1: Gather Requirements
