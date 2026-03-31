@@ -26,7 +26,7 @@ describe("AppendToNote widget", () => {
   it("submit button is disabled without content", async () => {
     const session = await createUIXTestSession(AppendToNoteWidget);
 
-    const submitBtn = session.findWidget({ title: "Append to Note" });
+    const submitBtn = session.findWidget({ title: "Add to Note" });
     if (submitBtn) {
       assert.equal(submitBtn.properties.isDisabled, true);
     }
