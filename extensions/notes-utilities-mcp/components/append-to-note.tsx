@@ -91,7 +91,7 @@ function AppendToNote(props: Props) {
 
       finalContext = `Content appended successfully to ${noteDisplay}`;
     } catch (error) {
-      finalContext = error instanceof Error ? error.message : "Failed to append to note";
+      finalContext = error instanceof Error ? error.message : "Failed to add to note";
     } finally {
       setIsAppending(false);
       closeWidget(finalContext);
@@ -102,7 +102,7 @@ function AppendToNote(props: Props) {
     <ActionPanel>
       <Divider />
       <Action.SubmitForm
-        title={isAppending ? "Appending..." : "Append to Note"}
+        title={isAppending ? "Appending..." : "Add to Note"}
         onSubmit={onSubmit}
         style="primary"
         isDisabled={!content.trim()}
@@ -111,7 +111,7 @@ function AppendToNote(props: Props) {
     </ActionPanel>
   );
 
-  const header = <CardHeader title="Notes" iconBundleId="com.apple.Notes" />;
+  const header = <CardHeader title="Add to note" iconBundleId="com.apple.Notes" />;
 
   if (isLoadingNotes) {
     return (

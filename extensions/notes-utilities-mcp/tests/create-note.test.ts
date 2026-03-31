@@ -33,7 +33,7 @@ describe("CreateNote widget", () => {
   it("has a submit action", async () => {
     const session = await createUIXTestSession(CreateNoteWidget);
 
-    const submitBtn = session.findWidget({ title: "Create Note" }) ?? session.findWidget({ title: "Creating..." });
+    const submitBtn = session.findWidget({ title: "Create note" }) ?? session.findWidget({ title: "Creating..." });
     assert.ok(submitBtn, "should have a submit button");
 
     session.unmount();

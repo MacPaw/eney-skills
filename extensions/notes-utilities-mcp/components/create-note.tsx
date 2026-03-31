@@ -82,7 +82,7 @@ function CreateNote(props: Props) {
     <ActionPanel>
       <Divider />
       <Action.SubmitForm
-        title={isCreating ? "Creating..." : "Create Note"}
+        title={isCreating ? "Creating..." : "Create note"}
         onSubmit={onSubmit}
         style="primary"
         isDisabled={!content.trim()}
@@ -91,7 +91,7 @@ function CreateNote(props: Props) {
     </ActionPanel>
   );
 
-  const header = <CardHeader title="Create Note" iconBundleId="com.apple.Notes" />;
+  const header = <CardHeader title="Create note" iconBundleId="com.apple.Notes" />;
 
   if (isLoadingNotes) {
     return (
