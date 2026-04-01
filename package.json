@@ -1,0 +1,6 @@
+{
+  "name": "eney-skills",
+  "scripts": {
+    "setup": "cd cli && npm install --no-fund --no-audit && npm link"
+  }
+}
