@@ -12,11 +12,15 @@ Eney skills are MCP (Model Context Protocol) servers that expose widgets via `@e
 
 ## Step 0: Setup CLI
 
-Make sure you have the CLI installed and linked globally:
+Make sure you have the CLI installed and linked globally. Run from the repo root:
 
 ```bash
-./setup.sh
+npm run setup
 ```
+
+This runs `cd cli && npm install --no-fund --no-audit && npm link`, installing CLI dependencies and making `eney-skills-cli` available globally.
+
+> If `npm run setup` fails, run the commands manually: `cd cli && npm install && npm link`.
 
 ## Step 1: Gather Requirements
 
@@ -51,7 +55,7 @@ eney-skills-cli create \
   -o ./extensions
 ```
 
-> If `eney-skills-cli` is not found, run `cd cli && npm link` first.
+> If `eney-skills-cli` is not found, run `npm run setup` from the repo root first.
 
 This creates the full MCP structure under `extensions/<mcp-id>/` and installs base dependencies.
 
