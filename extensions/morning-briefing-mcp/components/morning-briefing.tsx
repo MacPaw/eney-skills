@@ -352,81 +352,63 @@ function buildContextForLLM(
     day: "numeric",
   });
 
-  parts.push(`Today: ${today}`);
-  parts.push("");
-  parts.push(`INSTRUCTIONS:
-1. First, fetch today's and yesterday's calendar events using gcal_list_events MCP tool (timeMin = yesterday start of day, timeMax = end of today). Check both primary and work calendars.
-2. Then compose a morning briefing that is NOT just a list — be a smart assistant:
-   - Cross-reference data: e.g. if there's a PR review email AND a meeting with that person today, connect the dots
-   - Flag what actually needs attention vs what's just noise (CI notifications, automated emails)
-   - For emails: group related threads, highlight what needs a response vs FYI
-   - For notes: understand the content and suggest if any action is needed (e.g. "shopping list — might want to do this today since you have a free afternoon")
-   - For tasks: if something is overdue, flag it prominently
-   - Propose 2-3 concrete actions for the day based on all the data (e.g. "Reply to the PR feedback from Bogdan before your 1:1", "Payslip validation is due — approve it today")
-   - If the day looks light, say so and suggest what could be a good use of the time
-   - If the day looks packed, suggest what could be deprioritized
-3. Keep it conversational, concise. No need to list every single email — synthesize.`);
+  parts.push(
+    `Give me my morning briefing for ${today}. Here's what I've collected — synthesize it into a smart, concise briefing: cross-reference items across sections, flag what needs my attention vs noise, and suggest 2-3 concrete actions for the day.`,
+  );
   parts.push("");
 
-  // --- Calendar & Email: instruct the LLM to fetch via MCP tools ---
+  // --- Calendar: ask LLM to fetch via gcal_list_events ---
 
   if (sections.has("calendar")) {
-    parts.push("");
-    parts.push("=== CALENDAR (fetch needed) ===");
-    parts.push(
-      "ACTION REQUIRED: Call gcal_list_events with timeMin set to yesterday start-of-day and timeMax set to end of today. Check both primary and ollegro@macpaw.com calendars. Separate yesterday's events (for catch-up context) from today's events. Look for scheduling conflicts in today's events.",
-    );
+    parts.push("**Calendar:** Fetch yesterday's and today's events using gcal_list_events (timeMin = yesterday 00:00, timeMax = today 23:59). Check both primary and ollegro@macpaw.com calendars. Use yesterday's events for catch-up context; flag any conflicts in today's schedule.");
   }
 
-  if (sections.has("email")) {
-    parts.push("");
-    parts.push(
-      `=== IMPORTANT UNREAD EMAILS (${data.emails.length} messages) ===`,
-    );
-    if (data.emails.length === 0) {
-      parts.push("No important unread emails.");
+  // --- Weather ---
+
+  if (sections.has("weather")) {
+    if (data.weather) {
+      parts.push(
+        `**Weather:** ${data.weather.condition}, ${data.weather.temperature} — ${data.weather.location}`,
+      );
     } else {
+      parts.push("**Weather:** unavailable");
+    }
+  }
+
+  // --- Emails ---
+
+  if (sections.has("email")) {
+    if (data.emails.length === 0) {
+      parts.push("**Unread emails:** none");
+    } else {
+      parts.push(`**Unread emails (${data.emails.length}):**`);
       for (const e of data.emails) {
         parts.push(`- ${e.from}: ${e.subject}`);
       }
     }
   }
 
-  // --- Weather: already fetched by widget ---
-
-  if (sections.has("weather") && data.weather) {
-    parts.push("");
-    parts.push("=== WEATHER ===");
-    parts.push(
-      `${data.weather.condition}, ${data.weather.temperature} — ${data.weather.location}`,
-    );
-  }
-
-  // --- Notes: already fetched by widget ---
+  // --- Notes ---
 
   if (sections.has("notes")) {
-    parts.push("");
-    parts.push(
-      `=== RECENT NOTES (yesterday + today, ${data.notes.length} notes) ===`,
-    );
     if (data.notes.length === 0) {
-      parts.push("No notes modified yesterday or today.");
+      parts.push("**Recent notes:** none modified yesterday or today");
     } else {
+      parts.push(`**Recent notes (${data.notes.length}):**`);
       for (const n of data.notes) {
-        const snippet = n.snippet ? `: ${n.snippet}` : "";
+        const snippet = n.snippet ? ` — ${n.snippet}` : "";
         parts.push(`- "${n.title}" (${n.folder})${snippet}`);
       }
     }
   }
 
-  // --- Tasks: already fetched by widget ---
+  // --- Tasks ---
 
   if (sections.has("tasks")) {
-    parts.push("");
-    parts.push(`=== TASKS DUE/OVERDUE (${data.reminders.length} tasks) ===`);
     if (data.reminders.length === 0) {
-      parts.push("No tasks due or overdue.");
+      parts.push("**Tasks due/overdue:** none");
     } else {
+      parts.push(`**Tasks due/overdue (${data.reminders.length}):**`);
       for (const r of data.reminders) {
         parts.push(`- ${r.title} (${r.list})`);
       }
@@ -434,9 +416,7 @@ function buildContextForLLM(
   }
 
   if (data.errors.length > 0) {
-    parts.push("");
-    parts.push(`=== UNAVAILABLE ===`);
-    parts.push(data.errors.join(", "));
+    parts.push(`**Unavailable:** ${data.errors.join(", ")}`);
   }
 
   return parts.join("\n");
