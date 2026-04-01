@@ -1,0 +1,21 @@
+{
+  "manifest_version": "0.3",
+  "name": "morning-briefing-mcp",
+  "version": "1.0.0",
+  "description": "Personalized daily briefing combining calendar, email, tasks, notes, and weather into one actionable summary",
+  "author": {
+    "name": "eney-team"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/index.js"
+      ],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
