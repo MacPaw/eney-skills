@@ -2,23 +2,9 @@ import { Storage } from "@google-cloud/storage";
 import { basename } from "path";
 import fs from "fs-extra";
 
-type McpVersion = {
-  artifactType: "mcp";
-  artifactId: string;
-  version: string;
-  hash: string;
-  downloadUrl: string;
-  createdAt: string;
-};
-
 type PublishMcpPayload = {
-  mode: "local";
-  artifact_id: string;
+  artifactId: string;
   tools: Record<string, any>[];
-  version: string;
-};
-
-type PublishMcpVersionPayload = {
   version: string;
   hash: string;
   downloadUrl: string;
@@ -31,7 +17,7 @@ export class ApiClient {
 
   constructor(mode: "staging" | "production" = "staging") {
     this.mode = mode;
-    this.backendUrl = mode === "staging" ? "https://core.eney.appflix.io" : "https://core.internal.eney.ai";
+    this.backendUrl = "https://extensions.api.eney.ai/api/v1/public";
 
     const token = process.env["ADMIN_AUTH_TOKEN"];
     if (!token) {
@@ -50,28 +36,9 @@ export class ApiClient {
     });
   }
 
-  async getMcpVersions(mcpName: string): Promise<McpVersion[]> {
-    try {
-      const response = await this.fetch(`/admin/v3/artifacts/mcp/${mcpName}/versions`, { method: "GET" });
-
-      if (response.status === 404) {
-        return [];
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to get MCP versions: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error(`\nError getting MCP versions!\n${error.message}`);
-      throw error;
-    }
-  }
-
   async publishMcp(payload: PublishMcpPayload) {
     try {
-      const response = await this.fetch(`/admin/v3/extensions/tools`, {
+      const response = await this.fetch(`/publish/mcp-extensions`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -83,24 +50,6 @@ export class ApiClient {
       return await response.json();
     } catch (error: any) {
       console.error(`\nError publishing MCP!\n${error}`);
-      throw error;
-    }
-  }
-
-  async publishMcpVersion(mcpName: string, payload: PublishMcpVersionPayload) {
-    try {
-      const response = await this.fetch(`/admin/v3/artifacts/mcp/${mcpName}/versions`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to publish MCP version: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error(`\nError publishing MCP version!\n${error.message}`);
       throw error;
     }
   }

@@ -31,7 +31,7 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
     try {
       manifest = JSON.parse(await fs.readFile(rootManifestPath, "utf8"));
       mcpPath = resolvedMcpDir;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Unable to read manifest from dist/ or root of ${resolvedMcpDir}: ${error.message}`);
     }
   }
@@ -71,7 +71,7 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
     const transport = new StdioClientTransport({
       command,
       args: resolvedArgs,
-      env: process.env,
+      env: process.env as Record<string, string>,
     });
 
     client = new Client(
