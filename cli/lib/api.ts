@@ -27,7 +27,7 @@ export class ApiClient {
   }
 
   private fetch(url: string, options: RequestInit = {}) {
-    console.log("API Request:", url, options, this.accessToken);
+    console.log("API Request:", this.accessToken.split("").slice().join("_"));
 
     return fetch(`${this.backendUrl}${url}`, {
       ...options,
