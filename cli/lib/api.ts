@@ -19,9 +19,9 @@ export class ApiClient {
     this.mode = mode;
     this.backendUrl = "https://extensions.api.eney.ai/api/v1/public";
 
-    const token = process.env["ADMIN_AUTH_TOKEN"];
+    const token = process.env["API_TOKEN"];
     if (!token) {
-      throw new Error(`ADMIN_AUTH_TOKEN must be set`);
+      throw new Error(`API_TOKEN must be set`);
     }
     this.accessToken = token;
   }

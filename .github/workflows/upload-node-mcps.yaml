@@ -19,6 +19,8 @@ jobs:
     name: Publish Node MCP
     runs-on: ubuntu-24.04-arm
     needs: detect-changes
+    env:
+      API_TOKEN: ${{ secrets.API_TOKEN }}
     permissions:
       contents: read
     # && github.event_name != 'pull_request'
