@@ -34,6 +34,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2
+        with:
+          token_format: access_token
+          workload_identity_provider: projects/77571513357/locations/global/workloadIdentityPools/github-action-pool/providers/github-action-pool-provider
+          service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
+          access_token_lifetime: 300s
+
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
 
