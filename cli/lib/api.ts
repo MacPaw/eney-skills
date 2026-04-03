@@ -31,7 +31,7 @@ export class ApiClient {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        "X-API-Token": this.accessToken,
+        Authorization: `Bearer ${this.accessToken}`,
       },
     });
   }
