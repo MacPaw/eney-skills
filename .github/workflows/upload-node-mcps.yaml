@@ -23,6 +23,7 @@ jobs:
       API_TOKEN: ${{ secrets.API_TOKEN }}
     permissions:
       contents: read
+      id-token: write
     # && github.event_name != 'pull_request'
     if: needs.detect-changes.outputs.has_node_changes == 'true'
       && !contains(github.event.pull_request.title, '[skip ci]')
