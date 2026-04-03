@@ -11,11 +11,13 @@ export type ToolWithSchema = {
   annotations?: Record<string, any>;
 };
 
+const tempDir = "/tmp/";
+
 export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]> {
   const currentDir = process.cwd();
   const resolvedMcpDir = resolve(currentDir, mcpDir);
 
-  if (resolvedMcpDir.indexOf(currentDir) !== 0) {
+  if (resolvedMcpDir.indexOf(currentDir) !== 0 && resolvedMcpDir.indexOf(tempDir) !== 0) {
     throw new Error(`Invalid MCP directory path for ${resolvedMcpDir}: ${mcpDir}`);
   }
 
