@@ -1,0 +1,32 @@
+{
+  "manifest_version": "0.3",
+  "name": "gws-example-mcp",
+  "version": "1.0.0",
+  "description": "Google Workspace Example MCP server",
+  "author": {
+    "name": ""
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/index.js"
+      ],
+      "env": {
+        "GOOGLE_WORKSPACE_CLI_TOKEN": "${user_config.gcalendar}"
+      }
+    }
+  },
+  "user_config": {
+    "gcalendar": {
+      "type": "string",
+      "title": "Google Calendar Access Token",
+      "description": "A valid Google OAuth2 access token with Calendar read scope.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "license": "MIT"
+}
