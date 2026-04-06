@@ -1,3 +1,4 @@
+import { tmpdir } from "os";
 import { join, resolve } from "path";
 import fs from "fs/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -11,7 +12,7 @@ export type ToolWithSchema = {
   annotations?: Record<string, any>;
 };
 
-const tempDir = "/tmp/";
+const tempDir = tmpdir() || "/tmp/";
 
 export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]> {
   const currentDir = process.cwd();
