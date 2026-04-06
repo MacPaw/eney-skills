@@ -1,4 +1,5 @@
-import { useSQL } from "@eney/api";
+import { useEffect, useState } from "react";
+import Database from "better-sqlite3";
 
 const DB_PATH = `${process.env.HOME}/Library/Messages/chat.db`;
 
@@ -87,6 +88,14 @@ export interface ChatMessage {
   sentAt: number;
 }
 
+function openDB(): Database.Database {
+  return new Database(DB_PATH, { readonly: true });
+}
+
+function sanitizeChatIdentifier(id: string): string {
+  return id.replace(/[^a-zA-Z0-9+@.\-_ ]/g, "");
+}
+
 export function buildUnreadMessagesQuery(): string {
   return `
     SELECT
@@ -110,11 +119,6 @@ export function buildUnreadMessagesQuery(): string {
   `;
 }
 
-export function useUnreadMessages() {
-  const state = useSQL<UnreadMessage[]>(DB_PATH, buildUnreadMessagesQuery());
-  return { ...state, data: state.data ?? [] };
-}
-
 export function buildChatsQuery(): string {
   return `
     SELECT
@@ -128,15 +132,6 @@ export function buildChatsQuery(): string {
     GROUP BY c.ROWID
     ORDER BY MAX(${DATE_EXPR}) DESC
   `;
-}
-
-export function useChats() {
-  const state = useSQL<Chat[]>(DB_PATH, buildChatsQuery());
-  return { ...state, data: state.data ?? [] };
-}
-
-function sanitizeChatIdentifier(id: string): string {
-  return id.replace(/[^a-zA-Z0-9+@.\-_ ]/g, "");
 }
 
 export function buildHistoryQuery(chatIdentifier: string, limit: number): string {
@@ -160,12 +155,71 @@ export function buildHistoryQuery(chatIdentifier: string, limit: number): string
   `;
 }
 
+export function useUnreadMessages() {
+  const [data, setData] = useState<UnreadMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    try {
+      const db = openDB();
+      const rows = db.prepare(buildUnreadMessagesQuery()).all() as UnreadMessage[];
+      db.close();
+      setData(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { data, isLoading, error };
+}
+
+export function useChats() {
+  const [data, setData] = useState<Chat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    try {
+      const db = openDB();
+      const rows = db.prepare(buildChatsQuery()).all() as Chat[];
+      db.close();
+      setData(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { data, isLoading, error };
+}
+
 export function useChatHistory(
   chatIdentifier: string,
   limit: number,
   execute: boolean,
 ) {
-  const sql = buildHistoryQuery(chatIdentifier, limit);
-  const state = useSQL<ChatMessage[]>(DB_PATH, sql, { execute });
-  return { ...state, data: state.data ?? [] };
+  const [data, setData] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(execute);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!execute) return;
+    setIsLoading(true);
+    try {
+      const db = openDB();
+      const rows = db.prepare(buildHistoryQuery(chatIdentifier, limit)).all() as ChatMessage[];
+      db.close();
+      setData(rows);
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [chatIdentifier, limit, execute]);
+
+  return { data, isLoading, error };
 }

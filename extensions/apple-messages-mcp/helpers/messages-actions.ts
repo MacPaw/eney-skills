@@ -1,5 +1,3 @@
-import { runScript } from "./run-script.js";
-
 function escapeAppleScript(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
@@ -22,10 +20,17 @@ open location "messages://${chatIdentifier}"`;
   return `tell application "Messages" to activate`;
 }
 
-export function sendMessage(recipient: string, message: string): Promise<string> {
-  return runScript(buildSendScript(recipient, message));
+export function sendMessage(
+  runAppleScript: (script: string) => Promise<string>,
+  recipient: string,
+  message: string,
+): Promise<string> {
+  return runAppleScript(buildSendScript(recipient, message));
 }
 
-export function openMessagesChat(chatIdentifier?: string): Promise<string> {
-  return runScript(buildOpenScript(chatIdentifier));
+export function openMessagesChat(
+  runAppleScript: (script: string) => Promise<string>,
+  chatIdentifier?: string,
+): Promise<string> {
+  return runAppleScript(buildOpenScript(chatIdentifier));
 }

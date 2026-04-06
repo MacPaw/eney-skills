@@ -7,6 +7,7 @@ import {
   Action,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
 } from "@eney/api";
 import { openMessagesChat } from "../helpers/messages-actions.js";
@@ -23,6 +24,7 @@ type Props = z.infer<typeof schema>;
 
 function OpenMessagesChat(props: Props) {
   const closeWidget = useCloseWidget();
+  const runAppleScript = useAppleScript();
   const [selected, setSelected] = useState(props.chatIdentifier ?? "");
   const [selectedLabel, setSelectedLabel] = useState(props.chatIdentifier ?? "");
   const [isOpening, setIsOpening] = useState(false);
@@ -32,7 +34,7 @@ function OpenMessagesChat(props: Props) {
   useEffect(() => {
     if (!props.chatIdentifier) return;
     setIsOpening(true);
-    openMessagesChat(props.chatIdentifier)
+    openMessagesChat(runAppleScript, props.chatIdentifier)
       .then(() => closeWidget(`Opened Messages chat with ${props.chatIdentifier}`))
       .catch((e) => {
         setError(e instanceof Error ? e.message : "Failed to open Messages");
@@ -62,7 +64,7 @@ function OpenMessagesChat(props: Props) {
   async function onOpen() {
     setIsOpening(true);
     try {
-      await openMessagesChat(selected || undefined);
+      await openMessagesChat(runAppleScript, selected || undefined);
       closeWidget(selected ? `Opened Messages chat with ${selectedLabel} (${selected})` : "Opened Messages app");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to open Messages");
