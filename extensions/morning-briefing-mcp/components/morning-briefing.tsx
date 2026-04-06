@@ -4,9 +4,9 @@ import {
   Action,
   ActionPanel,
   Paper,
+  Divider,
   defineWidget,
   useCloseWidget,
-  Divider,
 } from "@eney/api";
 import { spawn } from "node:child_process";
 
@@ -353,7 +353,7 @@ function buildContextForLLM(
   });
 
   parts.push(
-    `Give me my morning briefing for ${today}. Here's what I've collected — synthesize it into a smart, concise briefing: cross-reference items across sections, flag what needs my attention vs noise, and suggest actions for today.`,
+    `Give me my morning briefing for ${today}. Here's what I've collected — synthesize it into a smart, concise briefing: cross-reference items across sections, flag what needs my attention vs noise, and end with a section headed exactly "Actions for today" listing concrete next steps.`,
   );
   parts.push("");
 
@@ -644,7 +644,7 @@ function MorningBriefing(props: Props) {
           <ActionPanel>
             <Divider />
             <Action.SubmitForm
-              title={hasError ? "Send Partial Briefing" : "Show Briefing"}
+              title={hasError ? "Show Partial Briefing" : "Show Briefing"}
               onSubmit={() => sendBriefing(data)}
               style="primary"
             />
