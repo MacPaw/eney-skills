@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules && cp chat.db dist/chat.db",
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules",
     "test": "npm run build && node --test dist/tests/*.test.js"
   },
   "dependencies": {
