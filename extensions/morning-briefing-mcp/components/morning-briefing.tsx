@@ -353,7 +353,7 @@ function buildContextForLLM(
   });
 
   parts.push(
-    `Give me my morning briefing for ${today}. Here's what I've collected — synthesize it into a smart, concise briefing: cross-reference items across sections, flag what needs my attention vs noise, and suggest 2-3 concrete actions for the day.`,
+    `Give me my morning briefing for ${today}. Here's what I've collected — synthesize it into a smart, concise briefing: cross-reference items across sections, flag what needs my attention vs noise, and suggest actions for today.`,
   );
   parts.push("");
 
@@ -474,11 +474,6 @@ function buildProgressMarkdown(
     const detail =
       s === "done" ? ` — ${data.reminders.length} tasks` : "";
     lines.push(`${statusIcon(s)} Tasks${detail}\n`);
-  }
-
-  if (allDone) {
-    lines.push("");
-    lines.push("Sending to assistant...");
   }
 
   return lines.join("\n");
@@ -649,7 +644,7 @@ function MorningBriefing(props: Props) {
           <ActionPanel>
             <Divider />
             <Action.SubmitForm
-              title="Send partial briefing"
+              title={hasError ? "Send Partial Briefing" : "Show Briefing"}
               onSubmit={() => sendBriefing(data)}
               style="primary"
             />
