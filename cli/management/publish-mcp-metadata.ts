@@ -6,7 +6,6 @@ import { spawnSync } from "child_process";
 
 import { ApiClient, getMcpFileDownloadUrl } from "../lib/api.ts";
 import { extractMcpTools } from "./extract-mcp-tools.ts";
-import { checkMcpVersion } from "./check-mcp-version.ts";
 import { getFileHash } from "./utils.ts";
 
 async function unpackMcpArchive(archivePath: string): Promise<string> {
@@ -20,7 +19,7 @@ async function unpackMcpArchive(archivePath: string): Promise<string> {
   return tmpDir;
 }
 
-export async function publishMcpMetadata(mode: "staging" | "production", archivePath: string, toolsJsonPath?: string) {
+export async function publishMcpMetadata(mode: "staging" | "production", archivePath: string) {
   const api = new ApiClient(mode);
   const resolvedArchivePath = resolve(archivePath);
 
@@ -37,56 +36,34 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
 
     const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
     const mcpName = manifest.name;
-    const parsedVersion = semver.coerce(manifest.version).toString();
+    const parsedVersion = semver.coerce(manifest.version)?.toString();
     const archiveName = `${mcpName}@v${parsedVersion}.mcpb`;
 
-    await checkMcpVersion(tmpDir, mode);
+    if (!parsedVersion) {
+      throw new Error(`Invalid version in manifest: ${manifest.version}`);
+    }
 
     console.log("\nStep 2/3: Extracting tools from MCP server...");
-    let tools;
-    if (toolsJsonPath) {
-      console.log(`Using pre-extracted tools from ${toolsJsonPath}`);
-      const currentDir = process.cwd();
-      const resolvedToolsPath = resolve(currentDir, toolsJsonPath);
-      // check for path traversal
-      if (resolvedToolsPath.indexOf(currentDir) !== 0) {
-        throw new Error(`Invalid tools path for ${resolvedToolsPath}: ${toolsJsonPath}`);
-      }
-      tools = JSON.parse(await fs.readFile(resolvedToolsPath, "utf8"));
-    } else {
-      tools = await extractMcpTools(tmpDir);
-    }
+
+    const tools = await extractMcpTools(tmpDir);
 
     console.log("\nStep 3/3: Publishing metadata to backend...");
     const finalHash = await getFileHash(resolvedArchivePath);
     const finalDownloadUrl = getMcpFileDownloadUrl(archiveName, mode);
 
     const metadataPayload = {
-      mode: "local" as const,
-      artifact_id: mcpName,
+      artifactId: mcpName,
       tools,
-      version: parsedVersion,
-    };
-
-    console.log("\nMCP metadata:");
-    console.dir(metadataPayload, { depth: null });
-
-    const artifactPayload = {
       version: parsedVersion,
       downloadUrl: finalDownloadUrl,
       hash: finalHash,
     };
 
-    console.log("\nArtifact metadata:");
-    console.log("%o", artifactPayload);
+    console.log("\nMCP metadata:");
+    console.dir(metadataPayload, { depth: null });
 
     try {
       const data = await api.publishMcp(metadataPayload);
-      console.log("MCP tools published successfully:", data);
-
-      const versionData = await api.publishMcpVersion(mcpName, artifactPayload);
-      console.log("MCP version published successfully:", versionData);
-
       console.log(`\nSuccessfully published ${mcpName}@${parsedVersion}!`);
     } catch (error) {
       console.error("\nError publishing MCP:", error);

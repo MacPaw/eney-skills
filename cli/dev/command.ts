@@ -93,6 +93,10 @@ export async function devMcp() {
   isInitialBuild = false;
 
   watch(currentFolder, { recursive: true }, async (_event, filename) => {
+    if (!filename) {
+      return;
+    }
+
     if (filename === "package-lock.json" || filename.startsWith("node_modules/") || filename.startsWith("dist/")) {
       return;
     }

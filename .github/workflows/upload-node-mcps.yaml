@@ -1,4 +1,4 @@
-name: "Publish MCP"
+name: "Publish Node.js MCP"
 
 on:
   push:
@@ -15,66 +15,18 @@ jobs:
       pull-requests: read
       contents: read
 
-  build-node-mcp:
-    name: Build Node MCP
-    runs-on: ubuntu-24.04-arm
-    needs: detect-changes
-    permissions:
-      contents: read
-    if: needs.detect-changes.outputs.has_node_changes == 'true'
-      && !contains(github.event.pull_request.title, '[skip ci]')
-      && github.event_name != 'pull_request'
-    strategy:
-      fail-fast: false
-      matrix:
-        mcp: ${{ fromJson(needs.detect-changes.outputs.node_mcps) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Setup CLI
-        uses: ./.github/actions/setup-cli
-
-      - name: Pack MCP archive
-        id: pack
-        run: |
-          MCP_NAME=$(jq -r '.name' manifest.json)
-          MCP_VERSION=$(jq -r '.version' manifest.json)
-          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
-          npm ci --os=darwin --cpu=arm64
-          npm run build
-          npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
-          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-        working-directory: extensions/${{ matrix.mcp }}
-
-      - name: Extract MCP tools
-        run: |
-          npm i --os=linux --cpu=arm64 # Prepare environment for MCP tools extraction
-          npm run build
-          eney-skills-cli extract-mcp-tools --mcp-dir dist --output tools.json
-        working-directory: extensions/${{ matrix.mcp }}
-
-      - name: Upload MCP archive artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-mcp-${{ matrix.mcp }}
-          path: |
-            extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
-            extensions/${{ matrix.mcp }}/tools.json
-          retention-days: 1
-
   publish-node-mcp:
     name: Publish Node MCP
-    runs-on:
-      group: gcp-k8s
-    needs: [detect-changes, build-node-mcp]
+    runs-on: ubuntu-24.04-arm
+    needs: detect-changes
+    env:
+      API_TOKEN: ${{ secrets.API_TOKEN }}
     permissions:
       contents: read
       id-token: write
-    if: needs.detect-changes.outputs.has_node_changes == 'true' && !contains(github.event.pull_request.title, '[skip ci]')
-    env:
-      IS_DRY_RUN: ${{ github.event_name == 'pull_request' }}
-      ADMIN_AUTH_TOKEN: ${{ secrets.ADMIN_AUTH_TOKEN_PRODUCTION }}
+    if: needs.detect-changes.outputs.has_node_changes == 'true'
+      && !contains(github.event.pull_request.title, '[skip ci]')
+      && github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -91,32 +43,29 @@ jobs:
           service_account: gh-action-eney@macpaw-devops.iam.gserviceaccount.com
           access_token_lifetime: 300s
 
-      - name: Download MCP archive artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: node-mcp-${{ matrix.mcp }}
-          path: extensions/${{ matrix.mcp }}
+      - name: Setup CLI
+        uses: ./.github/actions/setup-cli
 
-      - name: Resolve archive name
-        id: archive
+      - name: Pack MCP archive
+        id: pack
         run: |
           MCP_NAME=$(jq -r '.name' manifest.json)
           MCP_VERSION=$(jq -r '.version' manifest.json)
-          echo "archive_name=${MCP_NAME}@v${MCP_VERSION}.mcpb" >> $GITHUB_OUTPUT
+          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
+          npm ci --os=darwin --cpu=arm64
+          npm run build
+          npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
         working-directory: extensions/${{ matrix.mcp }}
-
-      - name: Setup CLI
-        uses: ./.github/actions/setup-cli
 
       - name: Upload MCP archive
         run: |
           eney-skills-cli upload-mcp-archive \
-            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }} \
             --mode production
 
       - name: Publish MCP metadata
         run: |
           eney-skills-cli publish-mcp-metadata \
             --mode production \
-            --archive-path extensions/${{ matrix.mcp }}/${{ steps.archive.outputs.archive_name }} \
-            --tools-json extensions/${{ matrix.mcp }}/tools.json
+            --archive-path extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
