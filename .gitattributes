@@ -1,0 +1,2 @@
+extensions/gws-example-mcp/bin/gws-arm64 filter=lfs diff=lfs merge=lfs -text
+extensions/gws-example-mcp/bin/gws-x64 filter=lfs diff=lfs merge=lfs -text
