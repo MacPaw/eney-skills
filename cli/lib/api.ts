@@ -17,7 +17,10 @@ export class ApiClient {
 
   constructor(mode: "staging" | "production" = "staging") {
     this.mode = mode;
-    this.backendUrl = "https://extensions.api.eney.ai/api/v1/public";
+    this.backendUrl =
+      mode === "production"
+        ? "https://extensions.api.eney.ai/api/v1/public"
+        : "https://extensions.api.appflix.io/api/v1/public";
 
     const token = process.env["API_TOKEN"];
     if (!token) {
