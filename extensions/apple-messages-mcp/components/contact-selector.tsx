@@ -42,6 +42,20 @@ export function ContactSelector({ value, onChange, onSelect, initialQuery = "", 
     return <Paper markdown="_Loading contacts…_" />;
   }
 
+  if (contacts.length === 0) {
+    return (
+      <Form.TextField
+        name="contact"
+        label={label}
+        value={value}
+        onChange={(v) => {
+          onChange(v);
+          if (onSelect) onSelect(v, v);
+        }}
+      />
+    );
+  }
+
   return (
     <Form.Dropdown
       name="contact"
