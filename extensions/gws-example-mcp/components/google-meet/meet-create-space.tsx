@@ -1,0 +1,135 @@
+import { useState } from "react";
+import { z } from "zod";
+import {
+  Action,
+  ActionPanel,
+  CardHeader,
+  Divider,
+  Form,
+  Paper,
+  defineWidget,
+  useCloseWidget,
+  useLogger,
+} from "@eney/api";
+import { execGws, meetToken } from "../../helpers/gws.js";
+
+const schema = z.object({
+  accessType: z
+    .enum(["OPEN", "TRUSTED", "RESTRICTED"])
+    .optional()
+    .describe("Who can join the meeting space. Defaults to OPEN."),
+});
+
+type Props = z.infer<typeof schema>;
+
+const ACCESS_OPTIONS = [
+  { label: "Open (anyone with link)", value: "OPEN" },
+  { label: "Trusted (org members)", value: "TRUSTED" },
+  { label: "Restricted (invited only)", value: "RESTRICTED" },
+];
+
+interface SpaceResponse {
+  name?: string;
+  meetingUri?: string;
+  meetingCode?: string;
+  config?: { accessType?: string };
+}
+
+function formatSpace(data: SpaceResponse): string {
+  const rows = [
+    `| **Meeting URI** | [Join](${data.meetingUri ?? ""}) |`,
+    `| **Meeting Code** | \`${data.meetingCode ?? "—"}\` |`,
+    `| **Space Name** | \`${data.name ?? "—"}\` |`,
+    `| **Access Type** | ${data.config?.accessType ?? "—"} |`,
+  ];
+  return ["| Property | Value |", "| --- | --- |", ...rows].join("\n");
+}
+
+function MeetCreateSpace(props: Props) {
+  const closeWidget = useCloseWidget();
+  const logger = useLogger();
+  const [accessType, setAccessType] = useState<string>(props.accessType ?? "OPEN");
+  const [result, setResult] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function onSubmit() {
+    setIsLoading(true);
+    setError("");
+    try {
+      logger.info(`[create-space] accessType=${accessType}`);
+      const stdout = await execGws(
+        `meet spaces create --json '${JSON.stringify({ config: { accessType } })}'`,
+        meetToken(),
+        logger
+      );
+      logger.info(`[create-space] completed`);
+      const data = JSON.parse(stdout) as SpaceResponse;
+      setResult(formatSpace(data));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logger.error(`[create-space] error=${msg}`);
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const header = (
+    <CardHeader title="Create Meet Space" iconBundleId="com.google.drivefs" />
+  );
+
+  if (result) {
+    return (
+      <Form
+        header={header}
+        actions={
+          <ActionPanel layout="row">
+            <Action.SubmitForm title="Create Another" onSubmit={() => setResult("")} style="secondary" />
+            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+          </ActionPanel>
+        }
+      >
+        <Paper markdown={result} />
+      </Form>
+    );
+  }
+
+  return (
+    <Form
+      header={header}
+      actions={
+        <ActionPanel>
+          <Divider />
+          <Action.SubmitForm
+            title={isLoading ? "Creating…" : "Create Space"}
+            onSubmit={onSubmit}
+            style="primary"
+            isLoading={isLoading}
+          />
+        </ActionPanel>
+      }
+    >
+      {error && <Paper markdown={`**Error:** ${error}`} />}
+      <Form.Dropdown
+        name="accessType"
+        label="Access Type"
+        value={accessType}
+        onChange={setAccessType}
+      >
+        {ACCESS_OPTIONS.map((o) => (
+          <Form.Dropdown.Item key={o.value} title={o.label} value={o.value} />
+        ))}
+      </Form.Dropdown>
+    </Form>
+  );
+}
+
+const MeetCreateSpaceWidget = defineWidget({
+  name: "meet-create-space",
+  description: "Create a new Google Meet meeting space",
+  schema,
+  component: MeetCreateSpace,
+});
+
+export default MeetCreateSpaceWidget;
