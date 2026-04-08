@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import { Command } from "commander";
 import path from "path";
 import { createCommand } from "./create/command.ts";
-import { checkMcpVersion } from "./management/check-mcp-version.ts";
 import { uploadMcpArchive } from "./management/upload-mcp-archive.ts";
 import { publishMcpMetadata } from "./management/publish-mcp-metadata.ts";
 import { analyticsCommand } from "./analytics/command.ts";
@@ -64,13 +63,6 @@ program
   .action(({ mode, prefix, yes }) => deleteArtifacts(mode, prefix, yes));
 
 program
-  .command("check-mcp-version")
-  .description("Check MCP version")
-  .option("--cwd <path>", "Current working directory", ".")
-  .requiredOption("--mode <mode>", "Mode (staging or production)")
-  .action(({ cwd, mode }) => checkMcpVersion(cwd, mode));
-
-program
   .command("upload-mcp-archive")
   .description("Upload a pre-built .mcpb archive to cloud storage")
   .requiredOption("--archive-path <path>", "Path to .mcpb archive")
@@ -82,8 +74,7 @@ program
   .description("Extract tools and publish MCP metadata to backend")
   .requiredOption("--mode <mode>", "Publish mode (staging or production)")
   .requiredOption("--archive-path <path>", "Path to .mcpb archive")
-  .option("--tools-json <path>", "Path to pre-extracted tools JSON file (skips binary execution)")
-  .action(({ mode, archivePath, toolsJson }) => publishMcpMetadata(mode, archivePath, toolsJson));
+  .action(({ mode, archivePath }) => publishMcpMetadata(mode, archivePath));
 
 program
   .command("extract-mcp-tools")
