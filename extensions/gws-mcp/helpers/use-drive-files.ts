@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLogger } from "@eney/api";
 import { execGws, driveToken } from "./gws.js";
 
 export interface DriveFile {
@@ -15,7 +14,6 @@ interface UseDriveFilesResult {
 }
 
 export function useDriveFiles(): UseDriveFilesResult {
-  const logger = useLogger();
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,8 +24,7 @@ export function useDriveFiles(): UseDriveFilesResult {
         const params = { fields: "files(id,name,mimeType)", pageSize: 50 };
         const stdout = await execGws(
           `drive files list --params '${JSON.stringify(params)}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
         const data = JSON.parse(stdout) as { files?: DriveFile[] };
         setFiles(data.files ?? []);

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLogger } from "@eney/api";
 import { execGws, meetToken } from "./gws.js";
 
 export interface ConferenceRecord {
@@ -17,7 +16,6 @@ interface UseConferenceRecordsResult {
 }
 
 export function useConferenceRecords(): UseConferenceRecordsResult {
-  const logger = useLogger();
   const [records, setRecords] = useState<ConferenceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,8 +26,7 @@ export function useConferenceRecords(): UseConferenceRecordsResult {
         const params = { pageSize: 20 };
         const stdout = await execGws(
           `meet conferenceRecords list --params '${JSON.stringify(params)}'`,
-          meetToken(),
-          logger
+          meetToken()
         );
         const data = JSON.parse(stdout) as { conferenceRecords?: ConferenceRecord[] };
         setRecords(data.conferenceRecords ?? []);

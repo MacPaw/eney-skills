@@ -1,21 +1,19 @@
 import { useState, useEffect } from "react";
-import { useLogger } from "@eney/api";
 import { execGws, driveToken } from "./gws.js";
 
-export interface DriveFolder {
+export interface DocFile {
   id: string;
   name: string;
 }
 
-interface UseDriveFoldersResult {
-  folders: DriveFolder[];
+interface UseDocFilesResult {
+  docs: DocFile[];
   isLoading: boolean;
   error: string;
 }
 
-export function useDriveFolders(): UseDriveFoldersResult {
-  const logger = useLogger();
-  const [folders, setFolders] = useState<DriveFolder[]>([]);
+export function useDocFiles(): UseDocFilesResult {
+  const [docs, setDocs] = useState<DocFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -23,18 +21,16 @@ export function useDriveFolders(): UseDriveFoldersResult {
     async function load() {
       try {
         const params = {
-          q: 'mimeType="application/vnd.google-apps.folder"',
+          q: 'mimeType="application/vnd.google-apps.document"',
           fields: "files(id,name)",
           pageSize: 50,
-          orderBy: "name",
         };
         const stdout = await execGws(
           `drive files list --params '${JSON.stringify(params)}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
-        const data = JSON.parse(stdout) as { files?: DriveFolder[] };
-        setFolders(data.files ?? []);
+        const data = JSON.parse(stdout) as { files?: DocFile[] };
+        setDocs(data.files ?? []);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -44,5 +40,5 @@ export function useDriveFolders(): UseDriveFoldersResult {
     void load();
   }, []);
 
-  return { folders, isLoading, error };
+  return { docs, isLoading, error };
 }

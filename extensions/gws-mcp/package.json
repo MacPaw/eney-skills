@@ -1,5 +1,5 @@
 {
-  "name": "gws-example-mcp",
+  "name": "gws-mcp",
   "version": "1.0.0",
   "type": "module",
   "description": "Google Workspace Example MCP server",

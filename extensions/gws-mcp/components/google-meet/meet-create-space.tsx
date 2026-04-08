@@ -35,21 +35,11 @@ interface SpaceResponse {
   config?: { accessType?: string };
 }
 
-function formatSpace(data: SpaceResponse): string {
-  const rows = [
-    `| **Meeting URI** | [Join](${data.meetingUri ?? ""}) |`,
-    `| **Meeting Code** | \`${data.meetingCode ?? "—"}\` |`,
-    `| **Space Name** | \`${data.name ?? "—"}\` |`,
-    `| **Access Type** | ${data.config?.accessType ?? "—"} |`,
-  ];
-  return ["| Property | Value |", "| --- | --- |", ...rows].join("\n");
-}
-
 function MeetCreateSpace(props: Props) {
   const closeWidget = useCloseWidget();
   const logger = useLogger();
   const [accessType, setAccessType] = useState<string>(props.accessType ?? "OPEN");
-  const [result, setResult] = useState("");
+  const [meetingUri, setMeetingUri] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,12 +50,11 @@ function MeetCreateSpace(props: Props) {
       logger.info(`[create-space] accessType=${accessType}`);
       const stdout = await execGws(
         `meet spaces create --json '${JSON.stringify({ config: { accessType } })}'`,
-        meetToken(),
-        logger
+        meetToken()
       );
       logger.info(`[create-space] completed`);
       const data = JSON.parse(stdout) as SpaceResponse;
-      setResult(formatSpace(data));
+      setMeetingUri(data.meetingUri ?? "");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[create-space] error=${msg}`);
@@ -79,18 +68,18 @@ function MeetCreateSpace(props: Props) {
     <CardHeader title="Create Meet Space" iconBundleId="com.google.drivefs" />
   );
 
-  if (result) {
+  if (meetingUri) {
     return (
       <Form
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Create Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action.CopyToClipboard content={meetingUri} title="Copy Link" style="secondary" />
+            <Action title="Done" onAction={() => closeWidget(`Meeting space created. Join: ${meetingUri}`)} style="primary" />
           </ActionPanel>
         }
       >
-        <Paper markdown={result} />
+        <Paper markdown="Meeting space created successfully." />
       </Form>
     );
   }

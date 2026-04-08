@@ -41,8 +41,7 @@ function DriveDeleteFile(props: Props) {
       logger.info(`[delete] fileId=${selectedId} name="${selectedFile?.name ?? "unknown"}"`);
       const stdout = await execGws(
           `drive files delete --params '${JSON.stringify({ fileId: selectedId })}' -o /dev/null`,
-          driveToken(),
-          logger
+          driveToken()
       );
       logger.info(`[delete] completed stdout=${stdout.trim() || "(empty)"}`);
       closeWidget(

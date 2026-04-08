@@ -9,8 +9,8 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
-  useLogger,
 } from "@eney/api";
 import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
@@ -34,12 +34,13 @@ const MIME_OPTIONS = [
 
 function DriveExportFile(props: Props) {
   const closeWidget = useCloseWidget();
-  const logger = useLogger();
+  const runScript = useAppleScript();
   const { files, isLoading: isLoadingFiles, error: filesError } = useDriveFiles();
   const [selectedId, setSelectedId] = useState(props.fileId ?? "");
   const [mimeType, setMimeType] = useState(props.mimeType ?? "application/pdf");
   const [outputPath, setOutputPath] = useState(props.outputPath ?? "");
   const [result, setResult] = useState("");
+  const [savedPath, setSavedPath] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,9 +63,9 @@ function DriveExportFile(props: Props) {
       const resolvedPath = outputPath.replace(/^~/, homedir());
       await execGws(
           `drive files export --params '${JSON.stringify({ fileId: selectedId, mimeType })}' -o "${resolvedPath}"`,
-          driveToken(),
-          logger
+          driveToken()
       );
+      setSavedPath(resolvedPath);
       setResult(`**File exported successfully**\n\nSaved to: \`${resolvedPath}\``);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -83,8 +84,8 @@ function DriveExportFile(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Export Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="Show in Finder" style="secondary" onAction={() => runScript(`tell application "Finder"\nreveal POSIX file "${savedPath}"\nactivate\nend tell`)} />
+            <Action title="Done" onAction={() => closeWidget(savedPath)} style="primary" />
           </ActionPanel>
         }
       >

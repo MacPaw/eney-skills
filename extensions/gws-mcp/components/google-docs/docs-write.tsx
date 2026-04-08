@@ -30,11 +30,10 @@ interface DocBodyResponse {
   body?: { content?: StructuralElement[] };
 }
 
-async function getDocEndIndex(docId: string, token: string, logger: ReturnType<typeof useLogger>): Promise<number> {
+async function getDocEndIndex(docId: string): Promise<number> {
   const stdout = await execGws(
     `docs documents get --params '${JSON.stringify({ documentId: docId })}'`,
-    token,
-    logger
+    docsToken()
   );
   const doc = JSON.parse(stdout) as DocBodyResponse;
   const content = doc.body?.content ?? [];
@@ -65,21 +64,19 @@ function DocsWrite(props: Props) {
 
       if (hasMarkdown(text)) {
         // Get doc end index, then batchUpdate with formatted requests
-        const endIndex = await getDocEndIndex(selectedId, docsToken(), logger);
+        const endIndex = await getDocEndIndex(selectedId);
         const insertAt = endIndex - 1;
         logger.info(`[docs-write] batchUpdate at index=${insertAt}`);
         const requests = markdownToDocRequests(text, insertAt);
         await execGws(
           `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
-          docsToken(),
-          logger
+          docsToken()
         );
       } else {
         // Plain text: use +write command
         await execGws(
           `docs +write --document ${selectedId} --text ${JSON.stringify(text)}`,
-          docsToken(),
-          logger
+          docsToken()
         );
       }
 
@@ -90,8 +87,7 @@ function DocsWrite(props: Props) {
         logger.info(`[docs-write] sharing with ${shareEmail} as ${shareRole}`);
         await execGws(
           `drive permissions create --params '${JSON.stringify({ fileId: selectedId, sendNotificationEmail: false })}' --json '${JSON.stringify({ role: shareRole, type: "user", emailAddress: shareEmail.trim() })}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
       }
 

@@ -8,6 +8,7 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
   useLogger,
 } from "@eney/api";
@@ -30,6 +31,7 @@ interface CopyResponse {
 
 function DocsCreateFromTemplate(props: Props) {
   const closeWidget = useCloseWidget();
+  const runScript = useAppleScript();
   const logger = useLogger();
   const { docs, isLoading: isLoadingDocs, error: docsError } = useDocFiles();
   const [templateId, setTemplateId] = useState(props.templateId ?? "");
@@ -37,6 +39,7 @@ function DocsCreateFromTemplate(props: Props) {
   const [text, setText] = useState(props.text ?? "");
   const [shareWith, setShareWith] = useState(props.shareWith ?? "");
   const [result, setResult] = useState("");
+  const [fileUrl, setFileUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -51,8 +54,7 @@ function DocsCreateFromTemplate(props: Props) {
       logger.info(`[docs-from-template] copying templateId=${templateId} name="${name}"`);
       const copyStdout = await execGws(
         `drive files copy --params '${JSON.stringify({ fileId: templateId })}' --json '${JSON.stringify({ name })}'`,
-        driveToken(),
-        logger
+        driveToken()
       );
       const copied = JSON.parse(copyStdout) as CopyResponse;
       const newId = copied.id;
@@ -64,8 +66,7 @@ function DocsCreateFromTemplate(props: Props) {
         logger.info(`[docs-from-template] appending text`);
         await execGws(
           `docs +write --document ${newId} --text ${JSON.stringify(text)}`,
-          docsToken(),
-          logger
+          docsToken()
         );
       }
 
@@ -74,12 +75,12 @@ function DocsCreateFromTemplate(props: Props) {
         logger.info(`[docs-from-template] sharing with ${shareWith}`);
         await execGws(
           `drive permissions create --params '${JSON.stringify({ fileId: newId })}' --json '${JSON.stringify({ role: "writer", type: "user", emailAddress: shareWith })}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
       }
 
       const link = `https://docs.google.com/document/d/${newId}/edit`;
+      setFileUrl(link);
       const steps = [
         `✓ Copied from **${selectedTemplate?.name ?? templateId}**`,
         text ? `✓ Text appended` : null,
@@ -106,8 +107,8 @@ function DocsCreateFromTemplate(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Create Another" onSubmit={() => { setResult(""); setName(""); setText(""); setShareWith(""); }} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="View File" style="secondary" onAction={() => runScript(`open location "${fileUrl}"`)} />
+            <Action title="Done" onAction={() => closeWidget(fileUrl)} style="primary" />
           </ActionPanel>
         }
       >
