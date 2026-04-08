@@ -11,15 +11,36 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, docsToken } from "../../helpers/gws.js";
+import { execGws, docsToken, driveToken } from "../../helpers/gws.js";
 import { useDocFiles } from "../../helpers/use-doc-files.js";
+import { markdownToDocRequests, hasMarkdown, categorizeError } from "../../helpers/markdown-to-requests.js";
 
 const schema = z.object({
   documentId: z.string().optional().describe("ID of the Google Doc to append text to."),
-  text: z.string().optional().describe("Text to append to the document."),
+  text: z.string().optional().describe("Text to append. Supports markdown: # heading, - list item."),
 });
 
 type Props = z.infer<typeof schema>;
+
+interface StructuralElement {
+  endIndex?: number;
+}
+
+interface DocBodyResponse {
+  body?: { content?: StructuralElement[] };
+}
+
+async function getDocEndIndex(docId: string, token: string, logger: ReturnType<typeof useLogger>): Promise<number> {
+  const stdout = await execGws(
+    `docs documents get --params '${JSON.stringify({ documentId: docId })}'`,
+    token,
+    logger
+  );
+  const doc = JSON.parse(stdout) as DocBodyResponse;
+  const content = doc.body?.content ?? [];
+  const last = content[content.length - 1];
+  return last?.endIndex ?? 2;
+}
 
 function DocsWrite(props: Props) {
   const closeWidget = useCloseWidget();
@@ -27,6 +48,8 @@ function DocsWrite(props: Props) {
   const { docs, isLoading: isLoadingDocs, error: docsError } = useDocFiles();
   const [selectedId, setSelectedId] = useState(props.documentId ?? "");
   const [text, setText] = useState(props.text ?? "");
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareRole, setShareRole] = useState("reader");
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,17 +62,54 @@ function DocsWrite(props: Props) {
     setError("");
     try {
       logger.info(`[docs-write] documentId=${selectedId} textLen=${text.length}`);
-      await execGws(
-        `docs +write --document ${selectedId} --text ${JSON.stringify(text)}`,
-        docsToken(),
-        logger
-      );
+
+      if (hasMarkdown(text)) {
+        // Get doc end index, then batchUpdate with formatted requests
+        const endIndex = await getDocEndIndex(selectedId, docsToken(), logger);
+        const insertAt = endIndex - 1;
+        logger.info(`[docs-write] batchUpdate at index=${insertAt}`);
+        const requests = markdownToDocRequests(text, insertAt);
+        await execGws(
+          `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
+          docsToken(),
+          logger
+        );
+      } else {
+        // Plain text: use +write command
+        await execGws(
+          `docs +write --document ${selectedId} --text ${JSON.stringify(text)}`,
+          docsToken(),
+          logger
+        );
+      }
+
       logger.info(`[docs-write] completed`);
-      setResult(`**Text appended successfully**\n\nDocument: **${selectedDoc?.name ?? selectedId}**`);
+
+      // Share if email provided
+      if (shareEmail.trim()) {
+        logger.info(`[docs-write] sharing with ${shareEmail} as ${shareRole}`);
+        await execGws(
+          `drive permissions create --params '${JSON.stringify({ fileId: selectedId, sendNotificationEmail: false })}' --json '${JSON.stringify({ role: shareRole, type: "user", emailAddress: shareEmail.trim() })}'`,
+          driveToken(),
+          logger
+        );
+      }
+
+      const link = `https://docs.google.com/document/d/${selectedId}/edit`;
+      const docName = selectedDoc?.name ?? selectedId;
+      const steps = [
+        `✓ Text appended`,
+        hasMarkdown(text) ? `✓ Formatting applied` : null,
+        shareEmail.trim() ? `✓ Shared with ${shareEmail.trim()} (${shareRole})` : null,
+      ].filter(Boolean).join("\n");
+
+      setResult(
+        `**Text appended successfully**\n\n${steps}\n\n| | |\n| --- | --- |\n| **Document** | ${docName} |\n| **ID** | \`${selectedId}\` |\n| **Link** | [Open in Docs](${link}) |`
+      );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[docs-write] error=${msg}`);
-      setError(msg);
+      setError(categorizeError(msg));
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +150,7 @@ function DocsWrite(props: Props) {
       }
     >
       {docsError && <Paper markdown={`**Error loading documents:** ${docsError}`} />}
-      {error && <Paper markdown={`**Error:** ${error}`} />}
+      {error && <Paper markdown={error} />}
       <Form.Dropdown name="documentId" label="Document" value={selectedId} onChange={setSelectedId}>
         {isLoadingDocs
           ? [<Form.Dropdown.Item key="loading" title="Loading documents…" value="" />]
@@ -98,14 +158,25 @@ function DocsWrite(props: Props) {
               <Form.Dropdown.Item key={d.id} title={d.name} value={d.id} />
             ))}
       </Form.Dropdown>
-      <Form.TextField name="text" label="Text to Append" value={text} onChange={setText} />
+      <Form.RichTextEditor value={text} onChange={setText} isInitiallyFocused />
+      <Form.TextField
+        name="shareEmail"
+        label="Share with email (optional)"
+        value={shareEmail}
+        onChange={setShareEmail}
+      />
+      <Form.Dropdown name="shareRole" label="Share role" value={shareRole} onChange={setShareRole}>
+        <Form.Dropdown.Item key="reader" title="Viewer" value="reader" />
+        <Form.Dropdown.Item key="commenter" title="Commenter" value="commenter" />
+        <Form.Dropdown.Item key="writer" title="Editor" value="writer" />
+      </Form.Dropdown>
     </Form>
   );
 }
 
 const DocsWriteWidget = defineWidget({
   name: "docs-write",
-  description: "Append text to a Google Doc",
+  description: "Append text to a Google Doc with optional markdown formatting and sharing",
   schema,
   component: DocsWrite,
 });
