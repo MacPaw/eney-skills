@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Database from "better-sqlite3";
+import { DatabaseSync } from "node:sqlite";
 
 const DB_PATH = `${process.env.HOME}/Library/Messages/chat.db`;
 
@@ -10,9 +10,7 @@ export function formatSentAt(unixTimestamp: number): string {
   const date = new Date(unixTimestamp * 1000);
   const now = new Date();
   const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
+    date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 
   if (isToday) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -27,9 +25,7 @@ export function formatGroupTime(unixTimestamp: number): string {
   const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
   const isToday =
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate();
+    date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
 
   if (isToday) return time;
 
@@ -52,10 +48,7 @@ function attachmentLabel(filename: string | null): string {
 }
 
 // Strip U+FFFC (object replacement) and other invisible chars macOS embeds in message text
-export function cleanMessageText(
-  raw: string | null,
-  filename?: string | null,
-): string {
+export function cleanMessageText(raw: string | null, filename?: string | null): string {
   if (raw) {
     const cleaned = raw.replace(/[\uFFFC\uFFA4\u200B-\u200D\uFEFF]/g, "").trim();
     if (cleaned) return cleaned;
@@ -88,8 +81,8 @@ export interface ChatMessage {
   sentAt: number;
 }
 
-function openDB(): Database.Database {
-  return new Database(DB_PATH, { readonly: true });
+function openDB(): DatabaseSync {
+  return new DatabaseSync(DB_PATH, { readOnly: true });
 }
 
 function sanitizeChatIdentifier(id: string): string {
@@ -163,7 +156,7 @@ export function useUnreadMessages() {
   useEffect(() => {
     try {
       const db = openDB();
-      const rows = db.prepare(buildUnreadMessagesQuery()).all() as UnreadMessage[];
+      const rows = db.prepare(buildUnreadMessagesQuery()).all() as unknown as UnreadMessage[];
       db.close();
       setData(rows);
     } catch (e) {
@@ -184,7 +177,7 @@ export function useChats() {
   useEffect(() => {
     try {
       const db = openDB();
-      const rows = db.prepare(buildChatsQuery()).all() as Chat[];
+      const rows = db.prepare(buildChatsQuery()).all() as unknown as Chat[];
       db.close();
       setData(rows);
     } catch (e) {
@@ -197,11 +190,7 @@ export function useChats() {
   return { data, isLoading, error };
 }
 
-export function useChatHistory(
-  chatIdentifier: string,
-  limit: number,
-  execute: boolean,
-) {
+export function useChatHistory(chatIdentifier: string, limit: number, execute: boolean) {
   const [data, setData] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(execute);
   const [error, setError] = useState<Error | null>(null);
@@ -211,7 +200,7 @@ export function useChatHistory(
     setIsLoading(true);
     try {
       const db = openDB();
-      const rows = db.prepare(buildHistoryQuery(chatIdentifier, limit)).all() as ChatMessage[];
+      const rows = db.prepare(buildHistoryQuery(chatIdentifier, limit)).all() as unknown as ChatMessage[];
       db.close();
       setData(rows);
     } catch (e) {
