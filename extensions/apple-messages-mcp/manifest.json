@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "apple-messages-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Apple Messages MCP server",
   "author": {
     "name": "Eney"
@@ -11,9 +11,7 @@
     "entry_point": "index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/index.js"
-      ],
+      "args": ["${__dirname}/index.js"],
       "env": {}
     }
   },
