@@ -16,7 +16,6 @@ import TasksManager from "./components/google-tasks/tasks-manager.js";
 import DocsGet from "./components/google-docs/docs-get.js";
 import DocsWrite from "./components/google-docs/docs-write.js";
 import DocsCreate from "./components/google-docs/docs-create.js";
-import DocsBatchUpdate from "./components/google-docs/docs-batch-update.js";
 import DocsCreateFromTemplate from "./components/google-docs/docs-create-from-template.js";
 
 const server = new McpServer(
@@ -40,7 +39,6 @@ uixServer.registerWidget(TasksManager);
 uixServer.registerWidget(DocsGet);
 uixServer.registerWidget(DocsWrite);
 uixServer.registerWidget(DocsCreate);
-uixServer.registerWidget(DocsBatchUpdate);
 uixServer.registerWidget(DocsCreateFromTemplate);
 
 async function main() {

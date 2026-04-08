@@ -19,7 +19,7 @@ const schema = z.object({
 });
 
 type Props = z.infer<typeof schema>;
-type Step = "select" | "edit" | "confirm-delete";
+type Step = "select" | "create" | "edit" | "confirm-delete";
 
 interface TaskList {
   id: string;
@@ -48,6 +48,11 @@ function TasksManager(props: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState(props.taskId ?? "");
+
+  // Create form state
+  const [newTitle, setNewTitle] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+  const [newDue, setNewDue] = useState<Date>(new Date());
 
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
@@ -197,9 +202,70 @@ function TasksManager(props: Props) {
     }
   }
 
+  async function onCreate() {
+    if (!newTitle || !selectedListId) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      logger.info(`[tasks] create title="${newTitle}"`);
+      const params = { tasklist: selectedListId };
+      const body: Record<string, string> = { title: newTitle };
+      if (newNotes) body.notes = newNotes;
+      body.due = newDue.toISOString();
+      await execGws(
+        `tasks tasks insert --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
+        tasksToken(),
+        logger
+      );
+      setInfo(`"${newTitle}" created.`);
+      setNewTitle("");
+      setNewNotes("");
+      setNewDue(new Date());
+      setStep("select");
+      await loadTasks(selectedListId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logger.error(`[tasks] create error=${msg}`);
+      setError(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const header = (
     <CardHeader title="Tasks Manager" iconBundleId="com.google.drivefs" />
   );
+
+  if (step === "create") {
+    return (
+      <Form
+        header={header}
+        actions={
+          <ActionPanel layout="row">
+            <Action title="Cancel" onAction={() => setStep("select")} style="secondary" />
+            <Action
+              title={isLoading ? "Creating…" : "Create Task"}
+              onAction={onCreate}
+              style="primary"
+              isLoading={isLoading}
+              isDisabled={!newTitle || !selectedListId}
+            />
+          </ActionPanel>
+        }
+      >
+        {error && <Paper markdown={`**Error:** ${error}`} />}
+        <Form.TextField name="newTitle" label="Title" value={newTitle} onChange={setNewTitle} />
+        <Form.TextField name="newNotes" label="Notes" value={newNotes} onChange={setNewNotes} />
+        <Form.DatePicker
+          name="newDue"
+          label="Due Date"
+          value={newDue}
+          onChange={setNewDue}
+          type="date"
+        />
+      </Form>
+    );
+  }
 
   if (step === "edit") {
     return (
@@ -273,7 +339,7 @@ function TasksManager(props: Props) {
           <Divider />
           <ActionPanel layout="row">
             <Action
-              title={isLoading ? "Working…" : "Mark Complete"}
+              title={isLoading ? "Working…" : "Complete"}
               onAction={onMarkComplete}
               style="secondary"
               isLoading={isLoading}
@@ -285,11 +351,24 @@ function TasksManager(props: Props) {
               style="secondary"
               isDisabled={!selectedTaskId || isLoading}
             />
+          </ActionPanel>
+          <ActionPanel layout="row">
+            <Action
+              title="New Task"
+              onAction={() => setStep("create")}
+              style="secondary"
+              isDisabled={!selectedListId || isLoading}
+            />
             <Action
               title="Delete"
               onAction={() => setStep("confirm-delete")}
-              style="primary"
+              style="secondary"
               isDisabled={!selectedTaskId || isLoading}
+            />
+            <Action
+              title="Done"
+              onAction={() => closeWidget("Tasks Manager closed.")}
+              style="primary"
             />
           </ActionPanel>
         </ActionPanel>
