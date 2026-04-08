@@ -8,8 +8,8 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
-  useLogger,
 } from "@eney/api";
 import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
@@ -49,10 +49,11 @@ function formatMetadata(data: FileMetadata): string {
 
 function DriveGetFileMetadata(props: Props) {
   const closeWidget = useCloseWidget();
-  const logger = useLogger();
+  const runScript = useAppleScript();
   const { files, isLoading: isLoadingFiles, error: filesError } = useDriveFiles();
   const [selectedId, setSelectedId] = useState(props.fileId ?? "");
   const [result, setResult] = useState("");
+  const [webViewLink, setWebViewLink] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,10 +68,11 @@ function DriveGetFileMetadata(props: Props) {
       };
       const stdout = await execGws(
           `drive files get --params '${JSON.stringify(params)}'`,
-          driveToken(),
-          logger
+          driveToken()
       );
-      setResult(formatMetadata(JSON.parse(stdout) as FileMetadata));
+      const metadata = JSON.parse(stdout) as FileMetadata;
+      setWebViewLink(metadata.webViewLink ?? "");
+      setResult(formatMetadata(metadata));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -88,8 +90,8 @@ function DriveGetFileMetadata(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Check Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="View File" onAction={() => runScript(`open location "${webViewLink}"`)} style="secondary" isDisabled={!webViewLink} />
+            <Action title="Done" onAction={() => closeWidget(webViewLink || result)} style="primary" />
           </ActionPanel>
         }
       >

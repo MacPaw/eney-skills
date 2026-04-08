@@ -52,8 +52,7 @@ function DocsCreate(props: Props) {
       // Step 1: Create blank document
       const stdout = await execGws(
         `docs documents create --json '${JSON.stringify({ title })}'`,
-        docsToken(),
-        logger
+        docsToken()
       );
       const doc = JSON.parse(stdout) as DocResponse;
       const docId = doc.documentId ?? "";
@@ -72,8 +71,7 @@ function DocsCreate(props: Props) {
           logger.info(`[docs-create] batchUpdate requests=${requests.length}`);
           await execGws(
             `docs documents batchUpdate --params '${JSON.stringify({ documentId: docId })}' --json '${JSON.stringify({ requests })}'`,
-            docsToken(),
-            logger
+            docsToken()
           );
         }
       }
@@ -83,8 +81,7 @@ function DocsCreate(props: Props) {
         logger.info(`[docs-create] moving to folderId=${folderId}`);
         await execGws(
           `drive files update --params '${JSON.stringify({ fileId: docId, addParents: folderId, removeParents: "root" })}' --json '{}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
       }
 
@@ -93,8 +90,7 @@ function DocsCreate(props: Props) {
         logger.info(`[docs-create] sharing with ${shareEmail} as ${shareRole}`);
         await execGws(
           `drive permissions create --params '${JSON.stringify({ fileId: docId, sendNotificationEmail: false })}' --json '${JSON.stringify({ role: shareRole, type: "user", emailAddress: shareEmail.trim() })}'`,
-          driveToken(),
-          logger
+          driveToken()
         );
       }
 

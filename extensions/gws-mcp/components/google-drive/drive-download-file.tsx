@@ -11,6 +11,7 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
   useLogger,
 } from "@eney/api";
@@ -29,11 +30,13 @@ type Props = z.infer<typeof schema>;
 
 function DriveDownloadFile(props: Props) {
   const closeWidget = useCloseWidget();
+  const runScript = useAppleScript();
   const logger = useLogger();
   const { files, isLoading: isLoadingFiles, error: filesError } = useDriveFiles();
   const [selectedId, setSelectedId] = useState(props.fileId ?? "");
   const [outputPath, setOutputPath] = useState(props.outputPath ?? "");
   const [result, setResult] = useState("");
+  const [savedPath, setSavedPath] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,8 +56,7 @@ function DriveDownloadFile(props: Props) {
       logger.info(`[download] fileId=${selectedId} resolvedPath=${resolvedPath}`);
       const stdout = await execGws(
           `drive files download --params '${JSON.stringify({ fileId: selectedId })}' -o "${resolvedPath}"`,
-          driveToken(),
-          logger
+          driveToken()
       );
       logger.info(`[download] completed stdout=${stdout.trim() || "(empty)"}`);
       const parsed = stdout.trim() ? JSON.parse(stdout) as { response?: { downloadUri?: string } } : null;
@@ -77,9 +79,11 @@ function DriveDownloadFile(props: Props) {
           createWriteStream(finalPath)
         );
         logger.info(`[download] written via downloadUri to ${finalPath}`);
+        setSavedPath(finalPath);
         setResult(`**File downloaded successfully**\n\nSaved to: \`${finalPath}\``);
         return;
       }
+      setSavedPath(resolvedPath);
       setResult(`**File downloaded successfully**\n\nSaved to: \`${resolvedPath}\``);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -98,8 +102,8 @@ function DriveDownloadFile(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Download Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="Show in Finder" style="secondary" onAction={() => runScript(`tell application "Finder"\nreveal POSIX file "${savedPath}"\nactivate\nend tell`)} />
+            <Action title="Done" onAction={() => closeWidget(savedPath)} style="primary" />
           </ActionPanel>
         }
       >

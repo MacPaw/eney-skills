@@ -8,8 +8,8 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
-  useLogger,
 } from "@eney/api";
 import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
@@ -23,10 +23,11 @@ type Props = z.infer<typeof schema>;
 
 function DriveCopyFile(props: Props) {
   const closeWidget = useCloseWidget();
-  const logger = useLogger();
+  const runScript = useAppleScript();
   const { files, isLoading: isLoadingFiles, error: filesError } = useDriveFiles();
   const [selectedId, setSelectedId] = useState(props.fileId ?? "");
   const [newName, setNewName] = useState(props.name ?? "");
+  const [newFileUrl, setNewFileUrl] = useState("");
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -46,10 +47,11 @@ function DriveCopyFile(props: Props) {
       const body = newName ? { name: newName } : {};
       const stdout = await execGws(
           `drive files copy --params '${JSON.stringify({ fileId: selectedId })}' --json '${JSON.stringify(body)}'`,
-          driveToken(),
-          logger
+          driveToken()
       );
       const data = JSON.parse(stdout) as { id?: string; name?: string };
+      const url = `https://drive.google.com/file/d/${data.id}/view`;
+      setNewFileUrl(url);
       setResult(
         `**File copied successfully**\n\n| | |\n| --- | --- |\n| **New Name** | ${data.name ?? "—"} |\n| **New ID** | \`${data.id ?? "—"}\` |`
       );
@@ -70,8 +72,8 @@ function DriveCopyFile(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Copy Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="View File" style="secondary" onAction={() => runScript(`open location "${newFileUrl}"`)} />
+            <Action title="Done" onAction={() => closeWidget(newFileUrl)} style="primary" />
           </ActionPanel>
         }
       >

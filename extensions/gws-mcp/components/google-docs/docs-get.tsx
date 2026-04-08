@@ -8,6 +8,7 @@ import {
   Form,
   Paper,
   defineWidget,
+  useAppleScript,
   useCloseWidget,
   useLogger,
 } from "@eney/api";
@@ -52,11 +53,11 @@ function extractText(doc: DocResponse): string {
 
 function formatDoc(doc: DocResponse): string {
   const text = extractText(doc);
-  const preview = text.length > 600 ? text.slice(0, 600) + "…" : text;
+  const preview = text.length > 800 ? text.slice(0, 800) + "…" : text;
   return [
-    `| **Title** | ${doc.title ?? "—"} |`,
-    `| **ID** | \`${doc.documentId ?? "—"}\` |`,
-    `| **Characters** | ${text.length} |`,
+    `**Title:** ${doc.title ?? "—"}`,
+    "",
+    `**Document ID:** \`${doc.documentId ?? "—"}\``,
     "",
     "---",
     "",
@@ -66,10 +67,12 @@ function formatDoc(doc: DocResponse): string {
 
 function DocsGet(props: Props) {
   const closeWidget = useCloseWidget();
+  const runScript = useAppleScript();
   const logger = useLogger();
   const { docs, isLoading: isLoadingDocs, error: docsError } = useDocFiles();
   const [selectedId, setSelectedId] = useState(props.documentId ?? "");
   const [result, setResult] = useState("");
+  const [fileUrl, setFileUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,10 +84,11 @@ function DocsGet(props: Props) {
       logger.info(`[docs-get] documentId=${selectedId}`);
       const stdout = await execGws(
         `docs documents get --params '${JSON.stringify({ documentId: selectedId })}'`,
-        docsToken(),
-        logger
+        docsToken()
       );
-      setResult(formatDoc(JSON.parse(stdout) as DocResponse));
+      const doc = JSON.parse(stdout) as DocResponse;
+      setFileUrl(`https://docs.google.com/document/d/${doc.documentId}/edit`);
+      setResult(formatDoc(doc));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[docs-get] error=${msg}`);
@@ -102,8 +106,8 @@ function DocsGet(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm title="Read Another" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
+            <Action title="View File" style="secondary" onAction={() => runScript(`open location "${fileUrl}"`)} />
+            <Action title="Done" onAction={() => closeWidget(fileUrl)} style="primary" />
           </ActionPanel>
         }
       >

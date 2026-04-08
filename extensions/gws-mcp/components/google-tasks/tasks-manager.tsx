@@ -64,6 +64,7 @@ function TasksManager(props: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [completeChecked, setCompleteChecked] = useState(false);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
 
@@ -71,7 +72,7 @@ function TasksManager(props: Props) {
   useEffect(() => {
     async function loadLists() {
       try {
-        const stdout = await execGws("tasks tasklists list", tasksToken(), logger);
+        const stdout = await execGws("tasks tasklists list", tasksToken());
         const data = JSON.parse(stdout) as { items?: TaskList[] };
         setTaskLists(data.items ?? []);
       } catch (e) {
@@ -88,6 +89,11 @@ function TasksManager(props: Props) {
     if (props.tasklistId) void loadTasks(props.tasklistId);
   }, []);
 
+  // Reset complete switch when selected task changes
+  useEffect(() => {
+    setCompleteChecked(false);
+  }, [selectedTaskId]);
+
   async function loadTasks(listId: string) {
     if (!listId) return;
     setIsLoadingTasks(true);
@@ -99,8 +105,7 @@ function TasksManager(props: Props) {
       const params = { tasklist: listId, showCompleted: false, showHidden: false };
       const stdout = await execGws(
         `tasks tasks list --params '${JSON.stringify(params)}'`,
-        tasksToken(),
-        logger
+        tasksToken()
       );
       const data = JSON.parse(stdout) as { items?: Task[] };
       setTasks(data.items ?? []);
@@ -135,8 +140,7 @@ function TasksManager(props: Props) {
       const params = { tasklist: selectedListId, task: selectedTaskId };
       await execGws(
         `tasks tasks patch --params '${JSON.stringify(params)}' --json '${JSON.stringify({ status: "completed" })}'`,
-        tasksToken(),
-        logger
+        tasksToken()
       );
       setInfo(`"${selectedTask?.title ?? selectedTaskId}" marked as complete.`);
       await loadTasks(selectedListId);
@@ -144,7 +148,6 @@ function TasksManager(props: Props) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[tasks] mark-complete error=${msg}`);
       setError(msg);
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -162,8 +165,7 @@ function TasksManager(props: Props) {
       body.due = editDue.toISOString();
       await execGws(
         `tasks tasks patch --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
-        tasksToken(),
-        logger
+        tasksToken()
       );
       setInfo(`"${editTitle}" updated.`);
       setStep("select");
@@ -186,8 +188,7 @@ function TasksManager(props: Props) {
       const params = { tasklist: selectedListId, task: selectedTaskId };
       await execGws(
         `tasks tasks delete --params '${JSON.stringify(params)}' -o /dev/null`,
-        tasksToken(),
-        logger
+        tasksToken()
       );
       setInfo(`"${selectedTask?.title ?? selectedTaskId}" deleted.`);
       setStep("select");
@@ -214,8 +215,7 @@ function TasksManager(props: Props) {
       body.due = newDue.toISOString();
       await execGws(
         `tasks tasks insert --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
-        tasksToken(),
-        logger
+        tasksToken()
       );
       setInfo(`"${newTitle}" created.`);
       setNewTitle("");
@@ -273,6 +273,12 @@ function TasksManager(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
+            <Action
+              title="Delete"
+              onAction={() => setStep("confirm-delete")}
+              style="secondary"
+              isDisabled={isLoading}
+            />
             <Action title="Cancel" onAction={() => setStep("select")} style="secondary" />
             <Action
               title={isLoading ? "Saving…" : "Save"}
@@ -284,18 +290,8 @@ function TasksManager(props: Props) {
         }
       >
         {error && <Paper markdown={`**Error:** ${error}`} />}
-        <Form.TextField
-          name="editTitle"
-          label="Title"
-          value={editTitle}
-          onChange={setEditTitle}
-        />
-        <Form.TextField
-          name="editNotes"
-          label="Notes"
-          value={editNotes}
-          onChange={setEditNotes}
-        />
+        <Form.TextField name="editTitle" label="Title" value={editTitle} onChange={setEditTitle} />
+        <Form.TextField name="editNotes" label="Notes" value={editNotes} onChange={setEditNotes} />
         <Form.DatePicker
           name="editDue"
           label="Due Date"
@@ -313,7 +309,7 @@ function TasksManager(props: Props) {
         header={header}
         actions={
           <ActionPanel layout="row">
-            <Action title="Cancel" onAction={() => setStep("select")} style="secondary" />
+            <Action title="Cancel" onAction={() => setStep("edit")} style="secondary" />
             <Action
               title={isLoading ? "Deleting…" : "Delete"}
               onAction={onDelete}
@@ -339,29 +335,14 @@ function TasksManager(props: Props) {
           <Divider />
           <ActionPanel layout="row">
             <Action
-              title={isLoading ? "Working…" : "Complete"}
-              onAction={onMarkComplete}
-              style="secondary"
-              isLoading={isLoading}
-              isDisabled={!selectedTaskId || isLoading}
-            />
-            <Action
-              title="Edit"
-              onAction={goToEdit}
-              style="secondary"
-              isDisabled={!selectedTaskId || isLoading}
-            />
-          </ActionPanel>
-          <ActionPanel layout="row">
-            <Action
               title="New Task"
               onAction={() => setStep("create")}
               style="secondary"
               isDisabled={!selectedListId || isLoading}
             />
             <Action
-              title="Delete"
-              onAction={() => setStep("confirm-delete")}
+              title="Edit"
+              onAction={goToEdit}
               style="secondary"
               isDisabled={!selectedTaskId || isLoading}
             />
@@ -376,7 +357,7 @@ function TasksManager(props: Props) {
     >
       {listsError && <Paper markdown={`**Error loading lists:** ${listsError}`} />}
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      {info && <Paper markdown={`${info}`} />}
+      {info && <Paper markdown={info} />}
       <Form.Dropdown
         name="tasklistId"
         label="Task List"
@@ -403,6 +384,16 @@ function TasksManager(props: Props) {
               <Form.Dropdown.Item key={t.id} title={t.title ?? t.id} value={t.id} />
             ))}
       </Form.Dropdown>
+      <Form.Checkbox
+        name="completed"
+        label="Mark as complete"
+        checked={completeChecked}
+        onChange={(checked) => {
+          setCompleteChecked(checked);
+          if (checked && selectedTaskId && !isLoading) void onMarkComplete();
+        }}
+        variant="switch"
+      />
     </Form>
   );
 }
