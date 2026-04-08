@@ -15,7 +15,7 @@
         "${__dirname}/index.js"
       ],
       "env": {
-"GOOGLE_DRIVE_TOKEN": "${user_config.gdrive}",
+        "GOOGLE_DRIVE_TOKEN": "${user_config.gdrive}",
         "GOOGLE_MEET_TOKEN": "${user_config.gcalendar}",
         "GOOGLE_TASKS_TOKEN": "${user_config.gcalendar}",
         "GOOGLE_DOCS_TOKEN": "${user_config.gdrive}"
