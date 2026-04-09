@@ -6,7 +6,7 @@ description: Add PKCE OAuth authentication to your extension
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Many extensions need to access third-party APIs that require user authorization — GitHub, Google, Spotify, and others. The `@eney/api` package provides built-in PKCE OAuth support that handles the entire sign-in flow for you.
+Many extensions need to access third-party APIs that require user authorization — Spotify, Google, Dropbox, and others. The `@eney/api` package provides built-in PKCE OAuth support that handles the entire sign-in flow for you.
 
 ## How it works
 
@@ -36,7 +36,7 @@ http://127.0.0.1:1798/callback
 
 Copy the **client ID** — you will not need a client secret.
 
-Make sure the provider supports PKCE with the S256 code challenge method. Most major providers do, including GitHub, Google, Spotify, GitLab, Dropbox, and Zoom.
+Make sure the provider supports PKCE with the S256 code challenge method. Most major providers do, including Google, Spotify, GitLab, Dropbox, and Zoom.
 </Step>
 
 <Step>
@@ -48,35 +48,33 @@ Pass an `oauth` object to `defineWidget`:
 import { z } from "zod";
 import { defineWidget, useOAuth, Paper } from "@eney/api";
 
-const schema = z.object({
-  query: z.string().optional().describe("Search query"),
-});
+const schema = z.object({});
 
 type Props = z.infer<typeof schema>;
 
-function SearchRepos({ query }: Props) {
+function TopTracks(_props: Props) {
   const { accessToken } = useOAuth();
 
   // accessToken is always available here
-  // ... use it to call the GitHub API
+  // ... use it to call the Spotify API
 
   return <Paper markdown="Authenticated!" />;
 }
 
-const SearchReposWidget = defineWidget({
-  name: "search-repos",
-  description: "Search GitHub repositories",
+const TopTracksWidget = defineWidget({
+  name: "spotify-top-tracks",
+  description: "Show your top Spotify tracks",
   schema,
   oauth: {
-    clientId: "your-github-client-id",
-    authorizeUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-    scopes: ["repo", "read:user"],
+    clientId: "your-spotify-client-id",
+    authorizeUrl: "https://accounts.spotify.com/authorize",
+    tokenUrl: "https://accounts.spotify.com/api/token",
+    scopes: ["user-top-read"],
   },
-  component: SearchRepos,
+  component: TopTracks,
 });
 
-export default SearchReposWidget;
+export default TopTracksWidget;
 ```
 </Step>
 
@@ -150,12 +148,46 @@ To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.jso
   The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the widget reports an error.
 </Callout>
 
-## Full example
+## Token refresh
 
-A complete extension that lists a user's GitHub repositories:
+Access tokens expire. The `useOAuth` hook returns a `refresh()` function that exchanges the refresh token for a new access token:
 
 ```tsx
-// components/github-repos.tsx
+const { accessToken, refresh } = useOAuth();
+const [token, setToken] = useState(accessToken);
+
+async function fetchWithRefresh(url: string) {
+  let res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 401) {
+    const newTokens = await refresh();
+    setToken(newTokens.accessToken);
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${newTokens.accessToken}` },
+    });
+  }
+
+  return res;
+}
+```
+
+When `refresh()` is called, the framework:
+1. POSTs to the provider's `tokenUrl` with `grant_type=refresh_token`
+2. Returns the new `{ accessToken, refreshToken }`
+3. Sends updated tokens to Eney so they persist across sessions
+
+<Callout type="info">
+  Not all providers issue refresh tokens by default. Some require specific scopes — for example, Google needs `access_type=offline` and Spotify includes refresh tokens automatically. If no refresh token was issued, calling `refresh()` will throw an error.
+</Callout>
+
+## Full example
+
+A complete extension that shows a user's top Spotify tracks:
+
+```tsx
+// components/spotify-top-tracks.tsx
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import {
@@ -169,46 +201,67 @@ import {
 
 const schema = z.object({});
 
-function GitHubRepos() {
-  const { accessToken } = useOAuth();
+function SpotifyTopTracks() {
+  const { accessToken, refresh } = useOAuth();
   const closeWidget = useCloseWidget();
-  const [markdown, setMarkdown] = useState("Loading repositories...");
+  const [token, setToken] = useState(accessToken);
+  const [markdown, setMarkdown] = useState("Loading your top tracks...");
+
+  async function fetchWithRefresh(url: string) {
+    let res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.status === 401) {
+      const newTokens = await refresh();
+      setToken(newTokens.accessToken);
+      res = await fetch(url, {
+        headers: { Authorization: `Bearer ${newTokens.accessToken}` },
+      });
+    }
+
+    return res;
+  }
 
   useEffect(() => {
-    fetch("https://api.github.com/user/repos?sort=updated&per_page=10", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    fetchWithRefresh("https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=short_term")
       .then((res) => res.json())
-      .then((repos) => {
-        const list = repos
-          .map((r: any) => `- **${r.full_name}** — ${r.description ?? ""}`)
-          .join("\n");
-        setMarkdown(list || "No repositories found.");
+      .then((data) => {
+        if (data.items?.length) {
+          const list = data.items
+            .map((t: any, i: number) =>
+              `${i + 1}. **${t.name}** — ${t.artists.map((a: any) => a.name).join(", ")}`,
+            )
+            .join("\n");
+          setMarkdown(`## Your Top Tracks\n\n${list}`);
+        } else {
+          setMarkdown("No recent tracks found.");
+        }
       })
-      .catch((err) => setMarkdown(`Error: ${err.message}`));
+      .catch((err: Error) => setMarkdown(`Error: ${err.message}`));
   }, []);
 
   const actions = (
     <ActionPanel>
-      <Action title="Done" onAction={() => closeWidget("Listed repos")} />
+      <Action title="Done" onAction={() => closeWidget("Showed top tracks")} />
     </ActionPanel>
   );
 
   return <Paper markdown={markdown} actions={actions} />;
 }
 
-const GitHubReposWidget = defineWidget({
-  name: "github-repos",
-  description: "List your GitHub repositories",
+const SpotifyTopTracksWidget = defineWidget({
+  name: "spotify-top-tracks",
+  description: "Show your top Spotify tracks",
   schema,
   oauth: {
-    clientId: "your-client-id",
-    authorizeUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-    scopes: ["repo"],
+    clientId: "your-spotify-client-id",
+    authorizeUrl: "https://accounts.spotify.com/authorize",
+    tokenUrl: "https://accounts.spotify.com/api/token",
+    scopes: ["user-top-read", "user-read-recently-played"],
   },
-  component: GitHubRepos,
+  component: SpotifyTopTracks,
 });
 
-export default GitHubReposWidget;
+export default SpotifyTopTracksWidget;
 ```

@@ -1,11 +1,11 @@
 ---
 title: useOAuth
-description: Access OAuth tokens inside an authenticated widget component
+description: Access OAuth tokens and refresh them inside an authenticated widget component
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Returns the OAuth tokens that the framework resolved before your component mounted. Use this hook to make authenticated API calls to external services.
+Returns the OAuth session that the framework resolved before your component mounted. Use this hook to make authenticated API calls and refresh tokens when they expire.
 
 ## Import
 
@@ -17,10 +17,10 @@ import { useOAuth } from "@eney/api";
 
 ## Usage
 
-Call the hook at the top of your component to get the current access token:
+Call the hook at the top of your component to get the current tokens and refresh function:
 
 ```typescript
-const { accessToken, refreshToken } = useOAuth();
+const { accessToken, refreshToken, refresh } = useOAuth();
 ```
 
 The `accessToken` is always a valid string — the framework guarantees that your component only renders after tokens have been resolved.
@@ -28,15 +28,22 @@ The `accessToken` is always a valid string — the framework guarantees that you
 ## Signature
 
 ```typescript
-function useOAuth(): OAuthTokens
+function useOAuth(): OAuthSession
 ```
 
 ### Return value
 
-| Property       | Type             | Description                                            |
-| -------------- | ---------------- | ------------------------------------------------------ |
-| `accessToken`  | `string`         | The OAuth access token for making authenticated calls  |
-| `refreshToken` | `string \| null` | The refresh token, if the provider returned one        |
+| Property       | Type                          | Description                                           |
+| -------------- | ----------------------------- | ----------------------------------------------------- |
+| `accessToken`  | `string`                      | The OAuth access token for making authenticated calls |
+| `refreshToken` | `string \| null`              | The refresh token, if the provider returned one       |
+| `refresh`      | `() => Promise<OAuthTokens>`  | Exchanges the refresh token for new tokens            |
+
+The `refresh` function:
+- POSTs to the provider's token endpoint with `grant_type=refresh_token`
+- Returns the new `{ accessToken, refreshToken }`
+- Sends the updated tokens to Eney so they persist across sessions
+- Throws if no refresh token is available
 
 ## Prerequisites
 
@@ -68,28 +75,40 @@ const MyWidget = defineWidget({
 
 ## Example
 
-This example fetches a list of repositories from GitHub using the access token:
+This example fetches data and automatically refreshes the token on a 401 response:
 
 ```tsx
 import { useState, useEffect } from "react";
 import { Paper, useOAuth, useCloseWidget } from "@eney/api";
 
 function MyWidgetComponent(props: Props) {
-  const { accessToken } = useOAuth();
+  const { accessToken, refresh } = useOAuth();
   const closeWidget = useCloseWidget();
-  const [repos, setRepos] = useState<string[]>([]);
+  const [token, setToken] = useState(accessToken);
+  const [markdown, setMarkdown] = useState("Loading...");
+
+  async function fetchWithRefresh(url: string) {
+    let res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.status === 401) {
+      const newTokens = await refresh();
+      setToken(newTokens.accessToken);
+      res = await fetch(url, {
+        headers: { Authorization: `Bearer ${newTokens.accessToken}` },
+      });
+    }
+
+    return res;
+  }
 
   useEffect(() => {
-    fetch("https://api.github.com/user/repos", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    fetchWithRefresh("https://api.example.com/data")
       .then((res) => res.json())
-      .then((data) => setRepos(data.map((r: any) => r.full_name)));
+      .then((data) => setMarkdown(JSON.stringify(data, null, 2)))
+      .catch((err) => setMarkdown(`Error: ${err.message}`));
   }, []);
-
-  const markdown = repos.length
-    ? repos.map((r) => `- ${r}`).join("\n")
-    : "Loading repositories...";
 
   return <Paper markdown={markdown} />;
 }
@@ -97,4 +116,8 @@ function MyWidgetComponent(props: Props) {
 
 <Callout type="info">
   You don't need to handle the sign-in flow yourself. The framework automatically shows a "Signing in..." screen, opens the browser for authorization, and only mounts your component after tokens are available. See the [OAuth guide](/docs/oauth) for the full setup instructions, configuration reference, and how the flow works end to end.
+</Callout>
+
+<Callout type="warn">
+  Not all OAuth providers issue refresh tokens. If the provider didn't return one, `refreshToken` will be `null` and calling `refresh()` will throw an error. Some providers require specific scopes to get a refresh token (e.g., `offline_access`).
 </Callout>
