@@ -1,0 +1,214 @@
+---
+title: OAuth
+description: Add PKCE OAuth authentication to your extension
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Callout } from "fumadocs-ui/components/callout";
+
+Many extensions need to access third-party APIs that require user authorization — GitHub, Google, Spotify, and others. The `@eney/api` package provides built-in PKCE OAuth support that handles the entire sign-in flow for you.
+
+## How it works
+
+1. When a widget with `oauth` configuration is invoked, the framework checks for `OAUTH_ACCESS_TOKEN` and `OAUTH_REFRESH_TOKEN` environment variables.
+2. If the environment variables are present, tokens are used directly and your component mounts immediately.
+3. If not, the framework displays a "Signing in..." placeholder and opens the provider's authorization page in the user's browser.
+4. A local server on port `1798` receives the OAuth callback. The framework exchanges the authorization code for tokens using PKCE (S256).
+5. Tokens are sent to Eney via MCP notification so they can be provided as environment variables on subsequent sessions — meaning the user only signs in once.
+6. Your component mounts with tokens available via the [`useOAuth`](/docs/hooks/use-oauth) hook.
+
+<Callout type="info">
+  PKCE (Proof Key for Code Exchange) is designed for public clients that cannot securely store a client secret. Your extension does not need a client secret — only a client ID.
+</Callout>
+
+## Setup
+
+<Steps>
+
+<Step>
+### Register an OAuth application with your provider
+
+Create an OAuth app in your provider's developer console. Set the redirect URI to:
+
+```
+http://127.0.0.1:1798/callback
+```
+
+Copy the **client ID** — you will not need a client secret.
+
+Make sure the provider supports PKCE with the S256 code challenge method. Most major providers do, including GitHub, Google, Spotify, GitLab, Dropbox, and Zoom.
+</Step>
+
+<Step>
+### Add OAuth configuration to your widget
+
+Pass an `oauth` object to `defineWidget`:
+
+```tsx
+import { z } from "zod";
+import { defineWidget, useOAuth, Paper } from "@eney/api";
+
+const schema = z.object({
+  query: z.string().optional().describe("Search query"),
+});
+
+type Props = z.infer<typeof schema>;
+
+function SearchRepos({ query }: Props) {
+  const { accessToken } = useOAuth();
+
+  // accessToken is always available here
+  // ... use it to call the GitHub API
+
+  return <Paper markdown="Authenticated!" />;
+}
+
+const SearchReposWidget = defineWidget({
+  name: "search-repos",
+  description: "Search GitHub repositories",
+  schema,
+  oauth: {
+    clientId: "your-github-client-id",
+    authorizeUrl: "https://github.com/login/oauth/authorize",
+    tokenUrl: "https://github.com/login/oauth/access_token",
+    scopes: ["repo", "read:user"],
+  },
+  component: SearchRepos,
+});
+
+export default SearchReposWidget;
+```
+</Step>
+
+<Step>
+### Access tokens in your component
+
+Use the [`useOAuth`](/docs/hooks/use-oauth) hook to read the tokens:
+
+```tsx
+import { useOAuth } from "@eney/api";
+
+function MyComponent() {
+  const { accessToken, refreshToken } = useOAuth();
+
+  // Make authenticated API calls
+  const response = await fetch("https://api.example.com/data", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+```
+
+The hook is guaranteed to return valid tokens — the framework only mounts your component after authentication completes.
+</Step>
+
+</Steps>
+
+## Configuration reference
+
+The `oauth` property in `defineWidget` accepts the following options:
+
+| Property       | Type       | Default       | Required | Description                                         |
+| -------------- | ---------- | ------------- | -------- | --------------------------------------------------- |
+| `clientId`     | `string`   | —             | Yes      | The OAuth client ID from your provider              |
+| `authorizeUrl` | `string`   | —             | Yes      | The provider's authorization endpoint               |
+| `tokenUrl`     | `string`   | —             | Yes      | The provider's token exchange endpoint              |
+| `scopes`       | `string[]` | —             | Yes      | The OAuth scopes to request                         |
+| `callbackPort` | `number`   | `1798`        | No       | Port for the local callback server                  |
+| `callbackPath` | `string`   | `"/callback"` | No       | Path for the OAuth redirect                         |
+
+## Environment variables
+
+On the first run, the full browser-based OAuth flow is triggered. After tokens are obtained, Eney receives them via MCP notification and provides them as environment variables on subsequent sessions:
+
+| Variable              | Description                   |
+| --------------------- | ----------------------------- |
+| `OAUTH_ACCESS_TOKEN`  | The OAuth access token        |
+| `OAUTH_REFRESH_TOKEN` | The refresh token, if present |
+
+When these variables are set, the framework skips the browser flow entirely and your component mounts immediately with the cached tokens.
+
+## Manifest configuration
+
+To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.json` server environment:
+
+```json
+{
+  "server": {
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {
+        "OAUTH_ACCESS_TOKEN": "${OAUTH_ACCESS_TOKEN}",
+        "OAUTH_REFRESH_TOKEN": "${OAUTH_REFRESH_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+<Callout type="warn">
+  The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the widget reports an error.
+</Callout>
+
+## Full example
+
+A complete extension that lists a user's GitHub repositories:
+
+```tsx
+// components/github-repos.tsx
+import { useState, useEffect } from "react";
+import { z } from "zod";
+import {
+  defineWidget,
+  useOAuth,
+  useCloseWidget,
+  Paper,
+  ActionPanel,
+  Action,
+} from "@eney/api";
+
+const schema = z.object({});
+
+function GitHubRepos() {
+  const { accessToken } = useOAuth();
+  const closeWidget = useCloseWidget();
+  const [markdown, setMarkdown] = useState("Loading repositories...");
+
+  useEffect(() => {
+    fetch("https://api.github.com/user/repos?sort=updated&per_page=10", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then((res) => res.json())
+      .then((repos) => {
+        const list = repos
+          .map((r: any) => `- **${r.full_name}** — ${r.description ?? ""}`)
+          .join("\n");
+        setMarkdown(list || "No repositories found.");
+      })
+      .catch((err) => setMarkdown(`Error: ${err.message}`));
+  }, []);
+
+  const actions = (
+    <ActionPanel>
+      <Action title="Done" onAction={() => closeWidget("Listed repos")} />
+    </ActionPanel>
+  );
+
+  return <Paper markdown={markdown} actions={actions} />;
+}
+
+const GitHubReposWidget = defineWidget({
+  name: "github-repos",
+  description: "List your GitHub repositories",
+  schema,
+  oauth: {
+    clientId: "your-client-id",
+    authorizeUrl: "https://github.com/login/oauth/authorize",
+    tokenUrl: "https://github.com/login/oauth/access_token",
+    scopes: ["repo"],
+  },
+  component: GitHubRepos,
+});
+
+export default GitHubReposWidget;
+```
