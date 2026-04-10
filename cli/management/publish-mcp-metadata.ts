@@ -60,7 +60,7 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
     };
 
     console.log("\nMCP metadata:");
-    console.dir(metadataPayload, { depth: null });
+    console.log(JSON.stringify(metadataPayload, null, 2));
 
     try {
       const data = await api.publishMcp(metadataPayload);
