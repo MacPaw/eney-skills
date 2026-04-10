@@ -6,7 +6,6 @@ import {
   CardHeader,
   Form,
   defineWidget,
-  useAppleScript,
   useCloseWidget,
 } from "@eney/api";
 import { sendMessage } from "../helpers/messages-actions.js";
@@ -27,7 +26,6 @@ type Props = z.infer<typeof schema>;
 
 function SendMessage(props: Props) {
   const closeWidget = useCloseWidget();
-  const runAppleScript = useAppleScript();
   const [recipient, setRecipient] = useState(props.recipient ?? "");
   const [message, setMessage] = useState(props.message ?? "");
   const [isSending, setIsSending] = useState(false);
@@ -38,7 +36,7 @@ function SendMessage(props: Props) {
     if (!canSend) return;
     setIsSending(true);
     try {
-      await sendMessage(runAppleScript, recipient.trim(), message.trim());
+      await sendMessage(recipient.trim(), message.trim());
       closeWidget(`🚀 Message sent to ${recipient}`);
     } catch (error) {
       closeWidget(error instanceof Error ? error.message : "Failed to send message");

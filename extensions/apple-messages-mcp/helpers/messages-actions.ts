@@ -1,3 +1,5 @@
+import { runScript } from "@eney/api";
+
 function escapeAppleScript(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
@@ -21,16 +23,14 @@ open location "messages://${chatIdentifier}"`;
 }
 
 export function sendMessage(
-  runAppleScript: (script: string) => Promise<string>,
   recipient: string,
   message: string,
 ): Promise<string> {
-  return runAppleScript(buildSendScript(recipient, message));
+  return runScript(buildSendScript(recipient, message));
 }
 
 export function openMessagesChat(
-  runAppleScript: (script: string) => Promise<string>,
   chatIdentifier?: string,
 ): Promise<string> {
-  return runAppleScript(buildOpenScript(chatIdentifier));
+  return runScript(buildOpenScript(chatIdentifier));
 }

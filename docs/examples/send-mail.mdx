@@ -34,20 +34,19 @@ const props = z.object({
 
 ---
 
-## Sending mail with useAppleScript
+## Sending mail with runScript
 
-Call `useAppleScript()` at the top of your component. Then, use the `runScript` function inside your `sendMail` helper to execute the script.
+Import `runScript` from `@eney/api` and use it inside your `sendMail` helper to execute the script.
 
 
 ```typescript
-import { useAppleScript, useCloseWidget } from "@eney/api";
+import { runScript, useCloseWidget } from "@eney/api";
 
 function escapeAppleScript(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function SendMail(props: Props) {
-  const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
 
   async function sendMail(
@@ -145,7 +144,7 @@ const hasOversizedFiles = oversizedFiles.length > 0;
 
 ## Key patterns
 
-- Call `useAppleScript()` at the top of the component and use the returned `runScript` inside your async helpers
+- Import `runScript` from `@eney/api` and call it directly inside your async helpers
 - Validate files inline and disable the submit button to guide the user, rather than showing an error after they click send
 - Always call `closeWidget` in both success and error paths so Eney receives the result either way
 - AppleScript automation requires the user to grant permission in **System Settings → Privacy & Security → Automation** on first run
