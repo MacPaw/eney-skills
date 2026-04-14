@@ -1,3 +1,4 @@
+import { tmpdir } from "os";
 import { join, resolve } from "path";
 import fs from "fs/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -11,11 +12,13 @@ export type ToolWithSchema = {
   annotations?: Record<string, any>;
 };
 
+const tempDir = tmpdir() || "/tmp/";
+
 export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]> {
   const currentDir = process.cwd();
   const resolvedMcpDir = resolve(currentDir, mcpDir);
 
-  if (resolvedMcpDir.indexOf(currentDir) !== 0) {
+  if (resolvedMcpDir.indexOf(currentDir) !== 0 && resolvedMcpDir.indexOf(tempDir) !== 0) {
     throw new Error(`Invalid MCP directory path for ${resolvedMcpDir}: ${mcpDir}`);
   }
 
@@ -31,7 +34,7 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
     try {
       manifest = JSON.parse(await fs.readFile(rootManifestPath, "utf8"));
       mcpPath = resolvedMcpDir;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Unable to read manifest from dist/ or root of ${resolvedMcpDir}: ${error.message}`);
     }
   }
@@ -71,7 +74,7 @@ export async function extractMcpTools(mcpDir: string): Promise<ToolWithSchema[]>
     const transport = new StdioClientTransport({
       command,
       args: resolvedArgs,
-      env: process.env,
+      env: process.env as Record<string, string>,
     });
 
     client = new Client(
