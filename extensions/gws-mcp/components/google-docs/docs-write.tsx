@@ -49,7 +49,6 @@ function DocsWrite(props: Props) {
   const [text, setText] = useState(props.text ?? "");
   const [shareEmail, setShareEmail] = useState("");
   const [shareRole, setShareRole] = useState("reader");
-  const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,25 +59,19 @@ function DocsWrite(props: Props) {
     setIsLoading(true);
     setError("");
     try {
-      logger.info(`[docs-write] documentId=${selectedId} textLen=${text.length}`);
+      const normalizedText = text.replace(/\\n/g, "\n");
+      logger.info(`[docs-write] documentId=${selectedId} textLen=${normalizedText.length}`);
 
-      if (hasMarkdown(text)) {
-        // Get doc end index, then batchUpdate with formatted requests
-        const endIndex = await getDocEndIndex(selectedId);
-        const insertAt = endIndex - 1;
-        logger.info(`[docs-write] batchUpdate at index=${insertAt}`);
-        const requests = markdownToDocRequests(text, insertAt);
-        await execGws(
-          `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
-          docsToken()
-        );
-      } else {
-        // Plain text: use +write command
-        await execGws(
-          `docs +write --document ${selectedId} --text ${JSON.stringify(text)}`,
-          docsToken()
-        );
-      }
+      const endIndex = await getDocEndIndex(selectedId);
+      const insertAt = endIndex - 1;
+      logger.info(`[docs-write] batchUpdate at index=${insertAt}`);
+      const requests = hasMarkdown(normalizedText)
+        ? markdownToDocRequests("\n" + normalizedText, insertAt)
+        : [{ insertText: { location: { index: insertAt }, text: "\n" + normalizedText } }];
+      await execGws(
+        `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
+        docsToken()
+      );
 
       logger.info(`[docs-write] completed`);
 
@@ -94,14 +87,12 @@ function DocsWrite(props: Props) {
       const link = `https://docs.google.com/document/d/${selectedId}/edit`;
       const docName = selectedDoc?.name ?? selectedId;
       const steps = [
-        `✓ Text appended`,
+        `✓ Text appended to "${docName}"`,
         hasMarkdown(text) ? `✓ Formatting applied` : null,
         shareEmail.trim() ? `✓ Shared with ${shareEmail.trim()} (${shareRole})` : null,
       ].filter(Boolean).join("\n");
 
-      setResult(
-        `**Text appended successfully**\n\n${steps}\n\n| | |\n| --- | --- |\n| **Document** | ${docName} |\n| **ID** | \`${selectedId}\` |\n| **Link** | [Open in Docs](${link}) |`
-      );
+      closeWidget(`${steps}\n${link}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[docs-write] error=${msg}`);
@@ -112,22 +103,6 @@ function DocsWrite(props: Props) {
   }
 
   const header = <CardHeader title="Append to Document" iconBundleId="com.google.drivefs" />;
-
-  if (result) {
-    return (
-      <Form
-        header={header}
-        actions={
-          <ActionPanel layout="row">
-            <Action.SubmitForm title="Append More" onSubmit={() => setResult("")} style="secondary" />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
-          </ActionPanel>
-        }
-      >
-        <Paper markdown={result} />
-      </Form>
-    );
-  }
 
   return (
     <Form

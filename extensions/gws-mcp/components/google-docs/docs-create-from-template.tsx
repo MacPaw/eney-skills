@@ -8,7 +8,6 @@ import {
   Form,
   Paper,
   defineWidget,
-  useAppleScript,
   useCloseWidget,
   useLogger,
 } from "@eney/api";
@@ -31,15 +30,12 @@ interface CopyResponse {
 
 function DocsCreateFromTemplate(props: Props) {
   const closeWidget = useCloseWidget();
-  const runScript = useAppleScript();
   const logger = useLogger();
   const { docs, isLoading: isLoadingDocs, error: docsError } = useDocFiles();
   const [templateId, setTemplateId] = useState(props.templateId ?? "");
   const [name, setName] = useState(props.name ?? "");
   const [text, setText] = useState(props.text ?? "");
   const [shareWith, setShareWith] = useState(props.shareWith ?? "");
-  const [result, setResult] = useState("");
-  const [fileUrl, setFileUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -80,16 +76,13 @@ function DocsCreateFromTemplate(props: Props) {
       }
 
       const link = `https://docs.google.com/document/d/${newId}/edit`;
-      setFileUrl(link);
       const steps = [
         `✓ Copied from **${selectedTemplate?.name ?? templateId}**`,
         text ? `✓ Text appended` : null,
         shareWith ? `✓ Shared with ${shareWith}` : null,
       ].filter(Boolean).join("\n");
 
-      setResult(
-        `**Document created successfully**\n\n${steps}\n\n| | |\n| --- | --- |\n| **Name** | ${copied.name ?? name} |\n| **ID** | \`${newId}\` |\n| **Link** | [Open in Docs](${link}) |`
-      );
+      closeWidget(`${steps}\n${link}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[docs-from-template] error=${msg}`);
@@ -100,22 +93,6 @@ function DocsCreateFromTemplate(props: Props) {
   }
 
   const header = <CardHeader title="Create from Template" iconBundleId="com.google.drivefs" />;
-
-  if (result) {
-    return (
-      <Form
-        header={header}
-        actions={
-          <ActionPanel layout="row">
-            <Action title="View File" style="secondary" onAction={() => runScript(`open location "${fileUrl}"`)} />
-            <Action title="Done" onAction={() => closeWidget(fileUrl)} style="primary" />
-          </ActionPanel>
-        }
-      >
-        <Paper markdown={result} />
-      </Form>
-    );
-  }
 
   return (
     <Form

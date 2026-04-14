@@ -9,11 +9,15 @@ import DriveDeleteFile from "./components/google-drive/drive-delete-file.js";
 import MeetCreateSpace from "./components/google-meet/meet-create-space.js";
 import MeetSpace from "./components/google-meet/meet-space.js";
 import TasksManager from "./components/google-tasks/tasks-manager.js";
+import TasksFilter from "./components/google-tasks/tasks-filter.js";
 import DocsGet from "./components/google-docs/docs-get.js";
 import DocsWrite from "./components/google-docs/docs-write.js";
 import DocsCreate from "./components/google-docs/docs-create.js";
 import DocsCreateFromTemplate from "./components/google-docs/docs-create-from-template.js";
 import SheetsCreate from "./components/google-sheets/sheets-create.js";
+import DriveFileComments from "./components/google-drive/drive-file-comments.js";
+import DriveFilePermissions from "./components/google-drive/drive-file-permissions.js";
+import DriveCommentReplies from "./components/google-drive/drive-comment-replies.js";
 
 const server = new McpServer(
   { name: "gws-mcp", version: "1.0.0" },
@@ -29,11 +33,15 @@ uixServer.registerWidget(DriveDeleteFile);
 uixServer.registerWidget(MeetCreateSpace);
 uixServer.registerWidget(MeetSpace);
 uixServer.registerWidget(TasksManager);
+uixServer.registerWidget(TasksFilter);
 uixServer.registerWidget(DocsGet);
 uixServer.registerWidget(DocsWrite);
 uixServer.registerWidget(DocsCreate);
 uixServer.registerWidget(DocsCreateFromTemplate);
 uixServer.registerWidget(SheetsCreate);
+uixServer.registerWidget(DriveFileComments);
+uixServer.registerWidget(DriveFilePermissions);
+uixServer.registerWidget(DriveCommentReplies);
 
 async function main() {
   const transport = new StdioServerTransport();
