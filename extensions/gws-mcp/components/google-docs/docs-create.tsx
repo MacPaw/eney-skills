@@ -38,7 +38,6 @@ function DocsCreate(props: Props) {
   const [folderId, setFolderId] = useState(props.folderId ?? "");
   const [shareEmail, setShareEmail] = useState("");
   const [shareRole, setShareRole] = useState("reader");
-  const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -97,15 +96,13 @@ function DocsCreate(props: Props) {
       const link = `https://docs.google.com/document/d/${docId}/edit`;
       const folderName = folders.find((f) => f.id === folderId)?.name;
       const steps = [
-        `✓ Document created`,
+        `✓ Document created: **${doc.title ?? title}**`,
         content.trim() ? `✓ Content inserted` : null,
         folderName ? `✓ Placed in **${folderName}**` : null,
         shareEmail.trim() ? `✓ Shared with ${shareEmail.trim()} (${shareRole})` : null,
       ].filter(Boolean).join("\n");
 
-      setResult(
-        `**Document created successfully**\n\n${steps}\n\n| | |\n| --- | --- |\n| **Title** | ${doc.title ?? title} |\n| **ID** | \`${docId}\` |\n| **Link** | [Open in Docs](${link}) |`
-      );
+      closeWidget(`${steps}\n${link}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       logger.error(`[docs-create] error=${msg}`);
@@ -116,26 +113,6 @@ function DocsCreate(props: Props) {
   }
 
   const header = <CardHeader title="Create Document" iconBundleId="com.google.drivefs" />;
-
-  if (result) {
-    return (
-      <Form
-        header={header}
-        actions={
-          <ActionPanel layout="row">
-            <Action.SubmitForm
-              title="Create Another"
-              onSubmit={() => { setResult(""); setTitle(""); setContent(""); setFolderId(""); setShareEmail(""); }}
-              style="secondary"
-            />
-            <Action title="Done" onAction={() => closeWidget(result)} style="primary" />
-          </ActionPanel>
-        }
-      >
-        <Paper markdown={result} />
-      </Form>
-    );
-  }
 
   return (
     <Form
