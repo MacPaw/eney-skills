@@ -17,8 +17,10 @@
       "env": {
         "GOOGLE_DRIVE_TOKEN": "${user_config.gdrive}",
         "GOOGLE_MEET_TOKEN": "${user_config.gcalendar}",
-        "GOOGLE_TASKS_TOKEN": "${user_config.gcalendar}",
-        "GOOGLE_DOCS_TOKEN": "${user_config.gdrive}"
+        "GOOGLE_TASKS_TOKEN": "${user_config.gtasks}",
+        "GOOGLE_DOCS_TOKEN": "${user_config.gdrive}",
+        "GOOGLE_SHEETS_TOKEN": "${user_config.gdrive}",
+        "GOOGLE_SLIDES_TOKEN": "${user_config.gdrive}"
       }
     }
   },
@@ -34,6 +36,13 @@
       "type": "string",
       "title": "Google Drive Access Token",
       "description": "A valid Google OAuth2 access token with Drive read/write scope.",
+      "sensitive": true,
+      "required": false
+    },
+    "gtasks": {
+      "type": "string",
+      "title": "Google Tasks Access Token",
+      "description": "A valid Google OAuth2 access token with Tasks read/write scope.",
       "sensitive": true,
       "required": false
     }

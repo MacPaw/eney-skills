@@ -18,6 +18,10 @@ import SheetsCreate from "./components/google-sheets/sheets-create.js";
 import DriveFileComments from "./components/google-drive/drive-file-comments.js";
 import DriveFilePermissions from "./components/google-drive/drive-file-permissions.js";
 import DriveCommentReplies from "./components/google-drive/drive-comment-replies.js";
+import SlidesCreate from "./components/google-slides/slides-create.js";
+import SlidesView from "./components/google-slides/slides-view.js";
+import SlidesAddSlide from "./components/google-slides/slides-add-slide.js";
+import SlidesFromTemplate from "./components/google-slides/slides-from-template.js";
 
 const server = new McpServer(
   { name: "gws-mcp", version: "1.0.0" },
@@ -42,6 +46,10 @@ uixServer.registerWidget(SheetsCreate);
 uixServer.registerWidget(DriveFileComments);
 uixServer.registerWidget(DriveFilePermissions);
 uixServer.registerWidget(DriveCommentReplies);
+uixServer.registerWidget(SlidesCreate);
+uixServer.registerWidget(SlidesView);
+uixServer.registerWidget(SlidesAddSlide);
+uixServer.registerWidget(SlidesFromTemplate);
 
 async function main() {
   const transport = new StdioServerTransport();

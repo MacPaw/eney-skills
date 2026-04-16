@@ -42,3 +42,7 @@ export function docsToken(): string {
 export function sheetsToken(): string {
   return process.env.GOOGLE_SHEETS_TOKEN ?? "";
 }
+
+export function slidesToken(): string {
+  return process.env.GOOGLE_SLIDES_TOKEN ?? "";
+}
