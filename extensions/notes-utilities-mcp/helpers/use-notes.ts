@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useAppleScript, useLogger } from "@eney/api";
+import { runScript, useLogger } from "@eney/api";
 
 export type NoteItem = {
   id: string;
@@ -135,8 +135,6 @@ export function parseNotes(raw: string): NoteItem[] {
 
 export const useNotes = () => {
   const logger = useLogger();
-  const runScript = useAppleScript();
-
   const [isLoading, setIsLoading] = useState(true);
   const [notes, setNotes] = useState<NoteItem[]>([]);
   const [folders, setFolders] = useState<FolderItem[]>([]);

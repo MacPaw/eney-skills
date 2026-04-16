@@ -7,7 +7,6 @@ import {
   Form,
   Paper,
   defineWidget,
-  useAppleScript,
   useCloseWidget,
 } from "@eney/api";
 import { useUnreadMessages, formatGroupTime, cleanMessageText, UnreadMessage } from "../helpers/messages-db.js";
@@ -92,7 +91,6 @@ function buildCloseContext(chats: ChatOption[]): string {
 
 function UnreadMessages(props: Props) {
   const closeWidget = useCloseWidget();
-  const runAppleScript = useAppleScript();
   const limit = props.limit ?? 50;
   const { data: rawMessages, isLoading: dbLoading, error } = useUnreadMessages();
 
@@ -150,7 +148,7 @@ function UnreadMessages(props: Props) {
         <Action
           title="Open Chat"
           onAction={() => {
-            if (selectedChat) openMessagesChat(runAppleScript, selectedChat);
+            if (selectedChat) openMessagesChat(selectedChat);
             closeWidget(buildCloseContext(chats));
           }}
           style="secondary"
@@ -210,7 +208,7 @@ function UnreadMessages(props: Props) {
       setIsSending(true);
       setSendError("");
       try {
-        await sendMessage(runAppleScript, chat.senderHandle, replyText.trim());
+        await sendMessage(chat.senderHandle, replyText.trim());
         setView("sent");
       } catch (e) {
         setSendError(e instanceof Error ? e.message : String(e));

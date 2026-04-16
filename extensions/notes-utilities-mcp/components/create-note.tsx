@@ -7,7 +7,7 @@ import {
   Paper,
   CardHeader,
   useCloseWidget,
-  useAppleScript,
+  runScript,
   Divider,
 } from "@eney/api";
 import { z } from "zod";
@@ -34,7 +34,6 @@ const renderAndCleanContent = (content: string) => {
 };
 
 function CreateNote(props: Props) {
-  const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
   const { data, isLoading: isLoadingNotes } = useNotes();
 

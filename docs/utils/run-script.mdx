@@ -1,28 +1,24 @@
 ---
-title: useAppleScript
-description: Run AppleScript commands directly from your widget
+title: runScript
+description: Run AppleScript commands from your extension
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-The `useAppleScript` hook wraps the macOS `osascript` process into a simple API for your extension.
+`runScript` is a plain async function that wraps the macOS `osascript` process into a simple API for your extension.
 
 ## Import
 
-Import the hook to start using AppleScript in your component:
-
 ```typescript
-import { useAppleScript } from "@eney/api";
+import { runScript } from "@eney/api";
 ```
 
 ## Usage
 
-Initialize the hook and execute a script to interact with a native macOS application:
+Execute a script to interact with a native macOS application:
 
 ```typescript
-const runAppleScript = useAppleScript();
-
-const result = await runAppleScript(`
+const result = await runScript(`
   tell application "Notes"
     get name of first note
   end tell
@@ -32,10 +28,10 @@ const result = await runAppleScript(`
 ## Signature
 
 ```typescript
-function useAppleScript(): (script: string) => Promise<string>
+function runScript(script: string): Promise<string>
 ```
 
-This hook returns an asynchronous function. When called with an AppleScript string, it resolves with the trimmed output (stdout) of the script, or rejects if the script fails.
+When called with an AppleScript string, it resolves with the trimmed output (stdout) of the script, or rejects if the script fails.
 
 ## Full example — send an email
 
@@ -43,12 +39,10 @@ This complete example shows how to build a mail-sending widget using AppleScript
 
 ```typescript
 import { useState } from "react";
-import { Form, Action, ActionPanel, useCloseWidget } from "@eney/api";
-import { useAppleScript } from "../shared/use-apple-script.js";
+import { Form, Action, ActionPanel, runScript, useCloseWidget } from "@eney/api";
 
 function SendMail(props: { to?: string; subject?: string; body?: string }) {
   const closeWidget = useCloseWidget();
-  const runAppleScript = useAppleScript();
   const [to, setTo] = useState(props.to ?? "");
   const [subject, setSubject] = useState(props.subject ?? "");
   const [body, setBody] = useState(props.body ?? "");
@@ -61,7 +55,7 @@ function SendMail(props: { to?: string; subject?: string; body?: string }) {
   async function onSubmit() {
     setSending(true);
     try {
-      await runAppleScript(`
+      await runScript(`
         tell application "Mail"
           set msg to make new outgoing message with properties {
             subject: "${escape(subject)}",
@@ -107,11 +101,11 @@ function SendMail(props: { to?: string; subject?: string; body?: string }) {
 
 ## Error handling
 
-`useAppleScript` rejects if `osascript` exits with a non-zero code. Always wrap calls in `try/catch`:
+`runScript` rejects if `osascript` exits with a non-zero code. Always wrap calls in `try/catch`:
 
 ```typescript
 try {
-  const result = await runAppleScript(`tell application "Notes" to get name of first note`);
+  const result = await runScript(`tell application "Notes" to get name of first note`);
   console.log(result);
 } catch (error) {
   // Handle AppleScript error

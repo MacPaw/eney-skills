@@ -1,0 +1,30 @@
+---
+title: Overview of utilities
+description: Utilities for data access and widget lifecycle
+---
+
+import { Card, Cards } from "fumadocs-ui/components/card";
+
+The `@eney/api` package provides several utilities to use inside your widget components. 
+
+## Available utilities
+
+<Cards>
+<Card title="useLogger" href="/docs/utils/use-logger">
+    Write debug, info, warn, and error messages to the Eney log.
+  </Card>
+  <Card title="useCloseWidget" href="/docs/utils/use-close-widget">
+    Finalize a widget interaction and pass context back to Eney.
+  </Card>
+  <Card title="runScript" href="/docs/utils/use-apple-script">
+    Run AppleScript via osascript and return the output as a string.
+  </Card>
+</Cards>
+
+## Import
+
+Import utilities directly from the Eney API package:
+
+```typescript
+import { useLogger, useCloseWidget, runScript } from "@eney/api";
+```
