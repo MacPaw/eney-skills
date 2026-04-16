@@ -1,123 +1,162 @@
 ---
 title: useOAuth
-description: Access OAuth tokens and refresh them inside an authenticated widget component
+description: Handle PKCE OAuth sign-in, token access, and refresh inside a widget component
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Returns the OAuth session that the framework resolved before your component mounted. Use this hook to make authenticated API calls and refresh tokens when they expire.
+Manages the full PKCE OAuth lifecycle inside your component — checks for cached tokens, runs the browser sign-in flow when needed, and provides token refresh. You control the UI for every state (loading, error, authenticated).
 
 ## Import
 
-Import the hook from the Eney API package:
-
 ```typescript
 import { useOAuth } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
 ```
 
 ## Usage
 
-Call the hook at the top of your component to get the current tokens and refresh function:
+Pass an `OAuthConfig` to the hook and render based on the returned state:
 
-```typescript
-const { accessToken, refreshToken, refresh } = useOAuth();
+```tsx
+const oauthConfig: OAuthConfig = {
+  clientId: "your-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read"],
+};
+
+function MyWidget() {
+  const { isLoading, error, data, refresh, retry } = useOAuth(oauthConfig);
+
+  if (isLoading) return <Paper markdown="Signing in..." />;
+
+  if (error) {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error}`}
+        actions={<ActionPanel><Action title="Retry" onAction={retry} /></ActionPanel>}
+      />
+    );
+  }
+
+  // data.accessToken is available here
+  return <Paper markdown="Authenticated!" />;
+}
 ```
-
-The `accessToken` is always a valid string — the framework guarantees that your component only renders after tokens have been resolved.
 
 ## Signature
 
 ```typescript
-function useOAuth(): OAuthSession
+function useOAuth(config: OAuthConfig): OAuthState
 ```
 
-### Return value
+### OAuthConfig
 
-| Property       | Type                          | Description                                           |
-| -------------- | ----------------------------- | ----------------------------------------------------- |
-| `accessToken`  | `string`                      | The OAuth access token for making authenticated calls |
-| `refreshToken` | `string \| null`              | The refresh token, if the provider returned one       |
-| `refresh`      | `() => Promise<OAuthTokens>`  | Exchanges the refresh token for new tokens            |
+| Property       | Type       | Default       | Required | Description                            |
+| -------------- | ---------- | ------------- | -------- | -------------------------------------- |
+| `clientId`     | `string`   | —             | Yes      | OAuth client ID from your provider     |
+| `authorizeUrl` | `string`   | —             | Yes      | Provider's authorization endpoint      |
+| `tokenUrl`     | `string`   | —             | Yes      | Provider's token exchange endpoint     |
+| `scopes`       | `string[]` | —             | Yes      | OAuth scopes to request                |
+| `callbackPort` | `number`   | `1798`        | No       | Port for the local callback server     |
+| `callbackPath` | `string`   | `"/callback"` | No       | Path for the OAuth redirect            |
 
-The `refresh` function:
-- POSTs to the provider's token endpoint with `grant_type=refresh_token`
-- Returns the new `{ accessToken, refreshToken }`
-- Sends the updated tokens to Eney so they persist across sessions
-- Throws if no refresh token is available
+### OAuthState (return value)
 
-## Prerequisites
+| Property    | Type                         | Description                                                  |
+| ----------- | ---------------------------- | ------------------------------------------------------------ |
+| `isLoading` | `boolean`                    | `true` while checking env vars or waiting for browser auth   |
+| `error`     | `string \| null`             | Error message if the flow failed, `null` otherwise           |
+| `data`      | `OAuthTokens \| null`        | `{ accessToken, refreshToken }` once authenticated           |
+| `refresh`   | `() => Promise<OAuthTokens>` | Exchanges the refresh token for new tokens                   |
+| `retry`     | `() => void`                 | Restarts the full OAuth flow from scratch                    |
 
-`useOAuth` only works inside widgets that declare an `oauth` configuration in `defineWidget`. If you call it in a widget without OAuth configured, it throws an error.
+## How the flow works
 
-```typescript
-import { defineWidget, useOAuth, Paper } from "@eney/api";
-import { z } from "zod";
-
-const schema = z.object({
-  query: z.string().optional(),
-});
-
-type Props = z.infer<typeof schema>;
-
-const MyWidget = defineWidget({
-  name: "my-authenticated-widget",
-  description: "Fetches data from an external API",
-  schema,
-  oauth: {
-    clientId: "your-client-id",
-    authorizeUrl: "https://provider.com/oauth/authorize",
-    tokenUrl: "https://provider.com/oauth/token",
-    scopes: ["read", "write"],
-  },
-  component: MyWidgetComponent,
-});
-```
+1. On mount, the hook checks for `OAUTH_ACCESS_TOKEN` and `OAUTH_REFRESH_TOKEN` environment variables.
+2. If present, `data` is populated immediately.
+3. If not, a local server starts on port `1798` and the provider's authorization page opens in the browser.
+4. After the user authorizes, the hook exchanges the code for tokens using PKCE (S256).
+5. Tokens are sent to Eney via MCP notification so they persist across sessions.
+6. `isLoading` becomes `false` and `data` is populated.
 
 ## Example
 
-This example fetches data and automatically refreshes the token on a 401 response:
+This example fetches Spotify data and handles token refresh on 401:
 
 ```tsx
 import { useState, useEffect } from "react";
-import { Paper, useOAuth, useCloseWidget } from "@eney/api";
+import { Paper, ActionPanel, Action, useOAuth, useCloseWidget } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
 
-function MyWidgetComponent(props: Props) {
-  const { accessToken, refresh } = useOAuth();
+const spotifyOAuth: OAuthConfig = {
+  clientId: "your-spotify-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read"],
+};
+
+function SpotifyWidget() {
+  const { isLoading, error, data, refresh, retry } = useOAuth(spotifyOAuth);
   const closeWidget = useCloseWidget();
-  const [token, setToken] = useState(accessToken);
+  const [token, setToken] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState("Loading...");
 
-  async function fetchWithRefresh(url: string) {
-    let res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.status === 401) {
-      const newTokens = await refresh();
-      setToken(newTokens.accessToken);
-      res = await fetch(url, {
-        headers: { Authorization: `Bearer ${newTokens.accessToken}` },
-      });
-    }
-
-    return res;
-  }
+  useEffect(() => {
+    if (data) setToken(data.accessToken);
+  }, [data]);
 
   useEffect(() => {
-    fetchWithRefresh("https://api.example.com/data")
-      .then((res) => res.json())
-      .then((data) => setMarkdown(JSON.stringify(data, null, 2)))
-      .catch((err) => setMarkdown(`Error: ${err.message}`));
-  }, []);
+    if (!token) return;
 
-  return <Paper markdown={markdown} />;
+    async function fetchTracks() {
+      let res = await fetch("https://api.spotify.com/v1/me/top/tracks?limit=10", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        const newTokens = await refresh();
+        setToken(newTokens.accessToken);
+        res = await fetch("https://api.spotify.com/v1/me/top/tracks?limit=10", {
+          headers: { Authorization: `Bearer ${newTokens.accessToken}` },
+        });
+      }
+
+      const body = await res.json();
+      const list = body.items
+        ?.map((t: any, i: number) => `${i + 1}. **${t.name}** — ${t.artists[0].name}`)
+        .join("\n");
+      setMarkdown(list || "No tracks found.");
+    }
+
+    fetchTracks().catch((err: Error) => setMarkdown(`Error: ${err.message}`));
+  }, [token]);
+
+  if (isLoading) return <Paper markdown="Signing in..." />;
+
+  if (error) {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error}`}
+        actions={<ActionPanel><Action title="Retry" onAction={retry} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  return (
+    <Paper
+      markdown={markdown}
+      actions={<ActionPanel><Action title="Done" onAction={() => closeWidget("Done")} /></ActionPanel>}
+    />
+  );
 }
 ```
 
 <Callout type="info">
-  You don't need to handle the sign-in flow yourself. The framework automatically shows a "Signing in..." screen, opens the browser for authorization, and only mounts your component after tokens are available. See the [OAuth guide](/docs/oauth) for the full setup instructions, configuration reference, and how the flow works end to end.
+  See the [OAuth guide](/docs/oauth) for full setup instructions including provider registration, manifest configuration, and environment variable details.
 </Callout>
 
 <Callout type="warn">
-  Not all OAuth providers issue refresh tokens. If the provider didn't return one, `refreshToken` will be `null` and calling `refresh()` will throw an error. Some providers require specific scopes to get a refresh token (e.g., `offline_access`).
+  Not all OAuth providers issue refresh tokens. If the provider didn't return one, `data.refreshToken` will be `null` and calling `refresh()` will throw an error. Some providers require specific scopes to get a refresh token (e.g., `offline_access`).
 </Callout>

@@ -6,16 +6,15 @@ description: Add PKCE OAuth authentication to your extension
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Many extensions need to access third-party APIs that require user authorization — Spotify, Google, Dropbox, and others. The `@eney/api` package provides built-in PKCE OAuth support that handles the entire sign-in flow for you.
+Many extensions need to access third-party APIs that require user authorization — Spotify, Google, Dropbox, and others. The `@eney/api` package provides a [`useOAuth`](/docs/hooks/use-oauth) hook that handles the entire PKCE sign-in flow. You control the UI for every state — loading, error, and authenticated.
 
 ## How it works
 
-1. When a widget with `oauth` configuration is invoked, the framework checks for `OAUTH_ACCESS_TOKEN` and `OAUTH_REFRESH_TOKEN` environment variables.
-2. If the environment variables are present, tokens are used directly and your component mounts immediately.
-3. If not, the framework displays a "Signing in..." placeholder and opens the provider's authorization page in the user's browser.
-4. A local server on port `1798` receives the OAuth callback. The framework exchanges the authorization code for tokens using PKCE (S256).
-5. Tokens are sent to Eney via MCP notification so they can be provided as environment variables on subsequent sessions — meaning the user only signs in once.
-6. Your component mounts with tokens available via the [`useOAuth`](/docs/hooks/use-oauth) hook.
+1. The [`useOAuth`](/docs/hooks/use-oauth) hook checks for `OAUTH_ACCESS_TOKEN` and `OAUTH_REFRESH_TOKEN` environment variables.
+2. If present, tokens are returned immediately.
+3. If not, a local server starts on port `1798` and the provider's authorization page opens in the browser.
+4. After the user authorizes, the hook exchanges the authorization code for tokens using PKCE (S256).
+5. Tokens are sent to Eney via MCP notification so they persist across sessions — meaning the user only signs in once.
 
 <Callout type="info">
   PKCE (Proof Key for Code Exchange) is designed for public clients that cannot securely store a client secret. Your extension does not need a client secret — only a client ID.
@@ -40,24 +39,39 @@ Make sure the provider supports PKCE with the S256 code challenge method. Most m
 </Step>
 
 <Step>
-### Add OAuth configuration to your widget
+### Call useOAuth in your component
 
-Pass an `oauth` object to `defineWidget`:
+Define your OAuth config and pass it to the `useOAuth` hook. The hook returns the current auth state — render your UI accordingly:
 
 ```tsx
 import { z } from "zod";
-import { defineWidget, useOAuth, Paper } from "@eney/api";
+import { defineWidget, useOAuth, Paper, ActionPanel, Action } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
 
 const schema = z.object({});
 
-type Props = z.infer<typeof schema>;
+const spotifyOAuth: OAuthConfig = {
+  clientId: "your-spotify-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read"],
+};
 
-function TopTracks(_props: Props) {
-  const { accessToken } = useOAuth();
+function TopTracks() {
+  const { isLoading, error, data, retry } = useOAuth(spotifyOAuth);
 
-  // accessToken is always available here
-  // ... use it to call the Spotify API
+  if (isLoading) return <Paper markdown="Signing in..." />;
 
+  if (error) {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error}`}
+        actions={<ActionPanel><Action title="Retry" onAction={retry} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  // data.accessToken is available here
   return <Paper markdown="Authenticated!" />;
 }
 
@@ -65,12 +79,6 @@ const TopTracksWidget = defineWidget({
   name: "spotify-top-tracks",
   description: "Show your top Spotify tracks",
   schema,
-  oauth: {
-    clientId: "your-spotify-client-id",
-    authorizeUrl: "https://accounts.spotify.com/authorize",
-    tokenUrl: "https://accounts.spotify.com/api/token",
-    scopes: ["user-top-read"],
-  },
   component: TopTracks,
 });
 
@@ -78,32 +86,11 @@ export default TopTracksWidget;
 ```
 </Step>
 
-<Step>
-### Access tokens in your component
-
-Use the [`useOAuth`](/docs/hooks/use-oauth) hook to read the tokens:
-
-```tsx
-import { useOAuth } from "@eney/api";
-
-function MyComponent() {
-  const { accessToken, refreshToken } = useOAuth();
-
-  // Make authenticated API calls
-  const response = await fetch("https://api.example.com/data", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-}
-```
-
-The hook is guaranteed to return valid tokens — the framework only mounts your component after authentication completes.
-</Step>
-
 </Steps>
 
 ## Configuration reference
 
-The `oauth` property in `defineWidget` accepts the following options:
+The `OAuthConfig` object passed to `useOAuth` accepts the following options:
 
 | Property       | Type       | Default       | Required | Description                                         |
 | -------------- | ---------- | ------------- | -------- | --------------------------------------------------- |
@@ -123,7 +110,7 @@ On the first run, the full browser-based OAuth flow is triggered. After tokens a
 | `OAUTH_ACCESS_TOKEN`  | The OAuth access token        |
 | `OAUTH_REFRESH_TOKEN` | The refresh token, if present |
 
-When these variables are set, the framework skips the browser flow entirely and your component mounts immediately with the cached tokens.
+When these variables are set, the hook skips the browser flow entirely and returns the cached tokens immediately.
 
 ## Manifest configuration
 
@@ -145,7 +132,7 @@ To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.jso
 ```
 
 <Callout type="warn">
-  The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the widget reports an error.
+  The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the hook sets the `error` state.
 </Callout>
 
 ## Token refresh
@@ -153,8 +140,12 @@ To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.jso
 Access tokens expire. The `useOAuth` hook returns a `refresh()` function that exchanges the refresh token for a new access token:
 
 ```tsx
-const { accessToken, refresh } = useOAuth();
-const [token, setToken] = useState(accessToken);
+const { data, refresh } = useOAuth(oauthConfig);
+const [token, setToken] = useState<string | null>(null);
+
+useEffect(() => {
+  if (data) setToken(data.accessToken);
+}, [data]);
 
 async function fetchWithRefresh(url: string) {
   let res = await fetch(url, {
@@ -173,7 +164,7 @@ async function fetchWithRefresh(url: string) {
 }
 ```
 
-When `refresh()` is called, the framework:
+When `refresh()` is called, the hook:
 1. POSTs to the provider's `tokenUrl` with `grant_type=refresh_token`
 2. Returns the new `{ accessToken, refreshToken }`
 3. Sends updated tokens to Eney so they persist across sessions
@@ -184,7 +175,7 @@ When `refresh()` is called, the framework:
 
 ## Full example
 
-A complete extension that shows a user's top Spotify tracks:
+A complete widget that shows a user's top Spotify tracks with token refresh:
 
 ```tsx
 // components/spotify-top-tracks.tsx
@@ -198,68 +189,86 @@ import {
   ActionPanel,
   Action,
 } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
 
 const schema = z.object({});
 
+const spotifyOAuth: OAuthConfig = {
+  clientId: "your-spotify-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read", "user-read-recently-played"],
+};
+
 function SpotifyTopTracks() {
-  const { accessToken, refresh } = useOAuth();
+  const { isLoading, error, data, refresh, retry } = useOAuth(spotifyOAuth);
   const closeWidget = useCloseWidget();
-  const [token, setToken] = useState(accessToken);
+  const [token, setToken] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState("Loading your top tracks...");
 
-  async function fetchWithRefresh(url: string) {
-    let res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.status === 401) {
-      const newTokens = await refresh();
-      setToken(newTokens.accessToken);
-      res = await fetch(url, {
-        headers: { Authorization: `Bearer ${newTokens.accessToken}` },
-      });
-    }
-
-    return res;
-  }
+  useEffect(() => {
+    if (data) setToken(data.accessToken);
+  }, [data]);
 
   useEffect(() => {
-    fetchWithRefresh("https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=short_term")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.items?.length) {
-          const list = data.items
-            .map((t: any, i: number) =>
+    if (!token) return;
+
+    async function fetchTracks() {
+      let res = await fetch(
+        "https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=short_term",
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (res.status === 401) {
+        const newTokens = await refresh();
+        setToken(newTokens.accessToken);
+        res = await fetch(
+          "https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=short_term",
+          { headers: { Authorization: `Bearer ${newTokens.accessToken}` } },
+        );
+      }
+
+      const body = await res.json();
+
+      if (body.items?.length) {
+        const list = body.items
+          .map(
+            (t: any, i: number) =>
               `${i + 1}. **${t.name}** — ${t.artists.map((a: any) => a.name).join(", ")}`,
-            )
-            .join("\n");
-          setMarkdown(`## Your Top Tracks\n\n${list}`);
-        } else {
-          setMarkdown("No recent tracks found.");
-        }
-      })
-      .catch((err: Error) => setMarkdown(`Error: ${err.message}`));
-  }, []);
+          )
+          .join("\n");
+        setMarkdown(`## Your Top Tracks\n\n${list}`);
+      } else {
+        setMarkdown("No recent tracks found.");
+      }
+    }
 
-  const actions = (
-    <ActionPanel>
-      <Action title="Done" onAction={() => closeWidget("Showed top tracks")} />
-    </ActionPanel>
+    fetchTracks().catch((err: Error) => setMarkdown(`Error: ${err.message}`));
+  }, [token]);
+
+  if (isLoading) return <Paper markdown="Signing in..." />;
+
+  if (error) {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error}`}
+        actions={<ActionPanel><Action title="Retry" onAction={retry} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  return (
+    <Paper
+      markdown={markdown}
+      actions={<ActionPanel><Action title="Done" onAction={() => closeWidget("Showed top tracks")} /></ActionPanel>}
+    />
   );
-
-  return <Paper markdown={markdown} actions={actions} />;
 }
 
 const SpotifyTopTracksWidget = defineWidget({
   name: "spotify-top-tracks",
   description: "Show your top Spotify tracks",
   schema,
-  oauth: {
-    clientId: "your-spotify-client-id",
-    authorizeUrl: "https://accounts.spotify.com/authorize",
-    tokenUrl: "https://accounts.spotify.com/api/token",
-    scopes: ["user-top-read", "user-read-recently-played"],
-  },
   component: SpotifyTopTracks,
 });
 
