@@ -94,14 +94,14 @@ function CreateNote(props: Props) {
 
   if (isLoadingNotes) {
     return (
-      <Form header={header} actions={actions}>
+      <Form header={header} actions={actions} size="medium">
         <Paper markdown="Loading notes..." />
       </Form>
     );
   }
 
   return (
-    <Form header={header} actions={actions}>
+    <Form header={header} actions={actions} size="medium">
       {error && <Paper markdown={`**Error:** ${error}`} />}
       {folders.length > 1 && (
         <Form.Dropdown name="folder" label="Folder" value={folder} onChange={setFolder}>
