@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, docsToken, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDocFiles } from "../../helpers/use-doc-files.js";
 import { markdownToDocRequests, hasMarkdown, categorizeError } from "../../helpers/markdown-to-requests.js";
 
@@ -33,7 +33,7 @@ interface DocBodyResponse {
 async function getDocEndIndex(docId: string): Promise<number> {
   const stdout = await execGws(
     `docs documents get --params '${JSON.stringify({ documentId: docId })}'`,
-    docsToken()
+    driveToken()
   );
   const doc = JSON.parse(stdout) as DocBodyResponse;
   const content = doc.body?.content ?? [];
@@ -70,7 +70,7 @@ function DocsWrite(props: Props) {
         : [{ insertText: { location: { index: insertAt }, text: "\n" + normalizedText } }];
       await execGws(
         `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
-        docsToken()
+        driveToken()
       );
 
       logger.info(`[docs-write] completed`);

@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, slidesToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useSlidesFiles } from "../../helpers/use-slides-files.js";
 
 const schema = z.object({
@@ -81,7 +81,7 @@ function SlidesView(props: Props) {
       logger.info(`[slides-view] presentationId=${presentationId}`);
       const stdout = await execGws(
         `slides presentations get --params '${JSON.stringify({ presentationId })}'`,
-        slidesToken()
+        driveToken()
       );
       const data = JSON.parse(stdout) as PresentationData;
       const slides = data.slides ?? [];

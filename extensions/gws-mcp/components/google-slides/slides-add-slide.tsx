@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, slidesToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useSlidesFiles } from "../../helpers/use-slides-files.js";
 
 const schema = z.object({
@@ -48,7 +48,7 @@ function SlidesAddSlide(props: Props) {
       // Get current slide count to determine insertion index
       const getStdout = await execGws(
         `slides presentations get --params '${JSON.stringify({ presentationId })}'`,
-        slidesToken()
+        driveToken()
       );
       const current = JSON.parse(getStdout) as SlideCountResponse;
       const insertionIndex = (current.slides ?? []).length;
@@ -91,7 +91,7 @@ function SlidesAddSlide(props: Props) {
       logger.info(`[slides-add-slide] batchUpdate requests=${requests.length}`);
       await execGws(
         `slides presentations batchUpdate --params '${JSON.stringify({ presentationId })}' --json '${JSON.stringify({ requests })}'`,
-        slidesToken()
+        driveToken()
       );
 
       const link = `https://docs.google.com/presentation/d/${presentationId}/edit`;
