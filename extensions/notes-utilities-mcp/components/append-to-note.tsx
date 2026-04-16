@@ -114,7 +114,7 @@ function AppendToNote(props: Props) {
 
   if (isLoadingNotes) {
     return (
-      <Form actions={actions} header={header}>
+      <Form actions={actions} header={header} size="medium">
         <Paper markdown={props.noteName} />
         <Paper markdown="Loading notes..." />
       </Form>
@@ -122,7 +122,7 @@ function AppendToNote(props: Props) {
   }
 
   return (
-    <Form actions={actions} header={header}>
+    <Form actions={actions} header={header} size="medium">
       <Form.Dropdown name="noteName" value={noteName} onChange={setNoteName}>
         <Form.Dropdown.Item key={NEW_NOTE_VALUE} title="New Note" value={NEW_NOTE_VALUE} />
         {notes.allNotes

@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "notes-utilities-mcp",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "Notes Utilities MCP server",
   "author": {
     "name": "Yurii"
