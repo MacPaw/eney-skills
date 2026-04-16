@@ -20,7 +20,7 @@ export class ApiClient {
     this.backendUrl =
       mode === "production"
         ? "https://extensions.api.eney.ai/api/v1/public"
-        : "https://extensions.api.appflix.io/api/v1/public";
+        : "https://extensions.eney.appflix.io/api/v1/public";
 
     const token = process.env["API_TOKEN"];
     if (!token) {
@@ -40,21 +40,16 @@ export class ApiClient {
   }
 
   async publishMcp(payload: PublishMcpPayload) {
-    try {
-      const response = await this.fetch(`/publish/mcp-extensions`, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+    const response = await this.fetch(`/publish/mcp-extensions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Failed to publish MCP: ${response.status} ${response.statusText} ${await response.text()}`);
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error(`\nError publishing MCP!\n${error}`);
-      throw error;
+    if (!response.ok) {
+      throw new Error(await response.text());
     }
+
+    return await response.json();
   }
 
   async uploadMcpArchiveToCloud(filePath: string) {

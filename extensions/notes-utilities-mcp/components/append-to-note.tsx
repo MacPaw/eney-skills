@@ -7,7 +7,7 @@ import {
   Paper,
   CardHeader,
   useCloseWidget,
-  useAppleScript,
+  runScript,
   Divider,
 } from "@eney/api";
 import { z } from "zod";
@@ -35,7 +35,6 @@ function escapeDoubleQuotes(value: string) {
 
 function AppendToNote(props: Props) {
   const closeWidget = useCloseWidget();
-  const runScript = useAppleScript();
   const { data: notes, isLoading: isLoadingNotes } = useNotes();
 
   const [noteName, setNoteName] = useState(props.noteName ?? NEW_NOTE_VALUE);

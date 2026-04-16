@@ -2,6 +2,7 @@ import { join, resolve } from "path";
 import semver from "semver";
 import fs from "fs/promises";
 import os from "os";
+import { styleText } from "node:util";
 import { spawnSync } from "child_process";
 
 import { ApiClient, getMcpFileDownloadUrl } from "../lib/api.ts";
@@ -14,7 +15,7 @@ async function unpackMcpArchive(archivePath: string): Promise<string> {
     encoding: "utf8",
   });
   if (result.status !== 0) {
-    throw new Error(`Failed to unpack .mcpb archive: ${result.stderr}`);
+    throw new Error(`Failed to unpack .mcpb archive!\n${result.stderr}`);
   }
   return tmpDir;
 }
@@ -23,10 +24,12 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
   const api = new ApiClient(mode);
   const resolvedArchivePath = resolve(archivePath);
 
-  console.log("\nStep 1/3: Unpacking .mcpb archive...");
-  const tmpDir = await unpackMcpArchive(resolvedArchivePath);
+  let tmpDir = "";
 
   try {
+    console.log("\nStep 1/3: Unpacking .mcpb archive...");
+    tmpDir = await unpackMcpArchive(resolvedArchivePath);
+
     const manifestPath = join(tmpDir, "manifest.json");
 
     // check for path traversal
@@ -60,16 +63,20 @@ export async function publishMcpMetadata(mode: "staging" | "production", archive
     };
 
     console.log("\nMCP metadata:");
-    console.dir(metadataPayload, { depth: null });
+    console.log(JSON.stringify(metadataPayload, null, 2));
 
     try {
-      const data = await api.publishMcp(metadataPayload);
+      await api.publishMcp(metadataPayload);
       console.log(`\nSuccessfully published ${mcpName}@${parsedVersion}!`);
     } catch (error) {
-      console.error("\nError publishing MCP:", error);
-      throw error;
+      throw new Error(`Failed to publish MCP metadata!\n${error}`);
     }
+  } catch (error) {
+    console.error(styleText("red", String(error)));
+    process.exit(1);
   } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true });
+    if (tmpDir) {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
   }
 }

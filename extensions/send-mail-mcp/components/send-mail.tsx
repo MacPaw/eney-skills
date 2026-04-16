@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Action, ActionPanel, defineWidget, Form, Paper, useAppleScript, useCloseWidget } from "@eney/api";
+import { Action, ActionPanel, defineWidget, Form, Paper, runScript, useCloseWidget } from "@eney/api";
 import { statSync } from "node:fs";
 import { basename } from "node:path";
 import { z } from "zod";
@@ -46,7 +46,6 @@ function escapeAppleScript(str: string): string {
 }
 
 export function SendMail(props: Props) {
-  const runScript = useAppleScript();
   const closeWidget = useCloseWidget();
   const [recipient, setRecipient] = useState(props.recipient ?? "");
   const [subject, setSubject] = useState(props.subject ?? "");
@@ -67,8 +66,7 @@ tell application "Mail"
 	set theMessage to make new outgoing message with properties {subject:"${escapeAppleScript(subject)}", content:"${escapeAppleScript(body)}", visible:false}
 	tell theMessage
 		make new to recipient at end of to recipients with properties {address:"${escapeAppleScript(recipient)}"}
-		${
-      attachments.length > 0
+		${attachments.length > 0
         ? `
 		set theAttachments to {${attachmentsList}}
 		repeat with theAttachment in theAttachments
@@ -77,7 +75,7 @@ tell application "Mail"
 			delay 1
 		end repeat`
         : ""
-    }
+      }
 	end tell
 	send theMessage
 end tell

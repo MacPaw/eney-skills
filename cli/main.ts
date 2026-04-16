@@ -10,6 +10,7 @@ import { listArtifacts } from "./management/list-artifacts.ts";
 import { deleteArtifacts } from "./management/delete-artifacts.ts";
 import { extractMcpTools } from "./management/extract-mcp-tools.ts";
 import { devMcp } from "./dev/command.ts";
+import { linkPackage } from "./link-package/command.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -88,5 +89,11 @@ program
     await writeFile(resolve(output), JSON.stringify(tools, null, 2));
     console.log(`Wrote ${tools.length} tool(s) to ${output}`);
   });
+
+program
+  .command("link-package")
+  .description("Link local @eney/api package to the current extension via npm pack + install")
+  .requiredOption("-p, --path <path>", "Path to the @eney/api package directory")
+  .action(({ path }) => linkPackage(path));
 
 program.parse(process.argv);
