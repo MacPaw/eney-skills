@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, docsToken, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFolders } from "../../helpers/use-drive-folders.js";
 import { markdownToDocRequests, hasMarkdown, categorizeError } from "../../helpers/markdown-to-requests.js";
 
@@ -51,7 +51,7 @@ function DocsCreate(props: Props) {
       // Step 1: Create blank document
       const stdout = await execGws(
         `docs documents create --json '${JSON.stringify({ title })}'`,
-        docsToken()
+        driveToken()
       );
       const doc = JSON.parse(stdout) as DocResponse;
       const docId = doc.documentId ?? "";
@@ -70,7 +70,7 @@ function DocsCreate(props: Props) {
           logger.info(`[docs-create] batchUpdate requests=${requests.length}`);
           await execGws(
             `docs documents batchUpdate --params '${JSON.stringify({ documentId: docId })}' --json '${JSON.stringify({ requests })}'`,
-            docsToken()
+            driveToken()
           );
         }
       }

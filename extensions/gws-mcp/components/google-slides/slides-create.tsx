@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, slidesToken, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFolders } from "../../helpers/use-drive-folders.js";
 
 const schema = z.object({
@@ -60,7 +60,7 @@ function SlidesCreate(props: Props) {
       // Step 1: Create presentation (response includes first slide with placeholder IDs)
       const stdout = await execGws(
         `slides presentations create --json '${JSON.stringify({ title })}'`,
-        slidesToken()
+        driveToken()
       );
       const presentation = JSON.parse(stdout) as PresentationResponse;
       const presentationId = presentation.presentationId ?? "";
@@ -91,7 +91,7 @@ function SlidesCreate(props: Props) {
           logger.info(`[slides-create] batchUpdate requests=${requests.length}`);
           await execGws(
             `slides presentations batchUpdate --params '${JSON.stringify({ presentationId })}' --json '${JSON.stringify({ requests })}'`,
-            slidesToken()
+            driveToken()
           );
         }
       }

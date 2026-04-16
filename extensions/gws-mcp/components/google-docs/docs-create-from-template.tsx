@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, docsToken, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDocFiles } from "../../helpers/use-doc-files.js";
 
 const schema = z.object({
@@ -62,7 +62,7 @@ function DocsCreateFromTemplate(props: Props) {
         logger.info(`[docs-from-template] appending text`);
         await execGws(
           `docs +write --document ${newId} --text ${JSON.stringify(text)}`,
-          docsToken()
+          driveToken()
         );
       }
 

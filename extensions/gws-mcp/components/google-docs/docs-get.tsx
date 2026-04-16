@@ -12,7 +12,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, docsToken } from "../../helpers/gws.js";
+import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDocFiles } from "../../helpers/use-doc-files.js";
 
 const schema = z.object({
@@ -84,7 +84,7 @@ function DocsGet(props: Props) {
       logger.info(`[docs-get] documentId=${selectedId}`);
       const stdout = await execGws(
         `docs documents get --params '${JSON.stringify({ documentId: selectedId })}'`,
-        docsToken()
+        driveToken()
       );
       const doc = JSON.parse(stdout) as DocResponse;
       setFileUrl(`https://docs.google.com/document/d/${doc.documentId}/edit`);

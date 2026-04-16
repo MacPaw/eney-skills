@@ -34,15 +34,3 @@ export function meetToken(): string {
 export function tasksToken(): string {
   return process.env.GOOGLE_TASKS_TOKEN ?? "";
 }
-
-export function docsToken(): string {
-  return process.env.GOOGLE_DOCS_TOKEN ?? "";
-}
-
-export function sheetsToken(): string {
-  return process.env.GOOGLE_SHEETS_TOKEN ?? "";
-}
-
-export function slidesToken(): string {
-  return process.env.GOOGLE_SLIDES_TOKEN ?? "";
-}
