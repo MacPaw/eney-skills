@@ -46,26 +46,6 @@ jobs:
       - name: Setup CLI
         uses: ./.github/actions/setup-cli
 
-      - name: Pack MCP archive
-        id: pack
-        run: |
-          MCP_NAME=$(jq -r '.name' manifest.json)
-          MCP_VERSION=$(jq -r '.version' manifest.json)
-          ARCHIVE_NAME="${MCP_NAME}@v${MCP_VERSION}.mcpb"
-          npm ci --os=darwin --cpu=arm64
-          npm run build
-          npx --yes @anthropic-ai/mcpb pack dist "$ARCHIVE_NAME"
-          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+      - name: Publish MCP
+        run: eney-skills-cli publish --mode production
         working-directory: extensions/${{ matrix.mcp }}
-
-      - name: Upload MCP archive
-        run: |
-          eney-skills-cli upload-mcp-archive \
-            --archive-path extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }} \
-            --mode production
-
-      - name: Publish MCP metadata
-        run: |
-          eney-skills-cli publish-mcp-metadata \
-            --mode production \
-            --archive-path extensions/${{ matrix.mcp }}/${{ steps.pack.outputs.archive_name }}
