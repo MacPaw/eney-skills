@@ -11,6 +11,7 @@ import { deleteArtifacts } from "./management/delete-artifacts.ts";
 import { extractMcpTools } from "./management/extract-mcp-tools.ts";
 import { devMcp } from "./dev/command.ts";
 import { linkPackage } from "./link-package/command.ts";
+import { publish } from "./management/publish.ts";
 
 dotenv.config({ path: path.join(import.meta.dirname, ".env"), quiet: true });
 
@@ -95,5 +96,11 @@ program
   .description("Link local @eney/api package to the current extension via npm pack + install")
   .requiredOption("-p, --path <path>", "Path to the @eney/api package directory")
   .action(({ path }) => linkPackage(path));
+
+program
+  .command("publish")
+  .description("Pack, upload, and publish the current extension (run from extension directory)")
+  .requiredOption("--mode <mode>", "Publish mode (staging or production)")
+  .action(({ mode }) => publish(mode));
 
 program.parse(process.argv);
