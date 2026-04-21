@@ -181,7 +181,10 @@ function buildFrontmatter(args: {
   title?: string;
 }): string {
   const lines = ["---", `created: ${timestamp()}`, `type: ${args.type}`];
-  if (args.title) lines.push(`title: "${args.title.replace(/"/g, '\\"')}"`);
+  if (args.title) {
+    const escapedTitle = args.title.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    lines.push(`title: "${escapedTitle}"`);
+  }
   if (args.source) lines.push(`source: ${args.source}`);
   if (args.tags.length) lines.push(`tags: [${args.tags.map((t) => t).join(", ")}]`);
   lines.push("---", "");
