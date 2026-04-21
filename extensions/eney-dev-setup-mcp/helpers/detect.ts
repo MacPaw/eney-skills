@@ -126,3 +126,19 @@ export async function requestXcodeCLT(): Promise<void> {
 
 export const BREW_INSTALL_COMMAND =
   '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"';
+
+export async function installBrew(): Promise<void> {
+  // Homebrew's installer is interactive (requires sudo password), so we open a
+  // Terminal window with the command already running rather than spawning silently.
+  const escapedCmd = BREW_INSTALL_COMMAND.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const script = [
+    'tell application "Terminal"',
+    "  activate",
+    `  do script "${escapedCmd}"`,
+    "end tell",
+  ].join("\n");
+  const result = await tryRun("osascript", ["-e", script]);
+  if (!result || result.code !== 0) {
+    throw new Error(result?.stderr || "Failed to open Terminal for Homebrew installation");
+  }
+}

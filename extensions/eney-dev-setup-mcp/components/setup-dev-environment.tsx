@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, CardHeader, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
 import {
-  BREW_INSTALL_COMMAND,
   ToolId,
   ToolStatus,
   detectAll,
+  installBrew,
   installGit,
   installNode,
   requestXcodeCLT,
@@ -37,6 +37,7 @@ function SetupDevEnvironment(_props: Props) {
   const [busy, setBusy] = useState<ToolId | "refresh" | null>(null);
   const [log, setLog] = useState("");
   const [error, setError] = useState("");
+  const [brewTerminalOpened, setBrewTerminalOpened] = useState(false);
 
   async function refresh() {
     setBusy("refresh");
@@ -64,6 +65,19 @@ function SetupDevEnvironment(_props: Props) {
       setLog((prev) => prev + `\n✅ ${id} installed.\n`);
       const next = await detectAll();
       setStatuses(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onInstallBrew() {
+    setBusy("brew");
+    setError("");
+    try {
+      await installBrew();
+      setBrewTerminalOpened(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,16 +115,23 @@ function SetupDevEnvironment(_props: Props) {
 
   const actions = (
     <ActionPanel layout="column">
-      {statuses && !statuses.brew.installed && (
-        <>
-          <Action.CopyToClipboard title="Copy Homebrew Install Command" content={BREW_INSTALL_COMMAND} />
-          <Action
-            title="I've Installed Homebrew — Re-check"
-            onAction={refresh}
-            style="primary"
-            isLoading={busy === "refresh"}
-          />
-        </>
+      {statuses && !statuses.brew.installed && !brewTerminalOpened && (
+        <Action
+          title={busy === "brew" ? "Opening Terminal…" : "Install Homebrew"}
+          onAction={onInstallBrew}
+          style="primary"
+          isLoading={busy === "brew"}
+          isDisabled={isBusy}
+        />
+      )}
+      {statuses && !statuses.brew.installed && brewTerminalOpened && (
+        <Action
+          title={busy === "refresh" ? "Re-checking…" : "Homebrew Installed — Re-check"}
+          onAction={refresh}
+          style="primary"
+          isLoading={busy === "refresh"}
+          isDisabled={isBusy}
+        />
       )}
       {statuses && statuses.brew.installed && !statuses.git.installed && (
         <Action
@@ -143,7 +164,9 @@ function SetupDevEnvironment(_props: Props) {
 
   const brewInstructions =
     statuses && !statuses.brew.installed
-      ? `\n\n---\n\n**Install Homebrew**\n\nHomebrew's installer is interactive and needs your password. Copy the command below, paste it into Terminal, follow the prompts, then click *I've Installed Homebrew — Re-check*.\n\n\`\`\`\n${BREW_INSTALL_COMMAND}\n\`\`\``
+      ? brewTerminalOpened
+        ? "\n\n---\n\n**Homebrew installer is running in Terminal.**\n\nFollow the prompts and enter your password when asked. Once complete, click *Homebrew Installed — Re-check*."
+        : "\n\n---\n\n**Install Homebrew**\n\nClick *Install Homebrew* to open Terminal and start the installer. You'll need to enter your password when prompted."
       : "";
 
   return (
