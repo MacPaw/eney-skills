@@ -6,15 +6,16 @@ description: Add PKCE OAuth authentication to your extension
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Many extensions need to access third-party APIs that require user authorization — Spotify, Google, Dropbox, and others. The `@eney/api` package provides a [`useOAuth`](/docs/hooks/use-oauth) hook that handles the entire PKCE sign-in flow. You control the UI for every state — loading, error, and authenticated.
+Many extensions need to access third-party APIs that require user authorization — Spotify, Google, Dropbox, and others. The `@eney/api` package provides a [`useOAuth`](/docs/utils/use-oauth) hook that handles the entire PKCE sign-in flow. You control the UI for every state — idle, pending, error, and authenticated.
 
 ## How it works
 
-1. The [`useOAuth`](/docs/hooks/use-oauth) hook checks for `OAUTH_ACCESS_TOKEN` and `OAUTH_REFRESH_TOKEN` environment variables.
-2. If present, tokens are returned immediately.
-3. If not, a local server starts on port `1798` and the provider's authorization page opens in the browser.
-4. After the user authorizes, the hook exchanges the authorization code for tokens using PKCE (S256).
-5. Tokens are sent to Eney via MCP notification so they persist across sessions — meaning the user only signs in once.
+1. On mount, the [`useOAuth`](/docs/utils/use-oauth) hook starts in the `idle` state and does nothing until you call `authorize()`.
+2. When `authorize()` is called, the hook first asks Eney for cached tokens via the MCP bridge.
+3. If cached tokens exist, they are returned immediately and the flow skips the browser.
+4. If not, a local server starts on port `1798` and the provider's authorization page opens in the browser.
+5. After the user authorizes, the hook exchanges the authorization code for tokens using PKCE (S256).
+6. Tokens are sent back to Eney via MCP notification so they persist across sessions — meaning the user only signs in once.
 
 <Callout type="info">
   PKCE (Proof Key for Code Exchange) is designed for public clients that cannot securely store a client secret. Your extension does not need a client secret — only a client ID.
@@ -44,6 +45,7 @@ Make sure the provider supports PKCE with the S256 code challenge method. Most m
 Define your OAuth config and pass it to the `useOAuth` hook. The hook returns the current auth state — render your UI accordingly:
 
 ```tsx
+import { useEffect } from "react";
 import { z } from "zod";
 import { defineWidget, useOAuth, Paper, ActionPanel, Action } from "@eney/api";
 import type { OAuthConfig } from "@eney/api";
@@ -58,20 +60,33 @@ const spotifyOAuth: OAuthConfig = {
 };
 
 function TopTracks() {
-  const { isLoading, error, data, retry } = useOAuth(spotifyOAuth);
+  const { status, tokens, error, authorize } = useOAuth(spotifyOAuth);
 
-  if (isLoading) return <Paper markdown="Signing in..." />;
+  useEffect(() => {
+    authorize().catch(() => {});
+  }, [authorize]);
 
-  if (error) {
+  if (status === "pending") return <Paper markdown="Signing in..." />;
+
+  if (status === "error") {
     return (
       <Paper
-        markdown={`**Sign in failed**\n\n${error}`}
-        actions={<ActionPanel><Action title="Retry" onAction={retry} style="primary" /></ActionPanel>}
+        markdown={`**Sign in failed**\n\n${error?.message ?? ""}`}
+        actions={<ActionPanel><Action title="Retry" onAction={authorize} style="primary" /></ActionPanel>}
       />
     );
   }
 
-  // data.accessToken is available here
+  if (status !== "ready" || !tokens) {
+    return (
+      <Paper
+        markdown="Please sign in to continue."
+        actions={<ActionPanel><Action title="Sign In" onAction={authorize} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  // tokens.accessToken is available here
   return <Paper markdown="Authenticated!" />;
 }
 
@@ -84,6 +99,10 @@ const TopTracksWidget = defineWidget({
 
 export default TopTracksWidget;
 ```
+
+<Callout type="info">
+  The hook does not start the flow automatically. Call `authorize()` from an effect (to mimic the old auto-sign-in UX) or from a button click (to let the user opt in explicitly).
+</Callout>
 </Step>
 
 </Steps>
@@ -100,39 +119,22 @@ The `OAuthConfig` object passed to `useOAuth` accepts the following options:
 | `scopes`       | `string[]` | —             | Yes      | The OAuth scopes to request                         |
 | `callbackPort` | `number`   | `1798`        | No       | Port for the local callback server                  |
 | `callbackPath` | `string`   | `"/callback"` | No       | Path for the OAuth redirect                         |
+| `extraParams`  | `Record<string, string>` | — | No | Extra query params appended to the authorization URL (e.g. `{ access_type: "offline" }`) |
 
-## Environment variables
+## Token persistence
 
-On the first run, the full browser-based OAuth flow is triggered. After tokens are obtained, Eney receives them via MCP notification and provides them as environment variables on subsequent sessions:
+Tokens are persisted by Eney itself — your extension does not need to configure any environment variables or manifest entries for OAuth to work across sessions.
 
-| Variable              | Description                   |
-| --------------------- | ----------------------------- |
-| `OAUTH_ACCESS_TOKEN`  | The OAuth access token        |
-| `OAUTH_REFRESH_TOKEN` | The refresh token, if present |
+When `authorize()` runs, the hook:
 
-When these variables are set, the hook skips the browser flow entirely and returns the cached tokens immediately.
+1. Asks Eney for any previously stored tokens via `oauth.getTokens()`.
+2. If Eney returns tokens, they are used directly and the browser flow is skipped.
+3. Otherwise, the full PKCE flow runs and the resulting tokens are reported back to Eney via `oauth.notifyTokens()`.
 
-## Manifest configuration
-
-To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.json` server environment:
-
-```json
-{
-  "server": {
-    "mcp_config": {
-      "command": "node",
-      "args": ["${__dirname}/index.js"],
-      "env": {
-        "OAUTH_ACCESS_TOKEN": "${OAUTH_ACCESS_TOKEN}",
-        "OAUTH_REFRESH_TOKEN": "${OAUTH_REFRESH_TOKEN}"
-      }
-    }
-  }
-}
-```
+From the second session onwards, `authorize()` resolves immediately with the cached tokens and no browser window opens.
 
 <Callout type="warn">
-  The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the hook sets the `error` state.
+  The local callback server binds to `127.0.0.1` only and shuts down after receiving the callback. If the user does not complete the authorization within 60 seconds, the flow times out and the hook transitions to the `error` state.
 </Callout>
 
 ## Token refresh
@@ -140,12 +142,12 @@ To allow Eney to inject the OAuth tokens, add placeholders in your `manifest.jso
 Access tokens expire. The `useOAuth` hook returns a `refresh()` function that exchanges the refresh token for a new access token:
 
 ```tsx
-const { data, refresh } = useOAuth(oauthConfig);
+const { tokens, refresh } = useOAuth(oauthConfig);
 const [token, setToken] = useState<string | null>(null);
 
 useEffect(() => {
-  if (data) setToken(data.accessToken);
-}, [data]);
+  if (tokens) setToken(tokens.accessToken);
+}, [tokens]);
 
 async function fetchWithRefresh(url: string) {
   let res = await fetch(url, {
@@ -167,10 +169,10 @@ async function fetchWithRefresh(url: string) {
 When `refresh()` is called, the hook:
 1. POSTs to the provider's `tokenUrl` with `grant_type=refresh_token`
 2. Returns the new `{ accessToken, refreshToken }`
-3. Sends updated tokens to Eney so they persist across sessions
+3. Sends updated tokens back to Eney so they persist across sessions
 
 <Callout type="info">
-  Not all providers issue refresh tokens by default. Some require specific scopes — for example, Google needs `access_type=offline` and Spotify includes refresh tokens automatically. If no refresh token was issued, calling `refresh()` will throw an error.
+  Not all providers issue refresh tokens by default. Some require specific scopes — for example, Google needs `access_type=offline` (pass it through `extraParams`) and Spotify includes refresh tokens automatically. If no refresh token was issued, calling `refresh()` will throw an error.
 </Callout>
 
 ## Full example
@@ -201,14 +203,18 @@ const spotifyOAuth: OAuthConfig = {
 };
 
 function SpotifyTopTracks() {
-  const { isLoading, error, data, refresh, retry } = useOAuth(spotifyOAuth);
+  const { status, tokens, error, authorize, refresh } = useOAuth(spotifyOAuth);
   const closeWidget = useCloseWidget();
   const [token, setToken] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState("Loading your top tracks...");
 
   useEffect(() => {
-    if (data) setToken(data.accessToken);
-  }, [data]);
+    authorize().catch(() => {});
+  }, [authorize]);
+
+  useEffect(() => {
+    if (tokens) setToken(tokens.accessToken);
+  }, [tokens]);
 
   useEffect(() => {
     if (!token) return;
@@ -246,13 +252,22 @@ function SpotifyTopTracks() {
     fetchTracks().catch((err: Error) => setMarkdown(`Error: ${err.message}`));
   }, [token]);
 
-  if (isLoading) return <Paper markdown="Signing in..." />;
+  if (status === "pending") return <Paper markdown="Signing in..." />;
 
-  if (error) {
+  if (status === "error") {
     return (
       <Paper
-        markdown={`**Sign in failed**\n\n${error}`}
-        actions={<ActionPanel><Action title="Retry" onAction={retry} style="primary" /></ActionPanel>}
+        markdown={`**Sign in failed**\n\n${error?.message ?? ""}`}
+        actions={<ActionPanel><Action title="Retry" onAction={authorize} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  if (status !== "ready" || !tokens) {
+    return (
+      <Paper
+        markdown="Please sign in to view your top tracks."
+        actions={<ActionPanel><Action title="Sign In" onAction={authorize} style="primary" /></ActionPanel>}
       />
     );
   }
