@@ -4,7 +4,7 @@ import { setupUIXForMCP } from "@eney/api";
 import SetupDevEnvironment from "./components/setup-dev-environment.js";
 
 const server = new McpServer(
-  { name: "eney-dev-setup-mcp", version: "1.0.0" },
+  { name: "eney-dev-setup-mcp", version: "1.2.0" },
   { capabilities: { logging: {}, resources: {} } },
 );
 
