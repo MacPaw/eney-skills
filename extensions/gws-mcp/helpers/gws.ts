@@ -7,15 +7,10 @@ const execAsync = promisify(exec);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export const GWS_BIN = join(
-  __dirname,
-  "..",
-  "bin",
-  process.arch === "arm64" ? "gws-arm64" : "gws-x64"
-);
+const GWS_SCRIPT = join(__dirname, "..", "node_modules", "@googleworkspace", "cli", "run.js");
 
 export async function execGws(args: string, token?: string): Promise<string> {
-  const { stdout } = await execAsync(`"${GWS_BIN}" ${args}`, {
+  const { stdout } = await execAsync(`"${process.execPath}" "${GWS_SCRIPT}" ${args}`, {
     timeout: 30000,
     env: { ...process.env, GOOGLE_WORKSPACE_CLI_TOKEN: token ?? "" },
     maxBuffer: 10 * 1024 * 1024,
