@@ -390,9 +390,8 @@ function CaptureToObsidian(props: Props) {
               onSubmit={onCaptureAnother}
               style="secondary"
             />
-            <Action title="Open in Obsidian" onAction={onOpenInObsidian} style="primary" />
-            <Action.CopyToClipboard content={success.path} title="Copy Path" />
-            <Action title="Done" onAction={onDone} style="secondary" />
+            <Action title="Open..." onAction={onOpenInObsidian} style="secondary" />
+            <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
