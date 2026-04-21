@@ -1,9 +1,13 @@
+import { join } from "node:path";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, CardHeader, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
 import {
+  REPO_FOLDER_NAME,
+  REPO_URL,
   ToolId,
   ToolStatus,
+  cloneRepo,
   detectAll,
   installBrew,
   installGit,
@@ -34,10 +38,12 @@ function buildStatusMarkdown(statuses: Statuses, log: string): string {
 function SetupDevEnvironment(_props: Props) {
   const closeWidget = useCloseWidget();
   const [statuses, setStatuses] = useState<Statuses>(null);
-  const [busy, setBusy] = useState<ToolId | "refresh" | null>(null);
+  const [busy, setBusy] = useState<ToolId | "refresh" | "clone" | null>(null);
   const [log, setLog] = useState("");
   const [error, setError] = useState("");
   const [brewTerminalOpened, setBrewTerminalOpened] = useState(false);
+  const [cloneDir, setCloneDir] = useState("");
+  const [clonedPath, setClonedPath] = useState<string | null>(null);
 
   async function refresh() {
     setBusy("refresh");
@@ -78,6 +84,22 @@ function SetupDevEnvironment(_props: Props) {
     try {
       await installBrew();
       setBrewTerminalOpened(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onCloneRepo() {
+    if (!cloneDir) return;
+    setBusy("clone");
+    setError("");
+    setLog(`Cloning ${REPO_URL}…\n`);
+    try {
+      const dest = await cloneRepo(cloneDir, (chunk) => setLog((prev) => prev + chunk));
+      setClonedPath(dest);
+      setLog((prev) => prev + `\n✅ Cloned to ${dest}\n`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -151,6 +173,18 @@ function SetupDevEnvironment(_props: Props) {
           isDisabled={isBusy}
         />
       )}
+      {allInstalled && !clonedPath && cloneDir && (
+        <Action
+          title={busy === "clone" ? "Cloning…" : "Clone Repository"}
+          onAction={onCloneRepo}
+          style="primary"
+          isLoading={busy === "clone"}
+          isDisabled={isBusy}
+        />
+      )}
+      {clonedPath && (
+        <Action.ShowInFinder title="Reveal in Finder" path={clonedPath} />
+      )}
       <Action
         title={busy === "refresh" ? "Re-checking…" : "Re-check"}
         onAction={refresh}
@@ -158,7 +192,7 @@ function SetupDevEnvironment(_props: Props) {
         isLoading={busy === "refresh"}
         isDisabled={isBusy}
       />
-      <Action title="Done" onAction={onDone} style={allInstalled ? "primary" : "secondary"} isDisabled={isBusy} />
+      <Action title="Done" onAction={onDone} style={allInstalled && clonedPath ? "primary" : "secondary"} isDisabled={isBusy} />
     </ActionPanel>
   );
 
@@ -169,10 +203,25 @@ function SetupDevEnvironment(_props: Props) {
         : "\n\n---\n\n**Install Homebrew**\n\nClick *Install Homebrew* to open Terminal and start the installer. You'll need to enter your password when prompted."
       : "";
 
+  const cloneDestPreview = cloneDir ? `\n\n**Will clone into:** \`${join(cloneDir, REPO_FOLDER_NAME)}\`` : "";
+  const cloneSuccessNote = clonedPath ? `\n\n✅ **Cloned to** \`${clonedPath}\`` : "";
+
   return (
     <Form header={<CardHeader title="Eney Dev Setup" iconBundleId="com.apple.Terminal" />} actions={actions}>
       {error && <Paper markdown={`**Error:** ${error}`} />}
       <Paper markdown={buildStatusMarkdown(statuses, log) + brewInstructions} isScrollable />
+      {allInstalled && (
+        <Form.FilePicker
+          name="cloneDir"
+          label="Clone Repository Into"
+          value={cloneDir}
+          onChange={(v) => { setCloneDir(v as string); setClonedPath(null); }}
+          accept={["public.folder"]}
+        />
+      )}
+      {allInstalled && (cloneDir || clonedPath) && (
+        <Paper markdown={`### Repository\n\n\`${REPO_URL}\`` + cloneDestPreview + cloneSuccessNote} />
+      )}
     </Form>
   );
 }
