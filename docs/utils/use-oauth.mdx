@@ -1,0 +1,201 @@
+---
+title: useOAuth
+description: Handle PKCE OAuth sign-in, token access, and refresh inside a widget component
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Manages the full PKCE OAuth lifecycle inside your component — asks Eney for cached tokens, runs the browser sign-in flow when needed, and provides token refresh. You control the UI for every state (idle, pending, error, ready).
+
+## Import
+
+```typescript
+import { useOAuth } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
+```
+
+## Usage
+
+Pass an `OAuthConfig` to the hook and render based on the returned state. The hook does not start the flow on its own — trigger `authorize()` from an effect or user action:
+
+```tsx
+const oauthConfig: OAuthConfig = {
+  clientId: "your-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read"],
+};
+
+function MyWidget() {
+  const { status, tokens, error, authorize, refresh } = useOAuth(oauthConfig);
+
+  useEffect(() => {
+    authorize().catch(() => {});
+  }, [authorize]);
+
+  if (status === "pending") return <Paper markdown="Signing in..." />;
+
+  if (status === "error") {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error?.message ?? ""}`}
+        actions={<ActionPanel><Action title="Retry" onAction={authorize} /></ActionPanel>}
+      />
+    );
+  }
+
+  if (status !== "ready" || !tokens) {
+    return (
+      <Paper
+        markdown="Please sign in."
+        actions={<ActionPanel><Action title="Sign In" onAction={authorize} /></ActionPanel>}
+      />
+    );
+  }
+
+  // tokens.accessToken is available here
+  return <Paper markdown="Authenticated!" />;
+}
+```
+
+## Signature
+
+```typescript
+function useOAuth(config: OAuthConfig): OAuthState
+```
+
+### OAuthConfig
+
+| Property       | Type                       | Default       | Required | Description                            |
+| -------------- | -------------------------- | ------------- | -------- | -------------------------------------- |
+| `clientId`     | `string`                   | —             | Yes      | OAuth client ID from your provider     |
+| `authorizeUrl` | `string`                   | —             | Yes      | Provider's authorization endpoint      |
+| `tokenUrl`     | `string`                   | —             | Yes      | Provider's token exchange endpoint     |
+| `scopes`       | `string[]`                 | —             | Yes      | OAuth scopes to request                |
+| `callbackPort` | `number`                   | `1798`        | No       | Port for the local callback server     |
+| `callbackPath` | `string`                   | `"/callback"` | No       | Path for the OAuth redirect            |
+| `extraParams`  | `Record<string, string>`   | —             | No       | Extra query params appended to the authorization URL |
+
+### OAuthState (return value)
+
+| Property     | Type                                          | Description                                                  |
+| ------------ | --------------------------------------------- | ------------------------------------------------------------ |
+| `status`     | `"idle" \| "pending" \| "ready" \| "error"`   | Current phase of the OAuth flow                              |
+| `tokens`     | `OAuthTokens \| null`                         | `{ accessToken, refreshToken }` once authenticated           |
+| `error`      | `Error \| null`                               | `Error` instance if the flow failed, `null` otherwise        |
+| `authorize`  | `() => Promise<OAuthTokens>`                  | Starts the flow (reuses cached tokens if Eney has them)      |
+| `refresh`    | `() => Promise<OAuthTokens>`                  | Exchanges the refresh token for new tokens                   |
+
+### Status values
+
+| Value       | Meaning                                                              |
+| ----------- | -------------------------------------------------------------------- |
+| `"idle"`    | Initial state — `authorize()` has not been called yet                |
+| `"pending"` | `authorize()` is running (checking cache or awaiting browser auth)   |
+| `"ready"`   | `tokens` is populated and valid                                      |
+| `"error"`   | The last `authorize()` attempt failed — see `error` for details      |
+
+## How the flow works
+
+1. On mount, the hook sits in the `idle` state and does nothing.
+2. When you call `authorize()`, `status` transitions to `pending`.
+3. The hook asks Eney for cached tokens via the MCP bridge. If present, they are returned immediately.
+4. If no cached tokens exist, a local server starts on port `1798` and the provider's authorization page opens in the browser.
+5. After the user authorizes, the hook exchanges the code for tokens using PKCE (S256).
+6. The hook reports the tokens back to Eney so they persist across sessions.
+7. `status` transitions to `ready` and `tokens` is populated. On failure, `status` transitions to `error`.
+
+To retry after a failure, call `authorize()` again — it resets `error` and starts a fresh attempt.
+
+## Example
+
+This example fetches Spotify data and handles token refresh on 401:
+
+```tsx
+import { useState, useEffect } from "react";
+import { Paper, ActionPanel, Action, useOAuth, useCloseWidget } from "@eney/api";
+import type { OAuthConfig } from "@eney/api";
+
+const spotifyOAuth: OAuthConfig = {
+  clientId: "your-spotify-client-id",
+  authorizeUrl: "https://accounts.spotify.com/authorize",
+  tokenUrl: "https://accounts.spotify.com/api/token",
+  scopes: ["user-top-read"],
+};
+
+function SpotifyWidget() {
+  const { status, tokens, error, authorize, refresh } = useOAuth(spotifyOAuth);
+  const closeWidget = useCloseWidget();
+  const [token, setToken] = useState<string | null>(null);
+  const [markdown, setMarkdown] = useState("Loading...");
+
+  useEffect(() => {
+    authorize().catch(() => {});
+  }, [authorize]);
+
+  useEffect(() => {
+    if (tokens) setToken(tokens.accessToken);
+  }, [tokens]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchTracks() {
+      let res = await fetch("https://api.spotify.com/v1/me/top/tracks?limit=10", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        const newTokens = await refresh();
+        setToken(newTokens.accessToken);
+        res = await fetch("https://api.spotify.com/v1/me/top/tracks?limit=10", {
+          headers: { Authorization: `Bearer ${newTokens.accessToken}` },
+        });
+      }
+
+      const body = await res.json();
+      const list = body.items
+        ?.map((t: any, i: number) => `${i + 1}. **${t.name}** — ${t.artists[0].name}`)
+        .join("\n");
+      setMarkdown(list || "No tracks found.");
+    }
+
+    fetchTracks().catch((err: Error) => setMarkdown(`Error: ${err.message}`));
+  }, [token]);
+
+  if (status === "pending") return <Paper markdown="Signing in..." />;
+
+  if (status === "error") {
+    return (
+      <Paper
+        markdown={`**Sign in failed**\n\n${error?.message ?? ""}`}
+        actions={<ActionPanel><Action title="Retry" onAction={authorize} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  if (status !== "ready" || !tokens) {
+    return (
+      <Paper
+        markdown="Please sign in to continue."
+        actions={<ActionPanel><Action title="Sign In" onAction={authorize} style="primary" /></ActionPanel>}
+      />
+    );
+  }
+
+  return (
+    <Paper
+      markdown={markdown}
+      actions={<ActionPanel><Action title="Done" onAction={() => closeWidget("Done")} /></ActionPanel>}
+    />
+  );
+}
+```
+
+<Callout type="info">
+  See the [OAuth guide](/docs/oauth) for full setup instructions including provider registration and how Eney persists tokens across sessions.
+</Callout>
+
+<Callout type="warn">
+  Not all OAuth providers issue refresh tokens. If the provider didn't return one, `tokens.refreshToken` will be `undefined` and calling `refresh()` will throw an error. Some providers require specific scopes or params to get a refresh token (e.g., Google needs `access_type=offline`, passed via `extraParams`).
+</Callout>
