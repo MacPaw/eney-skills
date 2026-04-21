@@ -1,10 +1,10 @@
 {
   "manifest_version": "0.3",
-  "name": "notes-utilities-mcp",
-  "version": "1.7.2",
-  "description": "Notes Utilities MCP server",
+  "name": "eney-dev-setup-mcp",
+  "version": "1.1.0",
+  "description": "Eney Dev Setup MCP server",
   "author": {
-    "name": "Yurii"
+    "name": "Eney"
   },
   "server": {
     "type": "node",
