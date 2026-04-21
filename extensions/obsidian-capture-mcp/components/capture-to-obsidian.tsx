@@ -12,7 +12,7 @@ import {
 import { readFile, writeFile, mkdir, appendFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, dirname, basename } from "node:path";
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 
 const schema = z.object({
   content: z
@@ -221,7 +221,10 @@ function openInObsidian(vaultName: string, filePath: string) {
   const url = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(
     filePath,
   )}`;
-  exec(`open '${url.replace(/'/g, "'\\''")}'`);
+  // Use execFile (not exec) so the URL is passed as an argv element, not
+  // interpreted by a shell — prevents any possibility of command injection
+  // from vault names or file paths.
+  execFile("/usr/bin/open", [url]);
 }
 
 // --- Component ---
