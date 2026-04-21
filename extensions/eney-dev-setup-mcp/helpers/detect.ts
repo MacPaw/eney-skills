@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { run, tryRun } from "./shell.js";
 
 export type ToolId = "brew" | "git" | "node";
@@ -126,3 +127,31 @@ export async function requestXcodeCLT(): Promise<void> {
 
 export const BREW_INSTALL_COMMAND =
   '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"';
+
+export async function installBrew(): Promise<void> {
+  // Homebrew's installer is interactive (requires sudo password), so we open a
+  // Terminal window with the command already running rather than spawning silently.
+  const escapedCmd = BREW_INSTALL_COMMAND.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const script = [
+    'tell application "Terminal"',
+    "  activate",
+    `  do script "${escapedCmd}"`,
+    "end tell",
+  ].join("\n");
+  const result = await tryRun("osascript", ["-e", script]);
+  if (!result || result.code !== 0) {
+    throw new Error(result?.stderr || "Failed to open Terminal for Homebrew installation");
+  }
+}
+
+export const REPO_URL = "https://github.com/MacPaw/eney-skills.git";
+export const REPO_FOLDER_NAME = "eney-skills";
+
+export async function cloneRepo(targetDir: string, onOutput: (chunk: string) => void): Promise<string> {
+  const gitPath = await which("git");
+  if (!gitPath) throw new Error("Git is not installed. Install it first.");
+  const destPath = join(targetDir, REPO_FOLDER_NAME);
+  const result = await run(gitPath, ["clone", REPO_URL, destPath], {}, (chunk) => onOutput(chunk));
+  if (result.code !== 0) throw new Error(result.stderr || `git clone failed with code ${result.code}`);
+  return destPath;
+}

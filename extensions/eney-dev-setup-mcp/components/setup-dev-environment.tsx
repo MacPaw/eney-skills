@@ -1,11 +1,16 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, CardHeader, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
 import {
-  BREW_INSTALL_COMMAND,
+  REPO_FOLDER_NAME,
+  REPO_URL,
   ToolId,
   ToolStatus,
+  cloneRepo,
   detectAll,
+  installBrew,
   installGit,
   installNode,
   requestXcodeCLT,
@@ -34,9 +39,16 @@ function buildStatusMarkdown(statuses: Statuses, log: string): string {
 function SetupDevEnvironment(_props: Props) {
   const closeWidget = useCloseWidget();
   const [statuses, setStatuses] = useState<Statuses>(null);
-  const [busy, setBusy] = useState<ToolId | "refresh" | null>(null);
+  const [busy, setBusy] = useState<ToolId | "refresh" | "clone" | null>(null);
   const [log, setLog] = useState("");
   const [error, setError] = useState("");
+  const [brewTerminalOpened, setBrewTerminalOpened] = useState(false);
+  const CLONE_DIR_OPTIONS = [
+    { label: "~/Downloads", path: join(homedir(), "Downloads") },
+    { label: "~/Documents", path: join(homedir(), "Documents") },
+  ];
+  const [cloneDir, setCloneDir] = useState(CLONE_DIR_OPTIONS[0].path);
+  const [clonedPath, setClonedPath] = useState<string | null>(null);
 
   async function refresh() {
     setBusy("refresh");
@@ -64,6 +76,35 @@ function SetupDevEnvironment(_props: Props) {
       setLog((prev) => prev + `\n✅ ${id} installed.\n`);
       const next = await detectAll();
       setStatuses(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onInstallBrew() {
+    setBusy("brew");
+    setError("");
+    try {
+      await installBrew();
+      setBrewTerminalOpened(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onCloneRepo() {
+    if (!cloneDir) return;
+    setBusy("clone");
+    setError("");
+    setLog(`Cloning ${REPO_URL}…\n`);
+    try {
+      const dest = await cloneRepo(cloneDir, (chunk) => setLog((prev) => prev + chunk));
+      setClonedPath(dest);
+      setLog((prev) => prev + `\n✅ Cloned to ${dest}\n`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,55 +142,96 @@ function SetupDevEnvironment(_props: Props) {
 
   const actions = (
     <ActionPanel layout="column">
-      {statuses && !statuses.brew.installed && (
-        <>
-          <Action.CopyToClipboard title="Copy Homebrew Install Command" content={BREW_INSTALL_COMMAND} />
+      <ActionPanel layout="row">
+        {statuses && !statuses.brew.installed && !brewTerminalOpened && (
           <Action
-            title="I've Installed Homebrew — Re-check"
+            title={busy === "brew" ? "Opening Terminal…" : "Install Homebrew"}
+            onAction={onInstallBrew}
+            style="primary"
+            isLoading={busy === "brew"}
+            isDisabled={isBusy}
+          />
+        )}
+        {statuses && !statuses.brew.installed && brewTerminalOpened && (
+          <Action
+            title={busy === "refresh" ? "Re-checking…" : "Homebrew Installed — Re-check"}
             onAction={refresh}
             style="primary"
             isLoading={busy === "refresh"}
+            isDisabled={isBusy}
           />
-        </>
-      )}
-      {statuses && statuses.brew.installed && !statuses.git.installed && (
+        )}
+        {statuses && statuses.brew.installed && !statuses.git.installed && (
+          <Action
+            title={busy === "git" ? "Installing Git…" : "Install Git"}
+            onAction={onInstallGit}
+            style="primary"
+            isLoading={busy === "git"}
+            isDisabled={isBusy}
+          />
+        )}
+        {statuses && statuses.brew.installed && !statuses.node.installed && (
+          <Action
+            title={busy === "node" ? "Installing Node.js…" : "Install Node.js"}
+            onAction={onInstallNode}
+            style="primary"
+            isLoading={busy === "node"}
+            isDisabled={isBusy}
+          />
+        )}
+        {allInstalled && !clonedPath && cloneDir && (
+          <Action
+            title={busy === "clone" ? "Cloning…" : "Clone Repository"}
+            onAction={onCloneRepo}
+            style="primary"
+            isLoading={busy === "clone"}
+            isDisabled={isBusy}
+          />
+        )}
+        {clonedPath && (
+          <Action.ShowInFinder title="Reveal in Finder" path={clonedPath} />
+        )}
         <Action
-          title={busy === "git" ? "Installing Git…" : "Install Git"}
-          onAction={onInstallGit}
-          style="primary"
-          isLoading={busy === "git"}
+          title={busy === "refresh" ? "Re-checking…" : "Re-check"}
+          onAction={refresh}
+          style="secondary"
+          isLoading={busy === "refresh"}
           isDisabled={isBusy}
         />
-      )}
-      {statuses && statuses.brew.installed && !statuses.node.installed && (
-        <Action
-          title={busy === "node" ? "Installing Node.js…" : "Install Node.js"}
-          onAction={onInstallNode}
-          style="primary"
-          isLoading={busy === "node"}
-          isDisabled={isBusy}
-        />
-      )}
-      <Action
-        title={busy === "refresh" ? "Re-checking…" : "Re-check"}
-        onAction={refresh}
-        style="secondary"
-        isLoading={busy === "refresh"}
-        isDisabled={isBusy}
-      />
-      <Action title="Done" onAction={onDone} style={allInstalled ? "primary" : "secondary"} isDisabled={isBusy} />
+      </ActionPanel>
+      <Action title="Done" onAction={onDone} style={allInstalled && clonedPath ? "primary" : "secondary"} isDisabled={isBusy} />
     </ActionPanel>
   );
 
   const brewInstructions =
     statuses && !statuses.brew.installed
-      ? `\n\n---\n\n**Install Homebrew**\n\nHomebrew's installer is interactive and needs your password. Copy the command below, paste it into Terminal, follow the prompts, then click *I've Installed Homebrew — Re-check*.\n\n\`\`\`\n${BREW_INSTALL_COMMAND}\n\`\`\``
+      ? brewTerminalOpened
+        ? "\n\n---\n\n**Homebrew installer is running in Terminal.**\n\nFollow the prompts and enter your password when asked. Once complete, click *Homebrew Installed — Re-check*."
+        : "\n\n---\n\n**Install Homebrew**\n\nClick *Install Homebrew* to open Terminal and start the installer. You'll need to enter your password when prompted."
       : "";
+
+  const cloneDestPreview = cloneDir ? `\n\n**Will clone into:** \`${join(cloneDir, REPO_FOLDER_NAME)}\`` : "";
+  const cloneSuccessNote = clonedPath ? `\n\n✅ **Cloned to** \`${clonedPath}\`` : "";
 
   return (
     <Form header={<CardHeader title="Eney Dev Setup" iconBundleId="com.apple.Terminal" />} actions={actions}>
       {error && <Paper markdown={`**Error:** ${error}`} />}
       <Paper markdown={buildStatusMarkdown(statuses, log) + brewInstructions} isScrollable />
+      {allInstalled && !clonedPath && (
+        <Form.Dropdown
+          name="cloneDir"
+          label="Clone Repository Into"
+          value={cloneDir}
+          onChange={(v) => { setCloneDir(v as string); setClonedPath(null); }}
+        >
+          {CLONE_DIR_OPTIONS.map((opt) => (
+            <Form.Dropdown.Item key={opt.path} title={opt.label} value={opt.path} />
+          ))}
+        </Form.Dropdown>
+      )}
+      {allInstalled && (cloneDir || clonedPath) && (
+        <Paper markdown={`### Repository\n\n\`${REPO_URL}\`` + cloneDestPreview + cloneSuccessNote} />
+      )}
     </Form>
   );
 }
