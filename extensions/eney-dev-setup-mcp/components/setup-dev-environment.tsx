@@ -1,3 +1,4 @@
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -42,7 +43,11 @@ function SetupDevEnvironment(_props: Props) {
   const [log, setLog] = useState("");
   const [error, setError] = useState("");
   const [brewTerminalOpened, setBrewTerminalOpened] = useState(false);
-  const [cloneDir, setCloneDir] = useState("");
+  const CLONE_DIR_OPTIONS = [
+    { label: "~/Downloads", path: join(homedir(), "Downloads") },
+    { label: "~/Documents", path: join(homedir(), "Documents") },
+  ];
+  const [cloneDir, setCloneDir] = useState(CLONE_DIR_OPTIONS[0].path);
   const [clonedPath, setClonedPath] = useState<string | null>(null);
 
   async function refresh() {
@@ -137,61 +142,63 @@ function SetupDevEnvironment(_props: Props) {
 
   const actions = (
     <ActionPanel layout="column">
-      {statuses && !statuses.brew.installed && !brewTerminalOpened && (
+      <ActionPanel layout="row">
+        {statuses && !statuses.brew.installed && !brewTerminalOpened && (
+          <Action
+            title={busy === "brew" ? "Opening Terminal…" : "Install Homebrew"}
+            onAction={onInstallBrew}
+            style="primary"
+            isLoading={busy === "brew"}
+            isDisabled={isBusy}
+          />
+        )}
+        {statuses && !statuses.brew.installed && brewTerminalOpened && (
+          <Action
+            title={busy === "refresh" ? "Re-checking…" : "Homebrew Installed — Re-check"}
+            onAction={refresh}
+            style="primary"
+            isLoading={busy === "refresh"}
+            isDisabled={isBusy}
+          />
+        )}
+        {statuses && statuses.brew.installed && !statuses.git.installed && (
+          <Action
+            title={busy === "git" ? "Installing Git…" : "Install Git"}
+            onAction={onInstallGit}
+            style="primary"
+            isLoading={busy === "git"}
+            isDisabled={isBusy}
+          />
+        )}
+        {statuses && statuses.brew.installed && !statuses.node.installed && (
+          <Action
+            title={busy === "node" ? "Installing Node.js…" : "Install Node.js"}
+            onAction={onInstallNode}
+            style="primary"
+            isLoading={busy === "node"}
+            isDisabled={isBusy}
+          />
+        )}
+        {allInstalled && !clonedPath && cloneDir && (
+          <Action
+            title={busy === "clone" ? "Cloning…" : "Clone Repository"}
+            onAction={onCloneRepo}
+            style="primary"
+            isLoading={busy === "clone"}
+            isDisabled={isBusy}
+          />
+        )}
+        {clonedPath && (
+          <Action.ShowInFinder title="Reveal in Finder" path={clonedPath} />
+        )}
         <Action
-          title={busy === "brew" ? "Opening Terminal…" : "Install Homebrew"}
-          onAction={onInstallBrew}
-          style="primary"
-          isLoading={busy === "brew"}
-          isDisabled={isBusy}
-        />
-      )}
-      {statuses && !statuses.brew.installed && brewTerminalOpened && (
-        <Action
-          title={busy === "refresh" ? "Re-checking…" : "Homebrew Installed — Re-check"}
+          title={busy === "refresh" ? "Re-checking…" : "Re-check"}
           onAction={refresh}
-          style="primary"
+          style="secondary"
           isLoading={busy === "refresh"}
           isDisabled={isBusy}
         />
-      )}
-      {statuses && statuses.brew.installed && !statuses.git.installed && (
-        <Action
-          title={busy === "git" ? "Installing Git…" : "Install Git"}
-          onAction={onInstallGit}
-          style="primary"
-          isLoading={busy === "git"}
-          isDisabled={isBusy}
-        />
-      )}
-      {statuses && statuses.brew.installed && !statuses.node.installed && (
-        <Action
-          title={busy === "node" ? "Installing Node.js…" : "Install Node.js"}
-          onAction={onInstallNode}
-          style="primary"
-          isLoading={busy === "node"}
-          isDisabled={isBusy}
-        />
-      )}
-      {allInstalled && !clonedPath && cloneDir && (
-        <Action
-          title={busy === "clone" ? "Cloning…" : "Clone Repository"}
-          onAction={onCloneRepo}
-          style="primary"
-          isLoading={busy === "clone"}
-          isDisabled={isBusy}
-        />
-      )}
-      {clonedPath && (
-        <Action.ShowInFinder title="Reveal in Finder" path={clonedPath} />
-      )}
-      <Action
-        title={busy === "refresh" ? "Re-checking…" : "Re-check"}
-        onAction={refresh}
-        style="secondary"
-        isLoading={busy === "refresh"}
-        isDisabled={isBusy}
-      />
+      </ActionPanel>
       <Action title="Done" onAction={onDone} style={allInstalled && clonedPath ? "primary" : "secondary"} isDisabled={isBusy} />
     </ActionPanel>
   );
@@ -210,14 +217,17 @@ function SetupDevEnvironment(_props: Props) {
     <Form header={<CardHeader title="Eney Dev Setup" iconBundleId="com.apple.Terminal" />} actions={actions}>
       {error && <Paper markdown={`**Error:** ${error}`} />}
       <Paper markdown={buildStatusMarkdown(statuses, log) + brewInstructions} isScrollable />
-      {allInstalled && (
-        <Form.FilePicker
+      {allInstalled && !clonedPath && (
+        <Form.Dropdown
           name="cloneDir"
           label="Clone Repository Into"
           value={cloneDir}
           onChange={(v) => { setCloneDir(v as string); setClonedPath(null); }}
-          accept={["public.folder"]}
-        />
+        >
+          {CLONE_DIR_OPTIONS.map((opt) => (
+            <Form.Dropdown.Item key={opt.path} title={opt.label} value={opt.path} />
+          ))}
+        </Form.Dropdown>
       )}
       {allInstalled && (cloneDir || clonedPath) && (
         <Paper markdown={`### Repository\n\n\`${REPO_URL}\`` + cloneDestPreview + cloneSuccessNote} />
