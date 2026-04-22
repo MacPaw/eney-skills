@@ -4,17 +4,17 @@ import { setupUIXForMCP } from "@eney/api";
 import MakeDecision from "./components/make-decision.js";
 
 const server = new McpServer(
-{ name: "decision-maker-mcp", version: "1.0.0" },
-{ capabilities: { logging: {}, resources: {} } },
+  { name: "decision-maker-mcp", version: "1.0.0" },
+  { capabilities: { logging: {}, resources: {} } },
 );
 
 const uixServer = setupUIXForMCP(server);
 uixServer.registerWidget(MakeDecision);
 
 async function main() {
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error("Decision Maker MCP Server running on stdio");
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Decision Maker MCP Server running on stdio");
 }
 
 main().catch(console.error);
