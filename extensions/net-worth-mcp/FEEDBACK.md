@@ -79,4 +79,3 @@ Every time the widget opens it re-fetches everything from scratch. There's no ca
 **Edit Positions**
 - Edit amount, buy price, or account name after adding
 - Currently you can only remove and re-add
-Every time the widget opens it re-fetches everything from scratch. There's no cache layer or way to persist UI state between sessions, so with slow APIs the loading experience is noticeable.
