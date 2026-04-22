@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { run, tryRun } from "./shell.js";
 
-export type ToolId = "brew" | "git" | "node";
+export type ToolId = "brew" | "git" | "node" | "gh";
 
 export interface ToolStatus {
   id: ToolId;
@@ -102,9 +102,19 @@ export async function detectNode(): Promise<ToolStatus> {
   };
 }
 
+export async function detectGh(): Promise<ToolStatus> {
+  const path = await which("gh");
+  if (!path) {
+    return { id: "gh", name: "GitHub CLI", installed: false, version: null, path: null, manager: null, note: null };
+  }
+  const version = await getVersion(path);
+  const manager = path.startsWith("/opt/homebrew/") || path.startsWith("/usr/local/Cellar/") ? "brew" : null;
+  return { id: "gh", name: "GitHub CLI", installed: true, version, path, manager, note: null };
+}
+
 export async function detectAll(): Promise<Record<ToolId, ToolStatus>> {
-  const [brew, git, node] = await Promise.all([detectBrew(), detectGit(), detectNode()]);
-  return { brew, git, node };
+  const [brew, git, node, gh] = await Promise.all([detectBrew(), detectGit(), detectNode(), detectGh()]);
+  return { brew, git, node, gh };
 }
 
 export async function installGit(onOutput: (chunk: string) => void): Promise<void> {
@@ -119,6 +129,13 @@ export async function installNode(onOutput: (chunk: string) => void): Promise<vo
   if (!brew) throw new Error("Homebrew is required to install Node.js. Install Homebrew first.");
   const result = await run(brew, ["install", "node"], {}, (chunk) => onOutput(chunk));
   if (result.code !== 0) throw new Error(result.stderr || `brew install node exited with code ${result.code}`);
+}
+
+export async function installGh(onOutput: (chunk: string) => void): Promise<void> {
+  const brew = await findBrewPath();
+  if (!brew) throw new Error("Homebrew is required to install GitHub CLI. Install Homebrew first.");
+  const result = await run(brew, ["install", "gh"], {}, (chunk) => onOutput(chunk));
+  if (result.code !== 0) throw new Error(result.stderr || `brew install gh exited with code ${result.code}`);
 }
 
 export async function requestXcodeCLT(): Promise<void> {

@@ -10,6 +10,7 @@ import {
   cloneRepo,
   detectAll,
   installBrew,
+  installGh,
   installGit,
   installNode,
   requestXcodeCLT,
@@ -30,7 +31,7 @@ function statusLine(tool: ToolStatus): string {
 
 function buildStatusMarkdown(statuses: Statuses, log: string): string {
   if (!statuses) return "Detecting installed tools…";
-  const lines = [statuses.brew, statuses.git, statuses.node].map(statusLine).join("\n");
+  const lines = [statuses.brew, statuses.git, statuses.node, statuses.gh].map(statusLine).join("\n");
   const logBlock = log ? `\n\n---\n\n\`\`\`\n${log.slice(-2000)}\n\`\`\`` : "";
   return `### Status\n\n${lines}${logBlock}`;
 }
@@ -107,6 +108,14 @@ function SetupDevEnvironment(_props: Props) {
     }
   }
 
+  async function onInstallGh() {
+    if (statuses && !statuses.brew.installed) {
+      setError("Install Homebrew first — GitHub CLI will be installed via Homebrew.");
+      return;
+    }
+    await runInstall("gh", installGh);
+  }
+
   async function onInstallGit() {
     if (statuses && !statuses.brew.installed) {
       setError("Install Homebrew first — Git on macOS is installed via Homebrew or Xcode Command Line Tools.");
@@ -132,7 +141,7 @@ function SetupDevEnvironment(_props: Props) {
     closeWidget("Dev environment check complete.");
   }
 
-  const allInstalled = statuses !== null && statuses.brew.installed && statuses.git.installed && statuses.node.installed;
+  const allInstalled = statuses !== null && statuses.brew.installed && statuses.git.installed && statuses.node.installed && statuses.gh.installed;
   const isBusy = busy !== null;
 
   const actions = (
@@ -170,6 +179,15 @@ function SetupDevEnvironment(_props: Props) {
           onAction={onInstallNode}
           style="primary"
           isLoading={busy === "node"}
+          isDisabled={isBusy}
+        />
+      )}
+      {statuses && statuses.brew.installed && !statuses.gh.installed && (
+        <Action
+          title={busy === "gh" ? "Installing GitHub CLI…" : "Install GitHub CLI"}
+          onAction={onInstallGh}
+          style="primary"
+          isLoading={busy === "gh"}
           isDisabled={isBusy}
         />
       )}
