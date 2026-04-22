@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc",
-    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
+    "postbuild": "cp manifest.json dist/manifest.json && cp package.json dist/package.json && cp -r node_modules dist/node_modules"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.54.0",

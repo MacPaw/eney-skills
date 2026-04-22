@@ -11,8 +11,16 @@ import {
 } from "@eney/api";
 import Groq from "groq-sdk";
 import { createReadStream } from "node:fs";
+import { stat, unlink } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join, extname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { promisify } from "node:util";
 // @ts-ignore — package "main" points to CJS; import ESM bundle directly
 import { YoutubeTranscript } from "youtube-transcript/dist/youtube-transcript.esm.js";
+
+const execFileAsync = promisify(execFile);
 
 // ─── Schema ────────────────────────────────────────────────────────────────
 
@@ -23,6 +31,11 @@ const schema = z.object({
 
 type Props = z.infer<typeof schema>;
 type Mode = "youtube" | "file";
+
+// ─── Constants ─────────────────────────────────────────────────────────────
+
+const MAX_UPLOAD_BYTES = 24 * 1024 * 1024; // 24 MB — Groq Whisper limit is 25 MB
+const CHUNK_SECONDS = 600;                  // 10-minute chunks
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -42,23 +55,18 @@ function formatTimestamp(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Keep the transcript under ~12 000 chars by sampling evenly across the full video
-function sampleTranscript(lines: string[], maxChars = 12000): string {
+function sampleTranscript(lines: string[], maxChars = 4000): string {
+  if (lines.length === 1) return lines[0].slice(0, maxChars);
   const full = lines.join("\n");
   if (full.length <= maxChars) return full;
-  // Pick evenly-spaced lines so we cover the whole video
-  const keep = Math.floor((maxChars / full.length) * lines.length);
+  const keep = Math.max(1, Math.floor((maxChars / full.length) * lines.length));
   const step = lines.length / keep;
   const sampled: string[] = [];
-  for (let i = 0; i < keep; i++) {
-    sampled.push(lines[Math.round(i * step)]);
-  }
+  for (let i = 0; i < keep; i++) sampled.push(lines[Math.round(i * step)]);
   return sampled.join("\n");
 }
 
@@ -70,10 +78,119 @@ Identify the main topics/sections and output ONLY a list of timestamps in this e
 1:23 Main topic
 5:47 Key example
 
+IMPORTANT: Write the topic descriptions in the SAME language as the transcript. Do not translate.
 Use the timestamps from the transcript to pick accurate times for each section. Focus on meaningful topic changes. Output only the timestamp list.
 
 Transcript:
 ${transcript}`;
+
+// ─── ffmpeg helpers ────────────────────────────────────────────────────────
+
+async function getAudioDuration(filePath: string): Promise<number> {
+  const { stdout } = await execFileAsync("ffprobe", [
+    "-v", "quiet",
+    "-show_entries", "format=duration",
+    "-of", "csv=p=0",
+    filePath,
+  ]);
+  return parseFloat(stdout.trim());
+}
+
+/** Extract audio-only track as mono 16 kHz mp3 at 32 kbps — ideal for speech. */
+async function extractAudio(inputPath: string): Promise<string> {
+  const outPath = join(tmpdir(), `${randomUUID()}.mp3`);
+  await execFileAsync("ffmpeg", [
+    "-i", inputPath,
+    "-vn", "-ar", "16000", "-ac", "1", "-b:a", "32k",
+    outPath, "-y",
+  ]);
+  return outPath;
+}
+
+/** Split audio into CHUNK_SECONDS-long pieces, returns paths + start offsets. */
+async function splitAudio(
+  audioPath: string,
+  durationSecs: number,
+): Promise<{ path: string; startSecs: number }[]> {
+  const chunks: { path: string; startSecs: number }[] = [];
+  let start = 0;
+  while (start < durationSecs) {
+    const outPath = join(tmpdir(), `${randomUUID()}.mp3`);
+    await execFileAsync("ffmpeg", [
+      "-i", audioPath,
+      "-ss", String(start),
+      "-t", String(CHUNK_SECONDS),
+      "-c", "copy",
+      outPath, "-y",
+    ]);
+    chunks.push({ path: outPath, startSecs: start });
+    start += CHUNK_SECONDS;
+  }
+  return chunks;
+}
+
+async function cleanupFiles(paths: string[]): Promise<void> {
+  await Promise.allSettled(paths.map((p) => unlink(p)));
+}
+
+// ─── Transcription ─────────────────────────────────────────────────────────
+
+type Segment = { start: number; text: string };
+
+async function transcribeChunk(
+  groq: Groq,
+  filePath: string,
+  offsetSecs: number,
+): Promise<Segment[]> {
+  const transcription = await groq.audio.transcriptions.create({
+    model: "whisper-large-v3",
+    file: createReadStream(filePath),
+    response_format: "verbose_json",
+    timestamp_granularities: ["segment"],
+  });
+  const segs = (transcription as unknown as { segments?: Segment[] }).segments;
+  if (segs && segs.length > 0) {
+    return segs.map((s) => ({ start: s.start + offsetSecs, text: s.text.trim() }));
+  }
+  return [{ start: offsetSecs, text: transcription.text }];
+}
+
+async function transcribeFile(
+  groq: Groq,
+  filePath: string,
+  onProgress: (msg: string) => void,
+): Promise<Segment[]> {
+  const tempFiles: string[] = [];
+
+  try {
+    onProgress("Extracting audio…");
+    const audioPath = await extractAudio(filePath);
+    tempFiles.push(audioPath);
+
+    const audioSize = (await stat(audioPath)).size;
+
+    if (audioSize <= MAX_UPLOAD_BYTES) {
+      onProgress("Transcribing…");
+      return await transcribeChunk(groq, audioPath, 0);
+    }
+
+    // File too large — split into chunks
+    onProgress("File is large, splitting into chunks…");
+    const duration = await getAudioDuration(audioPath);
+    const chunks = await splitAudio(audioPath, duration);
+    chunks.forEach((c) => tempFiles.push(c.path));
+
+    const allSegments: Segment[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      onProgress(`Transcribing chunk ${i + 1} of ${chunks.length}…`);
+      const segs = await transcribeChunk(groq, chunks[i].path, chunks[i].startSecs);
+      allSegments.push(...segs);
+    }
+    return allSegments;
+  } finally {
+    await cleanupFiles(tempFiles);
+  }
+}
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -86,9 +203,8 @@ function GenerateTimestamps(props: Props) {
   const [groqApiKey, setGroqApiKey] = useState("");
   const [timestamps, setTimestamps] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
-
-  // ── Shared: generate timestamps from a formatted transcript ───────────────
 
   async function generateTimestamps(groq: Groq, formattedTranscript: string): Promise<string> {
     const completion = await groq.chat.completions.create({
@@ -113,6 +229,7 @@ function GenerateTimestamps(props: Props) {
 
     setIsLoading(true);
     setError("");
+    setProgress("Fetching transcript…");
 
     let formattedTranscript: string;
     try {
@@ -125,16 +242,19 @@ function GenerateTimestamps(props: Props) {
     } catch {
       setError("No transcript available for this video. The video may not have captions enabled.");
       setIsLoading(false);
+      setProgress("");
       return;
     }
 
     try {
+      setProgress("Generating timestamps…");
       const groq = new Groq({ apiKey: groqApiKey.trim(), dangerouslyAllowBrowser: true });
       setTimestamps(await generateTimestamps(groq, formattedTranscript));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate timestamps.");
     } finally {
       setIsLoading(false);
+      setProgress("");
     }
   }
 
@@ -145,31 +265,21 @@ function GenerateTimestamps(props: Props) {
 
     setIsLoading(true);
     setError("");
+    setProgress("");
 
     try {
       const groq = new Groq({ apiKey: groqApiKey.trim(), dangerouslyAllowBrowser: true });
-
-      const transcription = await groq.audio.transcriptions.create({
-        model: "whisper-large-v3",
-        file: createReadStream(filePath),
-        response_format: "verbose_json",
-        timestamp_granularities: ["segment"],
-      });
-
-      const segments = (transcription as unknown as {
-        segments?: { start: number; text: string }[];
-      }).segments;
-
-      const lines = segments && segments.length > 0
-        ? segments.map((seg) => `[${formatTimestamp(seg.start)}] ${seg.text.trim()}`)
-        : [transcription.text];
+      const segments = await transcribeFile(groq, filePath, setProgress);
+      const lines = segments.map((s) => `[${formatTimestamp(s.start)}] ${s.text}`);
       const formattedTranscript = sampleTranscript(lines);
 
+      setProgress("Generating timestamps…");
       setTimestamps(await generateTimestamps(groq, formattedTranscript));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Transcription or timestamp generation failed.");
     } finally {
       setIsLoading(false);
+      setProgress("");
     }
   }
 
@@ -180,6 +290,7 @@ function GenerateTimestamps(props: Props) {
     setError("");
     setUrl("");
     setFilePath("");
+    setProgress("");
   }
 
   function onDone() {
@@ -216,7 +327,7 @@ function GenerateTimestamps(props: Props) {
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title={isLoading ? "Generating…" : "Generate"}
+            title={isLoading ? (progress || "Generating…") : "Generate"}
             onSubmit={isYouTube ? onGenerateFromYouTube : onGenerateFromFile}
             style="primary"
             isLoading={isLoading}
@@ -226,6 +337,15 @@ function GenerateTimestamps(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
+      {isLoading && progress && <Paper markdown={`_${progress}_`} />}
+
+      <Form.PasswordField
+        name="groqApiKey"
+        label="Groq API Key"
+        value={groqApiKey}
+        onChange={setGroqApiKey}
+      />
+
       <Form.Dropdown
         name="mode"
         label="Source"
@@ -252,13 +372,6 @@ function GenerateTimestamps(props: Props) {
           accept={["public.mpeg-4", "public.mp3", "com.apple.quicktime-movie", "public.mpeg-4-audio"]}
         />
       )}
-
-      <Form.PasswordField
-        name="groqApiKey"
-        label="Groq API Key"
-        value={groqApiKey}
-        onChange={setGroqApiKey}
-      />
     </Form>
   );
 }
