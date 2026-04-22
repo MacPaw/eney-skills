@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(eney-skills-cli create *)",
+      "Bash(mise install *)",
+      "Bash(mise use *)",
+      "Bash(mise exec *)",
+      "Bash(npm run *)",
+      "Bash(open *)",
+      "Bash(timeout 5 node dist/index.js)"
+    ]
+  }
+}
