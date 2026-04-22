@@ -1,0 +1,17 @@
+{
+  "manifest_version": "0.3",
+  "name": "mac-smart-organizer-mcp",
+  "version": "1.0.0",
+  "description": "Mac Smart Organizer MCP server",
+  "author": { "name": "" },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
