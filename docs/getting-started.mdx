@@ -6,7 +6,7 @@ description: Build your first Eney extension in minutes
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Eney extensions (also referred to as skills) are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the @eney/api widget library — the framework renders them as native macOS UI.
+Eney extensions (also referred to as skills) are MCP (Model Context Protocol) servers that expose interactive widgets to the Eney app. You write React components using the `@eney/api` widget library — the framework renders them as native macOS UI.
 
 This guide walks you through creating a complete extension from scratch.
 
@@ -17,6 +17,8 @@ This guide walks you through creating a complete extension from scratch.
 
 ## Setup
 
+<Steps>
+<Step>
 Clone the repository and run the setup script:
 
 ```bash
@@ -26,6 +28,16 @@ cd eney-skills
 ```
 
 This installs the CLI dependencies and registers the `eney-skills-cli` command globally. You only need to do this once after cloning the repository.
+</Step>
+
+<Step>
+Enable developer mode in Eney (Right click on the Eney app → Settings → Scroll to "Developer mode") to allow loading your local extensions.
+
+![CardHeader](./assets/developer-mode.png)
+
+</Step>
+
+</Steps>
 
 ## Create an Extension
 

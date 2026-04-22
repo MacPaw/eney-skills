@@ -1,4 +1,4 @@
 {
   "title": "Utilities",
-  "pages": ["index", "use-logger", "use-close-widget", "run-script"]
+  "pages": ["index", "use-logger", "use-close-widget", "use-oauth", "run-script"]
 }
