@@ -70,16 +70,7 @@ export default MyWidgetDef;
 ## Import
 
 ```tsx
-import {
-  Form,
-  Paper,
-  Action,
-  ActionPanel,
-  Files,
-  CardHeader,
-  defineWidget,
-  useCloseWidget,
-} from "@eney/api";
+import { Form, Paper, Action, ActionPanel, Files, CardHeader, defineWidget, useCloseWidget } from "@eney/api";
 ```
 
 ## Widgets Reference
@@ -100,10 +91,7 @@ For full documentation, read the files in `docs/widgets/`:
 Container for form fields.
 
 ```tsx
-<Form
-  header={<CardHeader title="Title" />}
-  actions={<ActionPanel>...</ActionPanel>}
->
+<Form header={<CardHeader title="Title" iconBundleId="app-on-mac-id" />} actions={<ActionPanel>...</ActionPanel>}>
   {/* form fields */}
 </Form>
 ```
@@ -266,15 +254,7 @@ A full widget with form input, async processing, and result display:
 ```tsx
 import { useState } from "react";
 import { z } from "zod";
-import {
-  Action,
-  ActionPanel,
-  Form,
-  Paper,
-  CardHeader,
-  defineWidget,
-  useCloseWidget,
-} from "@macpaw/eney-api";
+import { Action, ActionPanel, Form, Paper, CardHeader, defineWidget, useCloseWidget } from "@macpaw/eney-api";
 
 const schema = z.object({
   text: z.string().optional().describe("The input text to process."),
@@ -310,33 +290,23 @@ function MyTool(props: Props) {
   if (result) {
     return (
       <Form
-        header={<CardHeader title="My Tool" />}
+        header={<CardHeader title="My Tool" iconBundleId="app-on-mac-id" />}
         actions={
           <ActionPanel layout="row">
-            <Action.SubmitForm
-              title="Start Over"
-              onSubmit={() => setResult("")}
-              style="secondary"
-            />
+            <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
             <Action title="Done" onAction={onDone} style="primary" />
           </ActionPanel>
         }
       >
         <Paper markdown={result} />
-        <Form.TextField
-          name="text"
-          label="Input"
-          value={text}
-          onChange={setText}
-          isCopyable
-        />
+        <Form.TextField name="text" label="Input" value={text} onChange={setText} isCopyable />
       </Form>
     );
   }
 
   return (
     <Form
-      header={<CardHeader title="My Tool" />}
+      header={<CardHeader title="My Tool" iconBundleId="app-on-mac-id" />}
       actions={
         <ActionPanel>
           <Action.SubmitForm
@@ -350,12 +320,7 @@ function MyTool(props: Props) {
       }
     >
       {error && <Paper markdown={`**Error:** ${error}`} />}
-      <Form.TextField
-        name="text"
-        label="Input Text"
-        value={text}
-        onChange={setText}
-      />
+      <Form.TextField name="text" label="Input Text" value={text} onChange={setText} />
     </Form>
   );
 }
@@ -379,6 +344,6 @@ export default MyToolWidget;
 
 ## CLI Commands
 
-| Command                | Purpose                              |
-| ---------------------- | ------------------------------------ |
+| Command               | Purpose                              |
+| --------------------- | ------------------------------------ |
 | `eney-skills-cli dev` | Watch + compile + deploy MCP to Eney |
