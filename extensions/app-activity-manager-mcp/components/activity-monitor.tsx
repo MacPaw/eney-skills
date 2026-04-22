@@ -106,6 +106,10 @@ function ActivityMonitor() {
     fetchAppList().then(setApps).catch(() => {});
   }, []);
 
+  const refreshRef = useRef(() => {});
+  refreshRef.current = () => { fetchAppList().then(setApps).catch(() => {}); };
+  function handleRefresh() { refreshRef.current(); }
+
   const filteredApps = search.trim()
     ? apps.filter(a => a.name.toLowerCase().includes(search.toLowerCase()))
     : apps;
@@ -127,7 +131,9 @@ function ActivityMonitor() {
     if (!app) return;
     setSelectedPid("__none__");
     setSearch("");
-    void quitApp(app.pid).catch(() => {});
+    void quitApp(app.pid)
+      .then(() => fetchAppList().then(setApps))
+      .catch(() => {});
   }
 
   function handleRestart() {
@@ -135,7 +141,10 @@ function ActivityMonitor() {
     if (!app) return;
     setSelectedPid("__none__");
     setSearch("");
-    void restartApp(app.pid, app.bundlePath).catch(() => {});
+    void restartApp(app.pid, app.bundlePath)
+      .then(() => new Promise<void>(resolve => setTimeout(resolve, 1500)))
+      .then(() => fetchAppList().then(setApps))
+      .catch(() => {});
   }
 
   return (
@@ -143,6 +152,11 @@ function ActivityMonitor() {
       header={<CardHeader title="App Manager" iconBundleId="com.apple.ActivityMonitor" />}
       actions={
         <ActionPanel layout="row">
+          <Action
+            title="Refresh"
+            onAction={handleRefresh}
+            style="secondary"
+          />
           <Action
             title="Restart"
             onAction={handleRestart}
