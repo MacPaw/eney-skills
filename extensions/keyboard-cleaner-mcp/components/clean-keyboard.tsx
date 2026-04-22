@@ -1,70 +1,102 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Action, ActionPanel, Form, Paper, CardHeader, defineWidget, useCloseWidget } from "@eney/api";
-import { spawn, type ChildProcess } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Paper,
+  CardHeader,
+  defineWidget,
+  useCloseWidget,
+} from "@eney/api";
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { existsSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-// Python script uses Quartz CGEventTap to suppress keyboard events at the session level.
-// Requires Accessibility permission for the process running Eney.
-const BLOCKER_SCRIPT = `import os,sys,signal
-try:
-    import Quartz
-except ImportError:
-    sys.exit(1)
-def noop(p,t,e,r):return None
-mask=(Quartz.CGEventMaskBit(Quartz.kCGEventKeyDown)|
-      Quartz.CGEventMaskBit(Quartz.kCGEventKeyUp)|
-      Quartz.CGEventMaskBit(Quartz.kCGEventFlagsChanged))
-tap=Quartz.CGEventTapCreate(
-    Quartz.kCGSessionEventTap,Quartz.kCGHeadInsertEventTap,
-    Quartz.kCGEventTapOptionDefault,mask,noop,None)
-if tap is None:sys.exit(1)
-src=Quartz.CFMachPortCreateRunLoopSource(None,tap,0)
-Quartz.CFRunLoopAddSource(Quartz.CFRunLoopGetMain(),src,Quartz.kCFRunLoopCommonModes)
-Quartz.CGEventTapEnable(tap,True)
-def stop(s,f):Quartz.CGEventTapEnable(tap,False);sys.exit(0)
-signal.signal(signal.SIGTERM,stop)
-signal.signal(signal.SIGINT,stop)
-Quartz.CFRunLoopRun()
+// Swift CGEventTap process that blocks all keyboard input at the session level.
+// Requires Accessibility permission for Eney in System Settings → Privacy & Security.
+const SWIFT_SOURCE = `
+import Cocoa
+
+// Prevent App Nap so the blocker stays active when Eney is sent to the background.
+let _ = ProcessInfo.processInfo.beginActivity(
+  options: [.userInitiated, .latencyCritical],
+  reason: "Keyboard Cleaner active"
+)
+
+// keyDown/keyUp covers all regular keys + F1-F12.
+// flagsChanged covers modifier keys (Shift, Cmd, Opt, Ctrl, Caps Lock).
+// Type 14 (NSEventType.systemDefined) covers media/brightness/volume overlay keys.
+let mask = CGEventMask(
+  (1 << CGEventType.keyDown.rawValue) |
+  (1 << CGEventType.keyUp.rawValue) |
+  (1 << CGEventType.flagsChanged.rawValue) |
+  (1 << 14)
+)
+
+let tap = CGEvent.tapCreate(
+  tap: .cgSessionEventTap,
+  place: .headInsertEventTap,
+  options: .defaultTap,
+  eventsOfInterest: mask,
+  callback: { _, _, _, _ in return nil },
+  userInfo: nil
+)
+guard let tap = tap else {
+  fputs("no_accessibility\\n", stderr)
+  exit(1)
+}
+let src = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+CFRunLoopAddSource(CFRunLoopGetMain(), src, .commonModes)
+CGEvent.tapEnable(tap: tap, enable: true)
+
+// macOS silently disables event taps it deems unresponsive — re-enable every 0.5s.
+Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+  CGEvent.tapEnable(tap: tap, enable: true)
+}
+
+signal(SIGTERM) { _ in exit(0) }
+RunLoop.main.run()
 `;
+
+const BINARY_PATH = join(homedir(), ".eney", "eney-kb-blocker");
+const SOURCE_PATH = "/tmp/eney-kb-blocker.swift";
+
+function binaryExists(): boolean {
+  return existsSync(BINARY_PATH);
+}
+
+function compile(): void {
+  writeFileSync(SOURCE_PATH, SWIFT_SOURCE);
+  execFileSync("/usr/bin/swiftc", ["-O", SOURCE_PATH, "-o", BINARY_PATH], { timeout: 60_000 });
+}
 
 let blockerProc: ChildProcess | null = null;
 
 function startBlocker(): Promise<void> {
   return new Promise((resolve, reject) => {
-    try {
-      writeFileSync("/tmp/eney-kb-clean.py", BLOCKER_SCRIPT);
-    } catch {
-      reject(new Error("Failed to write helper script to /tmp"));
-      return;
-    }
-
-    const proc = spawn("/usr/bin/python3", ["/tmp/eney-kb-clean.py"]);
+    const proc = spawn(BINARY_PATH, []);
     blockerProc = proc;
 
-    proc.on("error", (e) => {
-      blockerProc = null;
-      reject(new Error(`Could not start python3: ${e.message}`));
-    });
+    let stderr = "";
+    proc.stderr?.on("data", (d) => { stderr += d.toString(); });
+    proc.on("error", (e) => { blockerProc = null; reject(e); });
 
     let exited = false;
-    proc.on("exit", () => {
-      exited = true;
-      blockerProc = null;
-    });
+    proc.on("exit", () => { exited = true; blockerProc = null; });
 
-    // Give the process 400ms to start. If it exits before that, the tap failed.
     setTimeout(() => {
       if (!exited) {
         resolve();
       } else {
-        reject(
-          new Error(
-            "Keyboard lock failed. Please grant Accessibility permission to Eney in System Settings → Privacy & Security → Accessibility, then try again.",
-          ),
-        );
+        reject(new Error(
+          stderr.includes("no_accessibility")
+            ? "Permission denied. Open System Settings → Privacy & Security → Accessibility and enable Eney, then try again."
+            : "Failed to start keyboard blocker."
+        ));
       }
-    }, 400);
+    }, 600);
   });
 }
 
@@ -83,52 +115,53 @@ const schema = z.object({
 });
 
 type Props = z.infer<typeof schema>;
-type Status = "idle" | "locked" | "done" | "error";
+type Status = "idle" | "compiling" | "locked" | "done" | "error";
 
 function CleanKeyboard(props: Props) {
   const closeWidget = useCloseWidget();
   const [status, setStatus] = useState<Status>("idle");
-  const [isLocking, setIsLocking] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
   const [duration, setDuration] = useState<number | null>(props.duration ?? 30);
   const [timeLeft, setTimeLeft] = useState<number>(props.duration ?? 30);
   const [error, setError] = useState("");
 
   const lockDuration = duration ?? 30;
 
-  // Unmount cleanup — always unlock on widget close
-  useEffect(() => {
-    return () => stopBlocker();
-  }, []);
+  // Unmount: always unlock
+  useEffect(() => () => stopBlocker(), []);
 
   // Countdown tick
   useEffect(() => {
     if (status !== "locked") return;
     if (timeLeft <= 0) {
-      stopBlocker();
-      setStatus("done");
+      doUnlock();
       return;
     }
     const t = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearTimeout(t);
   }, [status, timeLeft]);
 
-  async function onLock() {
-    if (isLocking) return;
-    setIsLocking(true);
-    setTimeLeft(lockDuration);
+  async function handleLock() {
     try {
+      if (!binaryExists()) {
+        setStatus("compiling");
+        await new Promise<void>((resolve, reject) => {
+          try { compile(); resolve(); } catch (e) { reject(e); }
+        });
+      }
+      setTimeLeft(lockDuration);
       await startBlocker();
       setStatus("locked");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setStatus("error");
-    } finally {
-      setIsLocking(false);
     }
   }
 
-  function onUnlock() {
+  async function doUnlock() {
+    setIsUnlocking(true);
     stopBlocker();
+    setIsUnlocking(false);
     setStatus("done");
   }
 
@@ -142,19 +175,15 @@ function CleanKeyboard(props: Props) {
     closeWidget("Keyboard unlocked. Cleaning complete.");
   }
 
+  const header = <CardHeader title="Keyboard Cleaner" iconBundleId="com.apple.systempreferences" />;
+
   if (status === "idle") {
     return (
       <Form
-        header={<CardHeader title="Keyboard Cleaner" iconBundleId="com.apple.systempreferences" />}
+        header={header}
         actions={
           <ActionPanel>
-            <Action
-              title={isLocking ? "Locking..." : "Lock Keyboard"}
-              onAction={onLock}
-              style="primary"
-              isLoading={isLocking}
-              isDisabled={isLocking}
-            />
+            <Action title="Lock Keyboard" onAction={handleLock} style="primary" />
           </ActionPanel>
         }
       >
@@ -163,33 +192,42 @@ function CleanKeyboard(props: Props) {
           name="duration"
           label="Duration (seconds)"
           value={duration}
-          onChange={(v) => {
-            setDuration(v);
-            setTimeLeft(v ?? 30);
-          }}
+          onChange={(v) => { setDuration(v); setTimeLeft(v ?? 30); }}
           min={5}
-          max={300}
+          max={3600}
         />
+      </Form>
+    );
+  }
+
+  if (status === "compiling") {
+    return (
+      <Form header={header} actions={<ActionPanel><Action title="Setting up..." onAction={() => {}} isDisabled /></ActionPanel>}>
+        <Paper markdown="**One-time setup:** compiling keyboard blocker (~10 seconds)…" />
       </Form>
     );
   }
 
   if (status === "locked") {
     const elapsed = lockDuration - timeLeft;
-    const pct = Math.round((elapsed / lockDuration) * 20);
-    const bar = "▓".repeat(pct) + "░".repeat(20 - pct);
+    const filled = Math.round((elapsed / lockDuration) * 20);
+    const bar = "▓".repeat(filled) + "░".repeat(20 - filled);
     return (
       <Form
-        header={<CardHeader title="Keyboard Cleaner" iconBundleId="com.apple.systempreferences" />}
+        header={header}
         actions={
           <ActionPanel>
-            <Action title="Unlock" onAction={onUnlock} style="secondary" />
+            <Action
+              title={isUnlocking ? "Unlocking..." : "Unlock"}
+              onAction={doUnlock}
+              style="secondary"
+              isLoading={isUnlocking}
+              isDisabled={isUnlocking}
+            />
           </ActionPanel>
         }
       >
-        <Paper
-          markdown={`**Keyboard locked** — safe to clean\n\n\`${bar}\`\n\n**${timeLeft}** seconds remaining`}
-        />
+        <Paper markdown={`**Keyboard locked** — safe to clean\n\n\`${bar}\`\n\n**${timeLeft}** seconds remaining`} />
       </Form>
     );
   }
@@ -197,7 +235,7 @@ function CleanKeyboard(props: Props) {
   if (status === "done") {
     return (
       <Form
-        header={<CardHeader title="Keyboard Cleaner" iconBundleId="com.apple.systempreferences" />}
+        header={header}
         actions={
           <ActionPanel layout="row">
             <Action.SubmitForm title="Lock Again" onSubmit={onReset} style="secondary" />
@@ -210,10 +248,9 @@ function CleanKeyboard(props: Props) {
     );
   }
 
-  // error state
   return (
     <Form
-      header={<CardHeader title="Keyboard Cleaner" iconBundleId="com.apple.systempreferences" />}
+      header={header}
       actions={
         <ActionPanel layout="row">
           <Action.SubmitForm title="Try Again" onSubmit={onReset} style="secondary" />
