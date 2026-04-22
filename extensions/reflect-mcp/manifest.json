@@ -1,0 +1,19 @@
+{
+  "manifest_version": "0.3",
+  "name": "reflect-mcp",
+  "version": "1.0.0",
+  "description": "Self-reflection agent: analyzes conversation history to find patterns, habits, and preferences",
+  "author": {
+    "name": "Eney"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
