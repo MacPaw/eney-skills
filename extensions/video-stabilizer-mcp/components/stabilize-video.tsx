@@ -18,19 +18,22 @@ type FfmpegStatus = "checking" | "missing" | "installing" | "vidstab-missing" | 
 const EXTENDED_PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ""}`;
 const SPAWN_ENV = { ...process.env, PATH: EXTENDED_PATH };
 
+const TAIL_BYTES = 2048;
+
 function spawnAsync(cmd: string, args: string[], onStderr?: (chunk: string) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { env: SPAWN_ENV });
-    let output = "";
-    proc.stdout.on("data", (d: Buffer) => { output += d.toString(); });
+    let tail = "";
+    const append = (chunk: string) => { tail = (tail + chunk).slice(-TAIL_BYTES); };
+    proc.stdout.on("data", (d: Buffer) => append(d.toString()));
     proc.stderr.on("data", (d: Buffer) => {
       const chunk = d.toString();
-      output += chunk;
+      append(chunk);
       onStderr?.(chunk);
     });
     proc.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`${cmd} exited with code ${code}.\n${output.slice(-800)}`));
+      else reject(new Error(`${cmd} exited with code ${code}.\n${tail}`));
     });
     proc.on("error", (e) => reject(new Error(`Failed to run ${cmd}: ${e.message}`)));
   });
@@ -68,7 +71,7 @@ function vidstabAvailableAt(bin: string): Promise<boolean> {
     proc.on("error", () => resolve(false));
   });
 
-  // Method 2: actually run the filter; only fail if IT SPECIFICALLY is missing
+  // Method 2: actually run the filter — exit 0 means it works, anything else is unreliable
   const viaRunTest = new Promise<boolean>((resolve) => {
     const proc = spawn(bin, [
       "-hide_banner",
@@ -76,9 +79,7 @@ function vidstabAvailableAt(bin: string): Promise<boolean> {
       "-vf", "vidstabdetect=result=/dev/null",
       "-f", "null", "-",
     ], { env: SPAWN_ENV });
-    let stderr = "";
-    proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-    proc.on("close", () => resolve(!stderr.includes("No such filter: 'vidstabdetect'")));
+    proc.on("close", (code) => resolve(code === 0));
     proc.on("error", () => resolve(false));
   });
 
@@ -236,7 +237,10 @@ function StabilizeVideo(props: Props) {
           setProgress(`${label2}…`);
           await spawnAsync(ffmpegBin, [
             "-i", input,
+            "-map", "0",
             "-vf", `vidstabtransform=input=${trfFile}:smoothing=${smoothing}:optzoom=1,unsharp=5:5:0.8:3:3:0.4`,
+            "-c:a", "copy",
+            "-c:s", "copy",
             "-y", output,
           ], (chunk) => parseFfmpegProgress(label2, chunk, setProgress));
         } else {
@@ -244,7 +248,12 @@ function StabilizeVideo(props: Props) {
           const label = `Stabilizing${fileLabel}`;
           setProgress(`${label}…`);
           await spawnAsync(ffmpegBin, [
-            "-i", input, "-vf", `deshake=rx=${shift}:ry=${shift}`, "-y", output,
+            "-i", input,
+            "-map", "0",
+            "-vf", `deshake=rx=${shift}:ry=${shift}`,
+            "-c:a", "copy",
+            "-c:s", "copy",
+            "-y", output,
           ], (chunk) => parseFfmpegProgress(label, chunk, setProgress));
         }
 
