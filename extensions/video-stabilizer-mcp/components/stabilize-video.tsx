@@ -345,7 +345,7 @@ function StabilizeVideo(props: Props) {
     return (
       <Form
         actions={
-          <ActionPanel layout="row">
+          <ActionPanel>
             <Action.SubmitForm onSubmit={onTryAgain} title="Try Again" style="secondary" />
             <Action.ShowInFinder path={results[0]} title="Show in Finder" style="secondary" />
             <Action.SubmitForm onSubmit={onDone} title="Done" style="primary" />
@@ -370,7 +370,7 @@ function StabilizeVideo(props: Props) {
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title={isLoading ? (progress || "Stabilizing…") : "Stabilize"}
+            title={isLoading ? "Stabilizing…" : "Stabilize"}
             onSubmit={() => onStabilize(!deshakeFallback)}
             style="primary"
             isLoading={isLoading}
