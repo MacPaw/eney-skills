@@ -56,12 +56,11 @@ export async function requestIPLocation(): Promise<UserLocation> {
   return tryIpGeolocation();
 }
 
-
 export async function geocodeCity(near: string): Promise<UserLocation> {
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(near)}&format=json&limit=1`;
   const res = await fetch(url, { headers: { "User-Agent": "Eney-SearchOnMaps/1.0" } });
   if (!res.ok) throw new Error("Geocoding failed");
   const data = await res.json();
   if (!data.length) throw new Error(`Location not found: ${near}`);
-  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), city: near, precise: true };
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), city: near, precise: false };
 }

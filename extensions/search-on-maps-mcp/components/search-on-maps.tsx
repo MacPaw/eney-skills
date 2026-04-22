@@ -89,13 +89,20 @@ function SearchOnMaps(props: Props) {
   }
 
   async function onUseGPS() {
-    setStatus("locating");
+    let loc: UserLocation;
     try {
-      const loc = await requestGPSLocation();
-      await fetchPlaces(loc);
+      setStatus("locating");
+      loc = await requestGPSLocation();
     } catch {
-      // Permission denied or unavailable — fall back to IP silently
+      // Permission denied or unavailable — fall back to IP
       await onUseIP();
+      return;
+    }
+    try {
+      await fetchPlaces(loc);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setStatus("error");
     }
   }
 

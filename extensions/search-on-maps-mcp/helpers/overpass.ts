@@ -133,7 +133,11 @@ do shell script "printf '%s' " & quoted form of q & " | curl -sf --max-time 20 -
   return (
     data.elements
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((el: any) => el.tags?.name)
+      .filter((el: any) => {
+        const lat = el.lat ?? el.center?.lat;
+        const lng = el.lon ?? el.center?.lon;
+        return el.tags?.name && lat != null && lng != null;
+      })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((el: any) => {
         const pLat: number = el.lat ?? el.center?.lat;
