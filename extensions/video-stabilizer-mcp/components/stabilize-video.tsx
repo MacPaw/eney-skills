@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, Files, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
 import { spawn } from "child_process";
+import { unlink } from "fs/promises";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
 import path from "path";
 
 const schema = z.object({
@@ -10,17 +13,21 @@ const schema = z.object({
 });
 
 type Props = z.infer<typeof schema>;
-type FfmpegStatus = "checking" | "missing" | "installing" | "ready";
+type FfmpegStatus = "checking" | "missing" | "installing" | "vidstab-missing" | "reinstalling" | "ready";
 
 const EXTENDED_PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ""}`;
 const SPAWN_ENV = { ...process.env, PATH: EXTENDED_PATH };
 
-function spawnAsync(cmd: string, args: string[]): Promise<void> {
+function spawnAsync(cmd: string, args: string[], onStderr?: (chunk: string) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { env: SPAWN_ENV });
     let output = "";
     proc.stdout.on("data", (d: Buffer) => { output += d.toString(); });
-    proc.stderr.on("data", (d: Buffer) => { output += d.toString(); });
+    proc.stderr.on("data", (d: Buffer) => {
+      const chunk = d.toString();
+      output += chunk;
+      onStderr?.(chunk);
+    });
     proc.on("close", (code) => {
       if (code === 0) resolve();
       else reject(new Error(`${cmd} exited with code ${code}.\n${output.slice(-800)}`));
@@ -29,16 +36,89 @@ function spawnAsync(cmd: string, args: string[]): Promise<void> {
   });
 }
 
-function checkFfmpeg(): Promise<boolean> {
+function parseFfmpegProgress(label: string, chunk: string, setProgress: (s: string) => void) {
+  for (const line of chunk.split(/[\r\n]/)) {
+    const m = line.match(/frame=\s*(\d+)\s+fps=\s*([\d.]+).*time=([\d:.]+)/);
+    if (m) setProgress(`${label} — frame ${m[1]}, ${m[2]} fps, ${m[3]}`);
+  }
+}
+
+const FFMPEG_CANDIDATES = [
+  "/opt/homebrew/bin/ffmpeg",
+  "/usr/local/bin/ffmpeg",
+  "ffmpeg",
+];
+
+function ffmpegExistsAt(bin: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const proc = spawn("which", ["ffmpeg"], { env: SPAWN_ENV });
+    const proc = spawn(bin, ["-version"], { env: SPAWN_ENV });
     proc.on("close", (code) => resolve(code === 0));
     proc.on("error", () => resolve(false));
   });
 }
 
-function strengthToShift(strength: number): number {
-  // deshake rx/ry must be multiples of 16 (16, 32, 48, 64)
+function vidstabAvailableAt(bin: string): Promise<boolean> {
+  // Method 1: scan the full filter list
+  const viaFilterList = new Promise<boolean>((resolve) => {
+    const proc = spawn(bin, ["-hide_banner", "-filters"], { env: SPAWN_ENV });
+    let out = "";
+    proc.stdout.on("data", (d: Buffer) => { out += d.toString(); });
+    proc.stderr.on("data", (d: Buffer) => { out += d.toString(); });
+    proc.on("close", () => resolve(out.includes("vidstabdetect")));
+    proc.on("error", () => resolve(false));
+  });
+
+  // Method 2: actually run the filter; only fail if IT SPECIFICALLY is missing
+  const viaRunTest = new Promise<boolean>((resolve) => {
+    const proc = spawn(bin, [
+      "-hide_banner",
+      "-f", "lavfi", "-i", "nullsrc=s=16x16:d=0.1",
+      "-vf", "vidstabdetect=result=/dev/null",
+      "-f", "null", "-",
+    ], { env: SPAWN_ENV });
+    let stderr = "";
+    proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
+    proc.on("close", () => resolve(!stderr.includes("No such filter: 'vidstabdetect'")));
+    proc.on("error", () => resolve(false));
+  });
+
+  // Available if either method says yes
+  return Promise.all([viaFilterList, viaRunTest]).then(([a, b]) => a || b);
+}
+
+type FfmpegScanResult = { bin: string; vidstab: boolean };
+
+async function scanFfmpegCandidates(): Promise<FfmpegScanResult[]> {
+  const results: FfmpegScanResult[] = [];
+  for (const bin of FFMPEG_CANDIDATES) {
+    if (await ffmpegExistsAt(bin)) {
+      results.push({ bin, vidstab: await vidstabAvailableAt(bin) });
+    }
+  }
+  return results;
+}
+
+async function findFfmpegWithVidstab(): Promise<string | null> {
+  const results = await scanFfmpegCandidates();
+  return results.find((r) => r.vidstab)?.bin ?? null;
+}
+
+// Returns true if any ffmpeg binary exists (regardless of vidstab).
+async function anyFfmpegExists(): Promise<boolean> {
+  for (const bin of FFMPEG_CANDIDATES) {
+    if (await ffmpegExistsAt(bin)) return true;
+  }
+  return false;
+}
+
+function strengthToVidstabParams(strength: number): { shakiness: number; smoothing: number } {
+  return {
+    shakiness: strength,
+    smoothing: Math.round(strength * 3),
+  };
+}
+
+function strengthToDeshakeShift(strength: number): number {
   return Math.min(64, Math.max(16, Math.round((strength / 10) * 4) * 16));
 }
 
@@ -52,7 +132,10 @@ function outputFor(inputPath: string): string {
 function StabilizeVideo(props: Props) {
   const closeWidget = useCloseWidget();
   const [ffmpegStatus, setFfmpegStatus] = useState<FfmpegStatus>("checking");
-  const [installError, setInstallError] = useState("");
+  const [ffmpegBin, setFfmpegBin] = useState("ffmpeg");
+  const [deshakeFallback, setDeshakeFallback] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [installProgress, setInstallProgress] = useState("");
   const [inputPaths, setInputPaths] = useState<string[]>(props.inputPath ? [props.inputPath] : []);
   const [outputPath, setOutputPath] = useState("");
   const [strength, setStrength] = useState<number | null>(props.strength ?? 5);
@@ -62,41 +145,117 @@ function StabilizeVideo(props: Props) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    checkFfmpeg().then((exists) => setFfmpegStatus(exists ? "ready" : "missing"));
+    findFfmpegWithVidstab().then(async (bin) => {
+      if (bin) { setFfmpegBin(bin); setFfmpegStatus("ready"); return; }
+      const scan = await scanFfmpegCandidates();
+      if (scan.length === 0) { setFfmpegStatus("missing"); return; }
+      setFfmpegStatus("vidstab-missing");
+    });
   }, []);
 
   async function onInstall() {
     setFfmpegStatus("installing");
-    setInstallError("");
+    setActionError("");
     try {
       await spawnAsync("brew", ["install", "ffmpeg"]);
-      setFfmpegStatus("ready");
+      const bin = await findFfmpegWithVidstab();
+      if (bin) { setFfmpegBin(bin); setFfmpegStatus("ready"); }
+      else setFfmpegStatus("vidstab-missing");
     } catch (e) {
-      setInstallError(e instanceof Error ? e.message : String(e));
+      setActionError(e instanceof Error ? e.message : String(e));
       setFfmpegStatus("missing");
     }
   }
 
-  function onCancelInstall() {
+  async function onReinstall() {
+    setFfmpegStatus("reinstalling");
+    setActionError("");
+    try {
+      setInstallProgress("Reinstalling ffmpeg…");
+      await spawnAsync("brew", ["reinstall", "ffmpeg"]);
+
+      let bin = await findFfmpegWithVidstab();
+
+      if (!bin) {
+        setInstallProgress("Installing libvidstab…");
+        await spawnAsync("brew", ["install", "libvidstab"]);
+        setInstallProgress("Reinstalling ffmpeg with libvidstab…");
+        await spawnAsync("brew", ["reinstall", "ffmpeg"]);
+        bin = await findFfmpegWithVidstab();
+      }
+
+      if (!bin) {
+        setInstallProgress("Installing ffmpeg-full (includes all codecs)…");
+        await spawnAsync("brew", ["install", "ffmpeg-full"]);
+        await spawnAsync("brew", ["unlink", "ffmpeg"]).catch(() => {});
+        await spawnAsync("brew", ["link", "ffmpeg-full", "--force"]);
+        bin = await findFfmpegWithVidstab();
+      }
+
+      if (bin) {
+        setFfmpegBin(bin);
+        setFfmpegStatus("ready");
+      } else {
+        // Couldn't get vidstab — fall back to deshake so the skill still works
+        const scan = await scanFfmpegCandidates();
+        const existingBin = scan[0]?.bin ?? "ffmpeg";
+        setFfmpegBin(existingBin);
+        setDeshakeFallback(true);
+        setFfmpegStatus("ready");
+      }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+      setFfmpegStatus("vidstab-missing");
+    } finally {
+      setInstallProgress("");
+    }
+  }
+
+  function onCancel() {
     closeWidget("ffmpeg is required to stabilize videos. Skill cancelled.");
   }
 
-  async function onStabilize() {
+  async function onStabilize(useVidstab: boolean) {
     if (inputPaths.length === 0) return;
     setIsLoading(true);
     setError("");
     setProgress("");
 
-    const shift = strengthToShift(strength ?? 5);
     const outputs: string[] = [];
+    const trfFile = path.join(tmpdir(), `vidstab-${randomUUID()}.trf`);
 
     try {
       for (let i = 0; i < inputPaths.length; i++) {
         const input = inputPaths[i];
         const isSingle = inputPaths.length === 1;
         const output = isSingle && outputPath.trim() ? outputPath.trim() : outputFor(input);
-        setProgress(inputPaths.length > 1 ? `Processing ${i + 1} of ${inputPaths.length}: ${path.basename(input)}` : "");
-        await spawnAsync("ffmpeg", ["-i", input, "-vf", `deshake=rx=${shift}:ry=${shift}`, "-y", output]);
+        const fileLabel = inputPaths.length > 1 ? ` (${i + 1}/${inputPaths.length})` : "";
+
+        if (useVidstab) {
+          const { shakiness, smoothing } = strengthToVidstabParams(strength ?? 5);
+          const label1 = `Pass 1/2: Detecting motion${fileLabel}`;
+          setProgress(`${label1}…`);
+          await spawnAsync(ffmpegBin, [
+            "-i", input,
+            "-vf", `vidstabdetect=shakiness=${shakiness}:accuracy=15:result=${trfFile}`,
+            "-f", "null", "-",
+          ], (chunk) => parseFfmpegProgress(label1, chunk, setProgress));
+          const label2 = `Pass 2/2: Applying stabilization${fileLabel}`;
+          setProgress(`${label2}…`);
+          await spawnAsync(ffmpegBin, [
+            "-i", input,
+            "-vf", `vidstabtransform=input=${trfFile}:smoothing=${smoothing}:optzoom=1,unsharp=5:5:0.8:3:3:0.4`,
+            "-y", output,
+          ], (chunk) => parseFfmpegProgress(label2, chunk, setProgress));
+        } else {
+          const shift = strengthToDeshakeShift(strength ?? 5);
+          const label = `Stabilizing${fileLabel}`;
+          setProgress(`${label}…`);
+          await spawnAsync(ffmpegBin, [
+            "-i", input, "-vf", `deshake=rx=${shift}:ry=${shift}`, "-y", output,
+          ], (chunk) => parseFfmpegProgress(label, chunk, setProgress));
+        }
+
         outputs.push(output);
       }
       setResults(outputs);
@@ -105,6 +264,7 @@ function StabilizeVideo(props: Props) {
     } finally {
       setIsLoading(false);
       setProgress("");
+      unlink(trfFile).catch(() => {});
     }
   }
 
@@ -125,7 +285,7 @@ function StabilizeVideo(props: Props) {
 
   if (ffmpegStatus === "checking") {
     return (
-      <Form actions={<ActionPanel><Action title="Cancel" onAction={onCancelInstall} style="secondary" /></ActionPanel>}>
+      <Form actions={<ActionPanel><Action title="Cancel" onAction={onCancel} style="secondary" /></ActionPanel>}>
         <Paper markdown="Checking for ffmpeg…" />
       </Form>
     );
@@ -137,7 +297,7 @@ function StabilizeVideo(props: Props) {
       <Form
         actions={
           <ActionPanel layout="row">
-            <Action title="Cancel" onAction={onCancelInstall} style="secondary" />
+            <Action title="Cancel" onAction={onCancel} style="secondary" />
             <Action.SubmitForm
               title={isInstalling ? "Installing…" : "Install via Homebrew"}
               onSubmit={onInstall}
@@ -148,8 +308,35 @@ function StabilizeVideo(props: Props) {
           </ActionPanel>
         }
       >
-        {installError && <Paper markdown={`**Installation failed:**\n\n${installError}`} />}
+        {actionError && <Paper markdown={`**Installation failed:**\n\n${actionError}`} />}
         <Paper markdown="**ffmpeg is required** to stabilize videos.\n\nffmpeg was not found on your system. Install it via Homebrew to continue — this may take a few minutes." />
+      </Form>
+    );
+  }
+
+  if (ffmpegStatus === "vidstab-missing" || ffmpegStatus === "reinstalling") {
+    const isReinstalling = ffmpegStatus === "reinstalling";
+    return (
+      <Form
+        actions={
+          <ActionPanel layout="row">
+            <Action title="Cancel" onAction={onCancel} style="secondary" />
+            <Action.SubmitForm
+              title={isReinstalling ? "Reinstalling…" : "Reinstall ffmpeg"}
+              onSubmit={onReinstall}
+              style="primary"
+              isLoading={isReinstalling}
+              isDisabled={isReinstalling}
+            />
+          </ActionPanel>
+        }
+      >
+        {actionError
+          ? <Paper markdown={`**Reinstall failed:**\n\n${actionError}`} />
+          : installProgress
+            ? <Paper markdown={installProgress} />
+            : <Paper markdown="**Your ffmpeg is missing vidstab support**, which is required for high-quality stabilization.\n\nReinstall ffmpeg to enable it. If the pre-built package lacks vidstab, it will automatically build from source (~20–30 min)." />
+        }
       </Form>
     );
   }
@@ -184,7 +371,7 @@ function StabilizeVideo(props: Props) {
         <ActionPanel>
           <Action.SubmitForm
             title={isLoading ? (progress || "Stabilizing…") : "Stabilize"}
-            onSubmit={onStabilize}
+            onSubmit={() => onStabilize(!deshakeFallback)}
             style="primary"
             isLoading={isLoading}
             isDisabled={inputPaths.length === 0}
@@ -192,6 +379,7 @@ function StabilizeVideo(props: Props) {
         </ActionPanel>
       }
     >
+      {deshakeFallback && <Paper markdown="⚠️ Using basic stabilization — vidstab unavailable. Quality will be lower." />}
       {error && <Paper markdown={`**Error:** ${error}`} />}
       {isLoading ? (
         <Paper markdown={progress || "Stabilizing…"} />
