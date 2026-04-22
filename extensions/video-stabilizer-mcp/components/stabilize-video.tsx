@@ -103,14 +103,6 @@ async function findFfmpegWithVidstab(): Promise<string | null> {
   return results.find((r) => r.vidstab)?.bin ?? null;
 }
 
-// Returns true if any ffmpeg binary exists (regardless of vidstab).
-async function anyFfmpegExists(): Promise<boolean> {
-  for (const bin of FFMPEG_CANDIDATES) {
-    if (await ffmpegExistsAt(bin)) return true;
-  }
-  return false;
-}
-
 function strengthToVidstabParams(strength: number): { shakiness: number; smoothing: number } {
   return {
     shakiness: strength,
@@ -145,10 +137,10 @@ function StabilizeVideo(props: Props) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    findFfmpegWithVidstab().then(async (bin) => {
-      if (bin) { setFfmpegBin(bin); setFfmpegStatus("ready"); return; }
-      const scan = await scanFfmpegCandidates();
+    scanFfmpegCandidates().then((scan) => {
       if (scan.length === 0) { setFfmpegStatus("missing"); return; }
+      const withVidstab = scan.find((r) => r.vidstab);
+      if (withVidstab) { setFfmpegBin(withVidstab.bin); setFfmpegStatus("ready"); return; }
       setFfmpegStatus("vidstab-missing");
     });
   }, []);

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Video Stabilizer MCP server",
   "author": {
-    "name": ""
+    "name": "Oryna Semenets"
   },
   "server": {
     "type": "node",
