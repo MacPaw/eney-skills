@@ -1,0 +1,26 @@
+{
+  "name": "audio-devices-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Audio Devices MCP server",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx tsx index.ts",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "test": "npx tsx --test tests/*.test.ts",
+    "build": "tsc",
+    "postbuild": "cp manifest.json dist/manifest.json && cp -r node_modules dist/node_modules"
+  },
+  "dependencies": {
+    "@eney/api": "^2.1.0",
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "react": "^18.3.1",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.27",
+    "typescript": "^5.9.3"
+  }
+}
