@@ -8,6 +8,7 @@ NC='\033[0m'
 
 cd cli
 npm install --no-fund --no-audit
+npm link
 echo ""
 echo -e "${GREEN}✔ Setup complete!${NC} You can now start creating extensions."
 echo ""
