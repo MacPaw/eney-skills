@@ -123,7 +123,7 @@ function MyTool(props: Props) {
   if (result) {
     return (
       <Form
-        header={<CardHeader title="My Tool" iconBundleId="app-on-mac-id" />}
+        header={<CardHeader title="My Tool" />}
         actions={
           <ActionPanel layout="row">
             <Action.SubmitForm title="Start Over" onSubmit={() => setResult("")} style="secondary" />
@@ -140,7 +140,7 @@ function MyTool(props: Props) {
   // Input state
   return (
     <Form
-      header={<CardHeader title="My Tool" iconBundleId="app-on-mac-id" />}
+      header={<CardHeader title="My Tool" />}
       actions={
         <ActionPanel>
           <Action.SubmitForm
