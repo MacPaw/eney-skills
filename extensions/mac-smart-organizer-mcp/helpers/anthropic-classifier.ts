@@ -77,7 +77,7 @@ export async function classifyWithAnthropic(
 ): Promise<Record<string, string>> {
   const { apiKey, files, existingFolders = [], onProgress } = options;
   const model = options.model ?? "claude-haiku-4-5";
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 60_000 });
   const BATCH_SIZE = 25;
   const results: Record<string, string> = {};
 
@@ -132,7 +132,7 @@ export async function classifyFoldersWithAnthropic(
 ): Promise<Record<string, string>> {
   const { apiKey, folders, existingFolders = [] } = options;
   const model = options.model ?? "claude-haiku-4-5";
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 60_000 });
   const folderHint = existingFolders.length > 0
     ? `Existing root folders: ${existingFolders.join(", ")}\n\n`
     : "";

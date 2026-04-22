@@ -474,8 +474,7 @@ export async function buildPlan(
     }
 
     const llmFolder = options.classifications?.[f.name];
-    if (llmFolder) {
-      if (llmFolder === "Other") { skipped++; continue; }
+    if (llmFolder && llmFolder !== "Other") {
       const matchedDir = existingDirLookup.get(llmFolder.toLowerCase());
       const folderName = matchedDir ?? llmFolder;
       const label = labelForFolderName(folderName);

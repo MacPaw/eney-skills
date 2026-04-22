@@ -31,14 +31,14 @@ import { isScreenshot, ocrImage } from "../helpers/ocr.js";
 import { revealInFinder } from "../helpers/run-script.js";
 
 const MODEL = "claude-haiku-4-5";
-const DEFAULT_FOLDER = join(homedir(), "Downloads");
+const DEFAULT_FOLDER = join(homedir(), "Desktop");
 
 const schema = z.object({
   directoryPath: z
     .string()
     .optional()
     .describe(
-      "Absolute path of the macOS directory to organize (e.g., /Users/name/Downloads). Defaults to ~/Downloads."
+      "Absolute path of the macOS directory to organize (e.g., /Users/name/Desktop). Defaults to ~/Desktop."
     ),
   applyFinderTags: z
     .boolean()
