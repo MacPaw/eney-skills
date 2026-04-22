@@ -144,7 +144,6 @@ function MakeDecision(props: Props) {
         actions={
           <ActionPanel layout="row">
             <Action.SubmitForm title="New Question" onSubmit={clearResults} style="secondary" />
-            <Action.SubmitForm title="Compare Again ⚖️" onSubmit={() => setComparison("")} style="secondary" />
             <Action title="Done" onAction={() => closeWidget("Showed the user an options comparison in the widget.")} style="primary" />
           </ActionPanel>
         }
