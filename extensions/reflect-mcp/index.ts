@@ -4,15 +4,9 @@ import { setupUIXForMCP } from "@eney/api";
 import { z } from "zod";
 
 import { countConversations, readConversations } from "./helpers/db.js";
-import {
-  addItem,
-  buildAgentPrompt,
-  completeSession,
-  logStep,
-  searchContext,
-  updateScore,
-} from "./helpers/storage.js";
-import ReflectionDashboard from "./components/reflection-dashboard.js";
+import { buildAgentPrompt, getLearnedItems, resetAllReflections } from "./helpers/storage.js";
+import ReflectionUIReview from "./components/reflection-ui-review.js";
+import ReflectionUIShowAll from "./components/reflection-ui-show-all.js";
 
 const server = new McpServer(
   { name: "reflect-mcp", version: "1.0.0" },
@@ -21,250 +15,114 @@ const server = new McpServer(
 
 const uixServer = setupUIXForMCP(server);
 
-// ─── UIX Widget ───────────────────────────────────────────────────────────────
+// ─── Widgets ──────────────────────────────────────────────────────────────────
 
-uixServer.registerWidget(ReflectionDashboard);
+uixServer.registerWidget(ReflectionUIReview);    // approve/reject pending items
+uixServer.registerWidget(ReflectionUIShowAll);  // show all reflections
 
-// ─── Reflection entrypoint ────────────────────────────────────────────────────
-// Returns a structured ReAct prompt. The calling agent (Claude) executes it
-// step-by-step using the atomic tools below. No external LLM needed — eney
-// is the inference engine.
+// ─── reflection_start ─────────────────────────────────────────────────────────
 
 server.tool(
   "reflection_start",
-  "Start a reflection session. Returns a structured agent prompt to guide analysis of conversation history. The calling agent should follow the returned instructions and use the atomic reflection tools to discover patterns, habits, and preferences. Open the `reflection_dashboard` widget to monitor progress and review results.",
+  "Start a self-reflection session. Returns an agent prompt to follow. Then use reflection_add_item to record findings, and open reflection-ui-review widget to approve/reject them.",
   {
-    days_back: z
-      .number()
-      .optional()
-      .describe("Days of conversation history to analyze. Default: 30."),
-    focus: z
-      .string()
-      .optional()
-      .describe(
-        "Optional focus area, e.g. 'coding habits', 'communication style', 'repeated workflows'. Default: all patterns.",
-      ),
+    days_back: z.number().optional().describe("Days of history to analyze. Default: 30."),
+    focus: z.string().optional().describe("Optional focus, e.g. 'communication style', 'recurring habits'. Default: all patterns."),
   },
   async ({ days_back = 30, focus }) => {
-    const focusText = focus ?? "all patterns, habits, and preferences";
     const stats = countConversations(days_back);
-    const prompt = buildAgentPrompt(days_back, focusText);
-
+    const prompt = buildAgentPrompt(days_back, focus ?? "all patterns, habits, and preferences");
     return {
-      content: [
-        {
-          type: "text",
-          text:
-            `Found ${stats.chats} conversations (${stats.messages} messages) in the last ${days_back} days.\n\n` +
-            prompt,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `${stats.chats} conversations, ${stats.messages} messages in last ${days_back} days.\n\n${prompt}`,
+      }],
     };
   },
 );
 
-// ─── Read conversations ───────────────────────────────────────────────────────
+// ─── reflection_read_conversations ────────────────────────────────────────────
 
 server.tool(
   "reflection_read_conversations",
-  "Read recent conversations from the eney app database for reflection analysis. Returns structured conversation data grouped by chat.",
+  "Read conversation history from the eney SQLite database for reflection analysis.",
   {
-    days_back: z
-      .number()
-      .optional()
-      .describe("Days of history to read. Default: 30."),
-    limit: z
-      .number()
-      .optional()
-      .describe("Max total messages to return. Default: 400."),
+    days_back: z.number().optional().describe("Days of history. Default: 30."),
+    limit: z.number().optional().describe("Max messages. Default: 400."),
   },
   async ({ days_back = 30, limit = 400 }) => {
     const conversations = readConversations(days_back, limit);
-    const summary =
-      `${conversations.length} conversations, ` +
-      `${conversations.reduce((n, c) => n + c.messages.length, 0)} messages`;
+    const total = conversations.reduce((n, c) => n + c.messages.length, 0);
     return {
-      content: [
-        {
-          type: "text",
-          text: `${summary}\n\n${JSON.stringify(conversations, null, 2)}`,
-        },
-      ],
+      content: [{
+        type: "text",
+        text: `${conversations.length} conversations, ${total} messages\n\n${JSON.stringify(conversations, null, 2)}`,
+      }],
     };
   },
 );
 
-// ─── Log step ─────────────────────────────────────────────────────────────────
-
-server.tool(
-  "reflection_log_step",
-  "Log a progress step during reflection. The reflection_dashboard widget polls this and shows live status. Call with status 'running' when starting a step, 'done' when finished, 'error' on failure.",
-  {
-    description: z
-      .string()
-      .describe("Human-readable description of the current step."),
-    status: z
-      .enum(["running", "done", "error"])
-      .optional()
-      .describe("Step status. Default: 'done'."),
-  },
-  async ({ description, status = "done" }) => {
-    logStep(description, status);
-    return { content: [{ type: "text", text: `Step logged: [${status}] ${description}` }] };
-  },
-);
-
-// ─── Add item (actor phase) ───────────────────────────────────────────────────
+// ─── reflection_add_item ──────────────────────────────────────────────────────
 
 server.tool(
   "reflection_add_item",
-  "Add a reflection item discovered during analysis (actor phase). Returns the item ID needed for reflection_update_score.",
+  "Record a single reflection action item discovered during conversation analysis. Call once per item.",
   {
-    title: z.string().describe("Short, specific title (e.g. 'Prefers TypeScript strict mode')."),
-    type: z
-      .enum(["memory", "skill_request", "preference", "communication_style", "habit"])
-      .describe(
-        "Category: memory=user facts, skill_request=automatable workflow, preference=response style, communication_style=how user writes, habit=recurring behavior.",
-      ),
-    content: z
-      .string()
-      .describe("1–3 sentences: specific insight with frequency and context."),
-    evidence: z
-      .array(z.string())
-      .optional()
-      .describe("Direct quotes from conversations supporting this insight."),
-    actor_score: z
-      .number()
-      .min(0)
-      .max(10)
-      .describe(
-        "Initial quality score 0–10: (specificity + recurrence + actionability) / 3. Will be updated by critic phase.",
-      ),
-    is_internal: z
-      .boolean()
-      .optional()
-      .describe(
-        "True if this is an agent-adaptation insight (how AI should behave). False if user-visible. skill_request always goes to skill-requests.md regardless.",
-      ),
+    title: z.string().describe("Short label, e.g. 'Opens with humor' or 'Morning weather check'."),
+    type: z.enum(["preference", "communication_style", "habit", "skill_request", "memory"]).describe("preference=response style, communication_style=tone/humor, habit=recurring behavior, skill_request=missing capability, memory=user facts."),
+    content: z.string().describe("2–3 sentences: what was noticed in conversations + what agent/system should do about it."),
+    score: z.number().min(0).max(10).describe("Confidence 0–10. 9–10=clear pattern, 7–8=solid, 5–6=a few times, <5=weak."),
+    is_internal: z.boolean().optional().describe("True = agent adapts silently. False = proactive/user-visible opportunity. Default false."),
   },
-  async ({ title, type, content, evidence, actor_score, is_internal }) => {
-    const id = addItem({
-      title,
-      type,
-      content,
-      evidence: evidence ?? [],
-      actor_score,
-      is_internal: is_internal ?? false,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Item added (id: ${id}). Use reflection_update_score to set critic_score.`,
-        },
-      ],
-    };
+  async ({ title, type, content, score, is_internal }) => {
+    const { addItem } = await import("./helpers/storage.js");
+    const id = addItem({ title, type, content, score, is_internal: is_internal ?? false });
+    return { content: [{ type: "text", text: `Item saved (id: ${id}). Call reflection_add_item again for the next item, then open reflection-review.` }] };
   },
 );
 
-// ─── Update score (critic phase) ─────────────────────────────────────────────
+// ─── reflection_reset ─────────────────────────────────────────────────────────
 
 server.tool(
-  "reflection_update_score",
-  "Re-evaluate an item's quality score (critic phase). Items with final score < 6 are auto-dropped when reflection_complete is called. Be strict — penalize vague or single-occurrence items.",
-  {
-    item_id: z.string().describe("ID returned by reflection_add_item."),
-    critic_score: z
-      .number()
-      .min(0)
-      .max(10)
-      .describe("Honest re-assessment score 0–10. Takes priority over actor_score."),
-    critic_reasoning: z
-      .string()
-      .optional()
-      .describe("Brief reasoning for the score. Shown in review UI."),
-  },
-  async ({ item_id, critic_score, critic_reasoning }) => {
-    updateScore(item_id, critic_score, critic_reasoning);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Score updated: ${item_id} → ${critic_score}/10${critic_reasoning ? ` (${critic_reasoning})` : ""}`,
-        },
-      ],
-    };
+  "reflection_reset",
+  "Delete all stored reflections and pending items. Start fresh.",
+  {},
+  async () => {
+    resetAllReflections();
+    return { content: [{ type: "text", text: "All reflections cleared." }] };
   },
 );
 
-// ─── Complete session ─────────────────────────────────────────────────────────
+// ─── reflection_context ───────────────────────────────────────────────────────
 
 server.tool(
-  "reflection_complete",
-  "Mark the reflection session complete. Items with final score < 6 are automatically dropped. The reflection_dashboard widget will switch to review mode.",
-  {
-    summary: z
-      .string()
-      .optional()
-      .describe("Brief summary shown in the review UI, e.g. 'Found 9 items: 2 skill requests, 4 preferences, 3 habits. Dropped 3 low-score items.'"),
-  },
-  async ({ summary }) => {
-    completeSession(summary);
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            "Session complete. Open `reflection_dashboard` to review and approve/reject items.\n" +
-            (summary ? `Summary: ${summary}` : ""),
-        },
-      ],
-    };
-  },
-);
-
-// ─── Load context ─────────────────────────────────────────────────────────────
-// Generic name so it surfaces in tool search for any context-loading need.
-
-server.tool(
-  "load_context",
-  "Search stored reflections (user preferences, habits, skill requests, agent-adaptation insights) by keyword query. Use at the start of sessions or tasks to load relevant context about the user. Returns matching sections from reflection files.",
-  {
-    query: z
-      .string()
-      .describe(
-        "Search terms to match against stored reflections, e.g. 'TypeScript testing', 'communication style', 'project setup'.",
-      ),
-  },
-  async ({ query }) => {
-    const results = searchContext(query);
-
-    if (results.length === 0) {
+  "reflection_context",
+  "Load all learned reflections into context. Call at session start to apply user preferences, habits, and rules.",
+  {},
+  async () => {
+    const learned = getLearnedItems();
+    if (learned.length === 0) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `No stored reflections match "${query}". Run reflection_start to build context.`,
-          },
-        ],
+        content: [{ type: "text", text: "No reflections yet. Run reflection_start to discover patterns." }],
       };
     }
 
-    const formatted = results
-      .map(
-        (r) =>
-          `### Source: ${r.source}\n\n` + r.matches.join("\n\n---\n\n"),
-      )
-      .join("\n\n===\n\n");
+    const internal = learned.filter((i) => i.type !== "skill_request" && i.is_internal);
+    const userFacing = learned.filter((i) => i.type !== "skill_request" && !i.is_internal);
+    const skillRequests = learned.filter((i) => i.type === "skill_request");
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Context loaded (query: "${query}"):\n\n${formatted}`,
-        },
-      ],
-    };
+    function fmt(items: typeof learned) {
+      return items.map((i) => `### ${i.title}\n*${i.type} · score ${i.score}/10*\n\n${i.content}`).join("\n\n---\n\n");
+    }
+
+    const text = [
+      `# User Reflection Profile (${learned.length} items)\n`,
+      internal.length > 0 ? `## How to Adapt (Internal Rules)\n\n${fmt(internal)}` : "",
+      userFacing.length > 0 ? `## Proactive Opportunities\n\n${fmt(userFacing)}` : "",
+      skillRequests.length > 0 ? `## Skill Gaps\n\n${fmt(skillRequests)}` : "",
+    ].filter(Boolean).join("\n\n");
+
+    return { content: [{ type: "text", text }] };
   },
 );
 

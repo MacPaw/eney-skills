@@ -9,48 +9,30 @@ const APP_SUPPORT = path.join(
 
 export const REFLECTIONS_DIR = path.join(APP_SUPPORT, "reflections");
 
-const STATE_FILE = path.join(REFLECTIONS_DIR, "state.json");
 const PENDING_FILE = path.join(REFLECTIONS_DIR, "pending.json");
-
-// Persistent output files — never auto-deleted
-export const INTERNAL_FILE = path.join(REFLECTIONS_DIR, "internal.md");
-export const USER_FACING_FILE = path.join(REFLECTIONS_DIR, "user-facing.md");
-export const SKILL_REQUESTS_FILE = path.join(REFLECTIONS_DIR, "skill-requests.md");
+const LEARNED_FILE = path.join(REFLECTIONS_DIR, "learned.json");
+const INTERNAL_FILE = path.join(REFLECTIONS_DIR, "internal.md");
+const USER_FACING_FILE = path.join(REFLECTIONS_DIR, "user-facing.md");
+const SKILL_REQUESTS_FILE = path.join(REFLECTIONS_DIR, "skill-requests.md");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type StepStatus = "running" | "done" | "error";
+export type ItemType =
+  | "preference"        // how user likes responses formatted/styled
+  | "communication_style" // how user communicates, tone, humor, brevity
+  | "habit"             // recurring behavior → could automate or proactively offer
+  | "skill_request"     // new capability needed (tool, skill, system access)
+  | "memory";           // factual info about user (role, tools, projects)
 
-export interface Step {
-  id: string;
-  description: string;
-  status: StepStatus;
-  timestamp: string;
-}
-
-export type SessionStatus = "idle" | "running" | "complete";
-
-export interface ReflectionState {
-  status: SessionStatus;
-  startedAt?: string;
-  completedAt?: string;
-  summary?: string;
-  steps: Step[];
-}
-
-export type ItemType = "memory" | "skill_request" | "preference" | "communication_style" | "habit";
 export type ItemStatus = "pending" | "approved" | "rejected";
 
 export interface ReflectionItem {
   id: string;
   title: string;
   type: ItemType;
-  content: string;
-  evidence: string[];
-  actor_score: number;
-  critic_score?: number;
-  critic_reasoning?: string;
-  is_internal: boolean;
+  content: string;      // summary: what was noticed + what to do about it
+  score: number;        // 0–10
+  is_internal: boolean; // true = agent adapts silently; false = user-visible / proactive
   status: ItemStatus;
   createdAt: string;
 }
@@ -74,40 +56,6 @@ function writeJson(file: string, data: unknown) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8");
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
-
-export function getState(): ReflectionState {
-  ensureDir();
-  return readJson<ReflectionState>(STATE_FILE, { status: "idle", steps: [] });
-}
-
-function saveState(state: ReflectionState) {
-  writeJson(STATE_FILE, state);
-}
-
-// ─── Steps ────────────────────────────────────────────────────────────────────
-
-export function logStep(description: string, status: StepStatus = "done") {
-  const state = getState();
-  if (state.status === "idle") {
-    state.status = "running";
-    state.startedAt = new Date().toISOString();
-  }
-  const existing = state.steps.find((s) => s.description === description);
-  if (existing) {
-    existing.status = status;
-    existing.timestamp = new Date().toISOString();
-  } else {
-    state.steps.push({
-      id: crypto.randomUUID(),
-      description,
-      status,
-      timestamp: new Date().toISOString(),
-    });
-  }
-  saveState(state);
-}
-
 // ─── Items ────────────────────────────────────────────────────────────────────
 
 export function getPendingItems(): ReflectionItem[] {
@@ -119,47 +67,18 @@ function savePendingItems(items: ReflectionItem[]) {
   writeJson(PENDING_FILE, items);
 }
 
-export function addItem(
-  item: Omit<ReflectionItem, "id" | "status" | "createdAt"> & { evidence?: string[] },
-): string {
+export function addItem(item: Omit<ReflectionItem, "id" | "status" | "createdAt">): string {
+  // content is the single summary field
   const items = getPendingItems();
-  const { evidence, ...rest } = item;
   const newItem: ReflectionItem = {
+    ...item,
     id: crypto.randomUUID(),
     status: "pending",
     createdAt: new Date().toISOString(),
-    evidence: evidence ?? [],
-    ...rest,
   };
   items.push(newItem);
   savePendingItems(items);
   return newItem.id;
-}
-
-export function updateScore(itemId: string, criticScore: number, criticReasoning?: string) {
-  const items = getPendingItems();
-  const item = items.find((i) => i.id === itemId);
-  if (item) {
-    item.critic_score = criticScore;
-    if (criticReasoning) item.critic_reasoning = criticReasoning;
-  }
-  savePendingItems(items);
-}
-
-// ─── Complete ─────────────────────────────────────────────────────────────────
-
-export function completeSession(summary?: string) {
-  const state = getState();
-  state.status = "complete";
-  state.completedAt = new Date().toISOString();
-  if (summary) state.summary = summary;
-  state.steps.forEach((s) => { if (s.status === "running") s.status = "done"; });
-  saveState(state);
-
-  // Drop items below score threshold (critic_score takes priority over actor_score)
-  const items = getPendingItems();
-  const kept = items.filter((i) => (i.critic_score ?? i.actor_score) >= 6);
-  savePendingItems(kept);
 }
 
 // ─── Apply / Reject ───────────────────────────────────────────────────────────
@@ -169,40 +88,47 @@ function appendToMd(file: string, item: ReflectionItem) {
   const date = new Date().toLocaleDateString("en-US", {
     year: "numeric", month: "short", day: "numeric",
   });
-  const score = item.critic_score ?? item.actor_score;
-  const evidenceBlock = item.evidence.length > 0
-    ? "\n\n**Evidence:**\n" + item.evidence.map((e) => `> ${e}`).join("\n\n")
-    : "";
-  const criticNote = item.critic_reasoning
-    ? `\n\n_Critic note: ${item.critic_reasoning}_`
-    : "";
-
-  const entry = `\n---\n\n## ${item.title}\n`
-    + `*${date} · ${item.type} · score ${score}/10*\n\n`
-    + item.content
-    + evidenceBlock
-    + criticNote
-    + "\n";
 
   if (!fs.existsSync(file)) {
-    const header = file.includes("internal")
-      ? "# Internal Reflections\n\nAgent-adaptation insights. Updated automatically.\n"
-      : file.includes("skill-requests")
-      ? "# Skill Requests\n\nWorkflows that could become reusable skills.\n"
-      : "# User-Facing Reflections\n\nInsights about user patterns and preferences.\n";
-    fs.writeFileSync(file, header, "utf-8");
+    const headers: Record<string, string> = {
+      [INTERNAL_FILE]: "# Internal Reflections\n\nHow agent should adapt its behavior.\n",
+      [USER_FACING_FILE]: "# User-Facing Reflections\n\nUser patterns and proactive opportunities.\n",
+      [SKILL_REQUESTS_FILE]: "# Skill Requests\n\nCapability gaps and automation requests.\n",
+    };
+    fs.writeFileSync(file, headers[file] ?? "# Reflections\n", "utf-8");
   }
+
+  const entry = `\n---\n\n## ${item.title}\n`
+    + `*${date} · ${item.type} · score ${item.score}/10*\n\n`
+    + item.content + "\n";
+
   fs.appendFileSync(file, entry, "utf-8");
 }
 
-export function applyItem(itemId: string) {
+export function getLearnedItems(): ReflectionItem[] {
+  ensureDir();
+  return readJson<ReflectionItem[]>(LEARNED_FILE, []);
+}
+
+function saveLearnedItems(items: ReflectionItem[]) {
+  writeJson(LEARNED_FILE, items);
+}
+
+export function applyItem(itemId: string): boolean {
   const items = getPendingItems();
   const item = items.find((i) => i.id === itemId);
   if (!item) return false;
-
   item.status = "approved";
   savePendingItems(items);
 
+  // Write to learned.json (structured, permanent store)
+  const learned = getLearnedItems();
+  if (!learned.find((l) => l.id === item.id)) {
+    learned.push({ ...item, status: "approved" });
+    saveLearnedItems(learned);
+  }
+
+  // Also keep md files for context loading
   if (item.type === "skill_request") {
     appendToMd(SKILL_REQUESTS_FILE, item);
   } else if (item.is_internal) {
@@ -213,7 +139,7 @@ export function applyItem(itemId: string) {
   return true;
 }
 
-export function rejectItem(itemId: string) {
+export function rejectItem(itemId: string): boolean {
   const items = getPendingItems();
   const item = items.find((i) => i.id === itemId);
   if (!item) return false;
@@ -222,57 +148,18 @@ export function rejectItem(itemId: string) {
   return true;
 }
 
-// Remove all resolved (approved/rejected) items from pending.json.
-// Persistent MD files are untouched.
 export function cleanupResolved() {
   const items = getPendingItems();
-  const stillPending = items.filter((i) => i.status === "pending");
-  savePendingItems(stillPending);
-
-  if (stillPending.length === 0) {
-    // All done — reset session state to idle
-    saveState({ status: "idle", steps: [] });
-  }
+  savePendingItems(items.filter((i) => i.status === "pending"));
 }
 
-// ─── Context search (for load_context tool) ──────────────────────────────────
+// ─── Reset ────────────────────────────────────────────────────────────────────
 
-export interface ContextResult {
-  source: string;
-  matches: string[];
-}
-
-export function searchContext(query: string): ContextResult[] {
-  const files: Array<{ source: string; path: string }> = [
-    { source: "internal-reflections", path: INTERNAL_FILE },
-    { source: "user-facing-reflections", path: USER_FACING_FILE },
-    { source: "skill-requests", path: SKILL_REQUESTS_FILE },
-  ];
-
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const results: ContextResult[] = [];
-
-  for (const { source, path: filePath } of files) {
-    if (!fs.existsSync(filePath)) continue;
-    const content = fs.readFileSync(filePath, "utf-8");
-
-    // Split into sections by ## heading
-    const sections = content.split(/\n(?=## )/);
-    const matched: string[] = [];
-
-    for (const section of sections) {
-      const lower = section.toLowerCase();
-      if (terms.every((t) => lower.includes(t))) {
-        matched.push(section.trim());
-      }
-    }
-
-    if (matched.length > 0) {
-      results.push({ source, matches: matched });
-    }
+export function resetAllReflections() {
+  ensureDir();
+  for (const f of [PENDING_FILE, LEARNED_FILE, INTERNAL_FILE, USER_FACING_FILE, SKILL_REQUESTS_FILE]) {
+    if (fs.existsSync(f)) fs.unlinkSync(f);
   }
-
-  return results;
 }
 
 // ─── Agent prompt ─────────────────────────────────────────────────────────────
@@ -280,102 +167,119 @@ export function searchContext(query: string): ContextResult[] {
 export function buildAgentPrompt(daysBack: number, focus: string): string {
   return `# Reflection Agent
 
-You received this prompt by calling \`reflection_start\`. Execute the reflection workflow below using the available tools. This session's goal: analyze the last **${daysBack} days** of conversation history, focusing on **${focus}**.
+Analyze the last **${daysBack} days** of conversation history. Focus: **${focus}**.
 
-## Available tools
-- \`reflection_read_conversations\` — read conversation history from the local DB
-- \`reflection_log_step\` — log a step (shown in the review UI; call with status "running" to start, then "done" to finish)
-- \`reflection_add_item\` — record a discovered insight (actor phase)
-- \`reflection_update_score\` — re-evaluate an item after adding it (critic phase)
-- \`reflection_complete\` — mark session done; items with final score < 6 are auto-dropped
+Your goal: find **concrete signals** in conversations. Look for BOTH explicit and implicit patterns:
 
----
+**Explicit:** User states a rule directly
+- "Always...", "Never...", "Non-negotiable"
+- "Yes, do that", "Exactly"
+- "That was too long/short"
 
-## Phase 1 — Read Data
+**Implicit:** User's behavior repeats without asking
+- User opens chats in morning 8/10 times → morning person
+- User asks for weather every day without prompting → frequent need
+- User requests tests + coverage every time → non-negotiable habit
+- User opens 3 chats in a row, then breaks → patterns in work rhythm
+
+Also track:
+- Repeated friction (asks same thing 2+ times, workarounds, frustration)
+- Blocked attempts (user tries feature that doesn't exist)
+- Proactivity gaps (user asks A, then B, then C in sequence → offer all upfront)
+
+Then produce **action items** — specific behaviors to adopt, not descriptions of what user did.
+
+## Workflow
+
+### 1. Read history
+Call \`reflection_read_conversations\` with \`days_back: ${daysBack}\`.
+
+### 2. Produce action items
+For each signal, call \`reflection_add_item\` once per item.
+
+**Item fields:**
+- **title** — what to do (imperative: "Enforce strict TypeScript", "Offer weather + follow-ups", "Request file-access skill")
+- **type** — see types below
+- **content** — concise rule: what behavior to adopt and when. 1–2 sentences. When possible, reference what user said.
+- **score** — 0–10 confidence (how clearly this pattern appeared)
+- **is_internal** — true = agent silently adopts rule | false = proactive/user-visible opportunity
+
+**Types:**
+- \`preference\` — explicit rule about response style (length, format, tone)
+- \`communication_style\` — how user communicates; patterns in tone, humor, directness
+- \`habit\` — repeated action → proactivity opportunity (user always asks X after greeting)
+- \`skill_request\` — user tried to do Y but feature doesn't exist
+- \`memory\` — useful facts (user is in Ukraine, uses TypeScript, etc.)
+
+**Examples (explicit + implicit):**
+
+1. **EXPLICIT: User states rule directly**
+   User: "Always use strict TypeScript in projects. Non-negotiable."
+   → title: "Enforce strict TypeScript"
+   → type: preference | is_internal: true | score: 10
+   → content: "User explicitly stated: non-negotiable strict mode. Default all TypeScript projects to strict: true."
+
+2. **IMPLICIT: User does thing repeatedly (without asking)**
+   User opens chats 9/10 days in morning (7–9am), rarely afternoon. Never asks for morning help.
+   → title: "Offer proactive help in morning"
+   → type: habit | is_internal: false | score: 8
+   → content: "User consistently opens chats in early morning. Offer morning check-in: 'What's first?' or proactive suggestions."
+
+3. **IMPLICIT: User searches for same thing multiple ways**
+   User asks "weather in Lviv", then "Kyiv forecast", then "Ukraine May outlook" in sequence
+   → title: "Bundle Ukraine weather queries"
+   → type: habit | is_internal: false | score: 9
+   → content: "User asks for Ukrainian weather piecemeal (city→city→region). Proactively offer all three together when they ask about weather."
+
+4. **EXPLICIT: Communication feedback user gives**
+   User: "Keep responses concise. I prefer terse explanations without fluff."
+   → title: "Keep replies short and direct"
+   → type: preference | is_internal: true | score: 9
+   → content: "User explicitly prefers terse, no-fluff. Skip preamble, use bullets, one idea per line."
+
+5. **EXPLICIT: Blocked attempt (user can't do something)**
+   User: "I need to check Mac logs but I can't access them. Can you debug this?"
+   → title: "Request Mac system diagnostics"
+   → type: skill_request | is_internal: false | score: 9
+   → content: "User repeatedly tries to debug macOS (logs, processes, disk) but can't access. Request/build skill for system diagnostics."
+
+6. **EXPLICIT: User agrees on pattern**
+   User: "Yeah, exactly. Atomic commits with ticket refs. One per logical change."
+   → title: "Create atomic commits"
+   → type: preference | is_internal: true | score: 8
+   → content: "User agreed: each commit = one logical change, format 'fix(#123): description', imperative mood."
+
+7. **IMPLICIT: User works around missing feature**
+   User asks "how do I do X?", I show workaround Y, user uses it. Repeats 3+ times.
+   → title: "Build X feature"
+   → type: skill_request | is_internal: false | score: 7
+   → content: "User repeatedly works around missing feature X using workaround Y. Build X natively so user doesn't need workaround."
+
+**Score guide:**
+- 9–10 = explicit rule, clear block/frustration, or repeated 5+ times
+- 7–8 = stated 2–3 times or clear pattern
+- 5–6 = weak signal, inferred but not explicit
+- <5 = don't include
+
+### 3. Open review widget (REQUIRED)
+After all \`reflection_add_item\` calls, open the review widget with NO arguments:
 
 \`\`\`
-reflection_log_step("Reading conversation history", "running")
-reflection_read_conversations(days_back: ${daysBack}, limit: 400)
-reflection_log_step("Reading conversation history", "done")
+reflection-ui-review()
 \`\`\`
 
----
-
-## Phase 2 — Actor: Discover Patterns
-
-Scan each conversation. For every clear pattern, call:
-
-\`\`\`
-reflection_log_step("Analyzing: <brief topic>", "running")
-reflection_add_item({
-  title: "Short, specific title",
-  type: "<type>",           // memory | skill_request | preference | communication_style | habit
-  content: "1–3 sentences, specific, includes frequency/context",
-  evidence: ["exact quote 1", "exact quote 2"],
-  actor_score: 7,           // 1–10 (specificity + recurrence + actionability) / 3
-  is_internal: false        // true = agent-adaptation only; false = user-visible
-})
-reflection_log_step("Analyzing: <brief topic>", "done")
-\`\`\`
-
-**What to look for:**
-- **memory**: User facts — role, expertise level, project names, recurring tools
-- **skill_request**: Workflow repeated 3+ times (scaffold, deploy, search pattern — something automatable)
-- **preference**: Response format/length/style the user consistently prefers
-- **communication_style**: How the user writes — terse/verbose, technical level, tone, vocabulary
-- **habit**: Recurring behavior — always adds tests, always starts with planning, always asks for TypeScript
-
-**is_internal = true** → agent should adapt silently (e.g. "respond tersely")
-**is_internal = false** → user should see this insight
-
----
-
-## Phase 3 — Critic: Re-evaluate Each Item
-
-After adding all items, review them honestly. For each:
-
-\`\`\`
-reflection_update_score({
-  item_id: "<id returned by reflection_add_item>",
-  critic_score: 8,           // your honest re-assessment
-  critic_reasoning: "Strong: appears in 5+ chats. Specific and actionable."
-})
-\`\`\`
-
-**Scoring rubric:**
-
-| Score | Meaning |
-|-------|---------|
-| 9–10 | Highly specific, strongly evidenced, high-impact, seen 5+ times |
-| 7–8 | Good evidence, specific, actionable |
-| 5–6 | Borderline: single occurrence or vague phrasing |
-| < 5 | Speculative, too generic, no direct evidence |
-
-**Penalty guide:**
-- Vague phrasing ("user likes clean code") → −3
-- Only one occurrence → −2
-- Already obvious / not novel → −1
-- No direct evidence quoted → −2
-
-Items ending up < 6 will be auto-dropped. Be strict.
-
----
-
-## Phase 4 — Complete
-
-\`\`\`
-reflection_log_step("Reflection complete", "done")
-reflection_complete({
-  summary: "Found N items: X skill requests, Y preferences, Z habits. Dropped M low-score items."
-})
-\`\`\`
-
----
+It reads the pending queue automatically. Do NOT pass items as arguments. Do NOT summarize in text.
 
 ## Quality bar
-- Aim for 5–15 high-quality items. Prefer fewer, better items over many weak ones.
-- Skill requests must describe the workflow precisely enough to implement.
-- Evidence must be direct quotes, not paraphrases.
-- Do not add items about the AI assistant's own behavior — only about the user.
+- **Explicit patterns**: what user said directly (rules, feedback, agreements)
+- **Implicit patterns**: what user does repeatedly without asking (habits, workarounds, rhythms)
+- Both are valid. A pattern needs evidence: explicit statement, repeated 3+ times, or blocked attempt.
+- Titles: imperative actions, not observations. "Enforce X", "Offer Y", "Request Z" — never "User does X".
+- Content: **be specific about the signal**. Quote user when explicit. Reference behavior when implicit.
+  - Explicit: "User stated...", "User explicitly asked...", "User agreed that..."
+  - Implicit: "User does X in 9/10 chats", "User repeatedly searches for A then B", "User works around missing X"
+- \`skill_request\`: describe blocked attempt. What did user try? What failed? What do they need?
+- Score 9–10: explicit rule or repeated 5+ times | Score 7–8: stated 2–3 times or clear repeated pattern | Score 5–6: weak/inferred
+- Skip observations that lack evidence (generic "user likes X" without 3+ instances or explicit statement).
 `;
 }
