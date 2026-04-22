@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, Files, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
-import { spawn } from "child_process";
-import { unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { randomUUID } from "crypto";
-import path from "path";
+import { spawn } from "node:child_process";
+import { unlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
 
 const schema = z.object({
   inputPath: z.string().optional().describe("Path to the input video file to stabilize."),
