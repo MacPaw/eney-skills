@@ -218,24 +218,20 @@ function SearchNotes(props: Props) {
         ? `_${notes.length} notes indexed · ${hits.length} result${hits.length === 1 ? "" : "s"}_`
         : `_${notes.length} notes indexed — type a query and hit Search._`;
 
-  const bodyMarkdown =
-    hits.length === 0
-      ? lastRanAt > 0
-        ? "No matches. Try fewer characters, different spelling, or clear filters."
-        : ""
-      : hits
-          .map((h, i) => {
-            const tags = h.note.tags.length ? h.note.tags.map((t) => `\`#${t}\``).join(" ") : "";
-            const kind = h.matchKind === "phonetic" ? " · _phonetic_" : "";
-            return [
-              `**${i + 1}. ${h.note.title}**${kind}`,
-              `\`${h.note.relPath}\`${tags ? " · " + tags : ""}`,
-              `> ${h.snippet || "_(empty note)_"}`,
-            ].join("\n");
-          })
-          .join("\n\n---\n\n");
+  const emptyBody =
+    hits.length === 0 && lastRanAt > 0
+      ? "No matches. Try fewer characters, different spelling, or clear filters."
+      : "";
 
-  const firstHit = hits[0];
+  function hitMarkdown(h: Hit, i: number): string {
+    const tags = h.note.tags.length ? h.note.tags.map((t) => `\`#${t}\``).join(" ") : "";
+    const kind = h.matchKind === "phonetic" ? " · _phonetic_" : "";
+    return [
+      `**${i + 1}. ${h.note.title}**${kind}`,
+      `\`${h.note.relPath}\`${tags ? " · " + tags : ""}`,
+      `> ${h.snippet || "_(empty note)_"}`,
+    ].join("\n\n");
+  }
 
   return (
     <Form
@@ -249,19 +245,27 @@ function SearchNotes(props: Props) {
             isDisabled={isIndexing || !selectedVault}
             isLoading={isIndexing}
           />
-          {firstHit && (
-            <Action
-              title={`Open "${firstHit.note.title}" in Obsidian`}
-              onAction={() => onOpen(firstHit)}
-              style="secondary"
-            />
-          )}
           <Action title="Done" onAction={onDone} style="secondary" />
         </ActionPanel>
       }
     >
       <Paper markdown={statusLine} />
-      {bodyMarkdown && <Paper markdown={bodyMarkdown} isScrollable />}
+      {emptyBody && <Paper markdown={emptyBody} />}
+      {hits.map((h, i) => (
+        <Paper
+          key={h.note.absPath}
+          markdown={hitMarkdown(h, i)}
+          actions={
+            <ActionPanel>
+              <Action
+                title="Open..."
+                onAction={() => onOpen(h)}
+                style="secondary"
+              />
+            </ActionPanel>
+          }
+        />
+      ))}
       <Form.Dropdown name="vault" label="Vault" value={vaultId} onChange={setVaultId}>
         {vaults.map((v) => (
           <Form.Dropdown.Item key={v.id} value={v.id} title={v.name} />
