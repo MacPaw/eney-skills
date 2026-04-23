@@ -35,7 +35,11 @@ function toMarkdownTable(rows: string[][]): string {
   // Normalize cells — collapse newlines so each cell stays on one line
   const cells = trimmed.map((r) =>
     Array.from({ length: cols }, (_, i) =>
-      String(r[i] ?? "").replace(/\r?\n/g, " · ").replace(/\|/g, "\\|").trim()
+      String(r[i] ?? "")
+        .replace(/\r?\n/g, " · ")
+        .replace(/\\/g, "\\\\")
+        .replace(/\|/g, "\\|")
+        .trim()
     )
   );
 
