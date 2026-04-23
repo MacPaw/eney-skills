@@ -136,6 +136,11 @@ function EditNote(props: Props) {
           selectedPath.replace(/\.md$/i, "").split("/").pop() ||
           "note";
         if (cancelled) return;
+        // Set body/tags BEFORE loadedNote so the editor view's first render
+        // (and the RichTextEditor's mount) already has the real content.
+        setContent(body);
+        setTagsInput(tagsToInput(tags));
+        setLoadError("");
         setLoadedNote({
           absPath: abs,
           relPath: selectedPath,
@@ -148,9 +153,6 @@ function EditNote(props: Props) {
           mtime: Date.now(),
           phonetic: "",
         });
-        setContent(body);
-        setTagsInput(tagsToInput(tags));
-        setLoadError("");
       } catch (e) {
         if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e));
       }
@@ -275,7 +277,12 @@ function EditNote(props: Props) {
           value={tagsInput}
           onChange={setTagsInput}
         />
-        <Form.RichTextEditor value={content} onChange={setContent} isInitiallyFocused />
+        <Form.RichTextEditor
+          key={loadedNote.relPath}
+          value={content}
+          onChange={setContent}
+          isInitiallyFocused
+        />
       </Form>
     );
   }
