@@ -39,13 +39,14 @@ interface Task {
 function startOfDay(d: Date): Date {
   const copy = new Date(d);
   copy.setHours(0, 0, 0, 0);
-  return copy;
+  return new Date(copy.getTime() - copy.getTimezoneOffset() * 60_000);
 }
 
-function endOfDay(d: Date): Date {
+function nextDay(d: Date): Date {
   const copy = new Date(d);
-  copy.setHours(23, 59, 59, 999);
-  return copy;
+  copy.setDate(copy.getDate() + 1);
+  copy.setHours(0, 0, 0, 0);
+  return new Date(copy.getTime() - copy.getTimezoneOffset() * 60_000);
 }
 
 function formatDate(iso: string): string {
@@ -75,7 +76,7 @@ function getPresetRange(preset: FilterPreset): { dueMin?: string; dueMax?: strin
   if (preset === "today") {
     return {
       dueMin: startOfDay(now).toISOString(),
-      dueMax: endOfDay(now).toISOString(),
+      dueMax: nextDay(now).toISOString(),
     };
   }
   if (preset === "week") {
@@ -83,7 +84,7 @@ function getPresetRange(preset: FilterPreset): { dueMin?: string; dueMax?: strin
     weekEnd.setDate(weekEnd.getDate() + 7);
     return {
       dueMin: startOfDay(now).toISOString(),
-      dueMax: endOfDay(weekEnd).toISOString(),
+      dueMax: nextDay(weekEnd).toISOString(),
     };
   }
   return {};
@@ -131,7 +132,7 @@ function TasksFilter(props: Props) {
     setError("");
     try {
       const range = preset === "custom"
-        ? { dueMin: startOfDay(customFrom).toISOString(), dueMax: endOfDay(customTo).toISOString() }
+        ? { dueMin: startOfDay(customFrom).toISOString(), dueMax: nextDay(customTo).toISOString() }
         : getPresetRange(preset);
 
       const params: Record<string, unknown> = {
@@ -208,8 +209,8 @@ function TasksFilter(props: Props) {
         {isLoadingLists
           ? [<Form.Dropdown.Item key="loading" title="Loading lists…" value="" />]
           : taskLists.map((l) => (
-              <Form.Dropdown.Item key={l.id} title={l.title} value={l.id} />
-            ))}
+            <Form.Dropdown.Item key={l.id} title={l.title} value={l.id} />
+          ))}
       </Form.Dropdown>
 
       <Form.Dropdown

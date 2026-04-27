@@ -21,6 +21,12 @@ const schema = z.object({
 type Props = z.infer<typeof schema>;
 type Step = "select" | "create" | "edit" | "confirm-delete";
 
+function toLocalMidnightISO(d: Date): string {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  return new Date(copy.getTime() - copy.getTimezoneOffset() * 60_000).toISOString();
+}
+
 interface TaskList {
   id: string;
   title: string;
@@ -162,7 +168,7 @@ function TasksManager(props: Props) {
       const params = { tasklist: selectedListId, task: selectedTaskId };
       const body: Record<string, string> = { title: editTitle };
       if (editNotes) body.notes = editNotes;
-      body.due = editDue.toISOString();
+      body.due = toLocalMidnightISO(editDue);
       await execGws(
         ["tasks", "tasks", "patch", "--params", JSON.stringify(params), "--json", JSON.stringify(body)],
         tasksToken()
@@ -212,7 +218,7 @@ function TasksManager(props: Props) {
       const params = { tasklist: selectedListId };
       const body: Record<string, string> = { title: newTitle };
       if (newNotes) body.notes = newNotes;
-      body.due = newDue.toISOString();
+      body.due = toLocalMidnightISO(newDue);
       await execGws(
         ["tasks", "tasks", "insert", "--params", JSON.stringify(params), "--json", JSON.stringify(body)],
         tasksToken()
@@ -367,8 +373,8 @@ function TasksManager(props: Props) {
         {isLoadingLists
           ? [<Form.Dropdown.Item key="loading" title="Loading lists…" value="" />]
           : taskLists.map((l) => (
-              <Form.Dropdown.Item key={l.id} title={l.title} value={l.id} />
-            ))}
+            <Form.Dropdown.Item key={l.id} title={l.title} value={l.id} />
+          ))}
       </Form.Dropdown>
       <Form.Dropdown
         name="taskId"
@@ -379,8 +385,8 @@ function TasksManager(props: Props) {
         {isLoadingTasks
           ? [<Form.Dropdown.Item key="loading" title="Loading tasks…" value="" />]
           : tasks.length === 0
-          ? [<Form.Dropdown.Item key="empty" title={selectedListId ? "No pending tasks" : "Select a list first"} value="" />]
-          : tasks.map((t) => (
+            ? [<Form.Dropdown.Item key="empty" title={selectedListId ? "No pending tasks" : "Select a list first"} value="" />]
+            : tasks.map((t) => (
               <Form.Dropdown.Item key={t.id} title={t.title ?? t.id} value={t.id} />
             ))}
       </Form.Dropdown>
