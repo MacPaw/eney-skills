@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
 
 const schema = z.object({
@@ -48,7 +48,7 @@ function DriveDeleteFile(props: Props) {
         `File "${selectedFile?.name ?? selectedId}" has been moved to Trash.`
       );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[trash] error=${msg}`);
       setError(msg);
       setIsLoading(false);

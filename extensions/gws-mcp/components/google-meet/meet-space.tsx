@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, meetToken } from "../../helpers/gws.js";
+import { execGws, meetToken, parseGwsError } from "../../helpers/gws.js";
 import { useConferenceRecords } from "../../helpers/use-conference-records.js";
 
 const schema = z.object({
@@ -84,7 +84,7 @@ function MeetSpace(props: Props) {
       setOriginalAccessType(currentAccessType);
       setSpaceInfo(formatSpace(data));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[meet-space] get error=${msg}`);
       setError(msg);
     } finally {
@@ -108,7 +108,7 @@ function MeetSpace(props: Props) {
       setOriginalAccessType(updated);
       setInfo(`Access type updated to ${updated}.`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[meet-space] update error=${msg}`);
       setError(msg);
     } finally {

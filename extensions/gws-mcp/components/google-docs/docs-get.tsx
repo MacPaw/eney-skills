@@ -12,7 +12,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 import { useDocFiles } from "../../helpers/use-doc-files.js";
 
 const schema = z.object({
@@ -90,7 +90,7 @@ function DocsGet(props: Props) {
       setFileUrl(`https://docs.google.com/document/d/${doc.documentId}/edit`);
       setResult(formatDoc(doc));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[docs-get] error=${msg}`);
       setError(msg);
     } finally {

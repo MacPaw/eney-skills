@@ -12,7 +12,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 
 const schema = z.object({
   title: z.string().optional().describe("Title for the new Google Spreadsheet. Defaults to 'New Sheet – {date}'."),
@@ -124,7 +124,7 @@ function SheetsCreate(props: Props) {
           `| | |\n| --- | --- |\n| **Name** | ${file.name ?? sheetTitle} |\n| **ID** | \`${fileId}\` |`
       );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[sheets-create] error=${msg}`);
       setError(msg);
     } finally {

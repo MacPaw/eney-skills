@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, tasksToken } from "../../helpers/gws.js";
+import { execGws, tasksToken, parseGwsError } from "../../helpers/gws.js";
 
 const schema = z.object({
   tasklistId: z.string().optional().describe("ID of the task list to open."),
@@ -151,7 +151,7 @@ function TasksManager(props: Props) {
       setInfo(`"${selectedTask?.title ?? selectedTaskId}" marked as complete.`);
       await loadTasks(selectedListId);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[tasks] mark-complete error=${msg}`);
       setError(msg);
     } finally {
@@ -177,7 +177,7 @@ function TasksManager(props: Props) {
       setStep("select");
       await loadTasks(selectedListId);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[tasks] update error=${msg}`);
       setError(msg);
     } finally {
@@ -200,7 +200,7 @@ function TasksManager(props: Props) {
       setStep("select");
       await loadTasks(selectedListId);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[tasks] delete error=${msg}`);
       setError(msg);
       setStep("select");
@@ -230,7 +230,7 @@ function TasksManager(props: Props) {
       setStep("select");
       await loadTasks(selectedListId);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[tasks] create error=${msg}`);
       setError(msg);
     } finally {

@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 import { useDriveFolders } from "../../helpers/use-drive-folders.js";
 import { markdownToDocRequests, hasMarkdown, categorizeError } from "../../helpers/markdown-to-requests.js";
 
@@ -104,7 +104,7 @@ function DocsCreate(props: Props) {
 
       closeWidget(`${steps}\n${link}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[docs-create] error=${msg}`);
       setError(categorizeError(msg));
     } finally {

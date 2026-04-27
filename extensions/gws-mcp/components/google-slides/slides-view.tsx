@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 import { useSlidesFiles } from "../../helpers/use-slides-files.js";
 
 const schema = z.object({
@@ -95,7 +95,7 @@ function SlidesView(props: Props) {
         `## ${data.title ?? "Untitled"}\n\n**${slides.length} slide${slides.length !== 1 ? "s" : ""}**\n\n| # | Title |\n|---|-------|\n${rows}`
       );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[slides-view] error=${msg}`);
       setError(msg);
     } finally {

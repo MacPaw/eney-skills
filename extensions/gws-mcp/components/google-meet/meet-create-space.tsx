@@ -11,7 +11,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, meetToken } from "../../helpers/gws.js";
+import { execGws, meetToken, parseGwsError } from "../../helpers/gws.js";
 
 const schema = z.object({
   accessType: z
@@ -56,7 +56,7 @@ function MeetCreateSpace(props: Props) {
       const data = JSON.parse(stdout) as SpaceResponse;
       setMeetingUri(data.meetingUri ?? "");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[create-space] error=${msg}`);
       setError(msg);
     } finally {

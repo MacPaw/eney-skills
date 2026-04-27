@@ -10,7 +10,7 @@ import {
   defineWidget,
   useCloseWidget,
 } from "@eney/api";
-import { execGws, driveToken } from "../../helpers/gws.js";
+import { execGws, driveToken, parseGwsError } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
 
 const schema = z.object({

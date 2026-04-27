@@ -10,7 +10,7 @@ import {
   useCloseWidget,
   useLogger,
 } from "@eney/api";
-import { execGws, tasksToken } from "../../helpers/gws.js";
+import { execGws, tasksToken, parseGwsError } from "../../helpers/gws.js";
 
 const schema = z.object({
   tasklistId: z.string().optional().describe("ID of the task list to filter."),
@@ -163,7 +163,7 @@ function TasksFilter(props: Props) {
       });
       closeWidget(`${fetched.length} task${fetched.length !== 1 ? "s" : ""} found (${label}):\n${lines.join("\n")}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = parseGwsError(e);
       logger.error(`[tasks-filter] error=${msg}`);
       setError(msg);
       setIsLoadingTasks(false);

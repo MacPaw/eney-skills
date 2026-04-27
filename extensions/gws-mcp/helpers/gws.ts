@@ -29,3 +29,11 @@ export function meetToken(): string {
 export function tasksToken(): string {
   return process.env.GOOGLE_TASKS_TOKEN ?? "";
 }
+
+export function parseGwsError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  const match = msg.match(/error\[[^\]]+\]:\s*(.+)$/s);
+  if (match) return match[1].trim();
+  const lines = msg.split("\n").filter((l) => l.trim());
+  return lines[lines.length - 1] ?? msg;
+}
