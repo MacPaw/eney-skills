@@ -72,7 +72,7 @@ function TasksManager(props: Props) {
   useEffect(() => {
     async function loadLists() {
       try {
-        const stdout = await execGws("tasks tasklists list", tasksToken());
+        const stdout = await execGws(["tasks", "tasklists", "list"], tasksToken());
         const data = JSON.parse(stdout) as { items?: TaskList[] };
         setTaskLists(data.items ?? []);
       } catch (e) {
@@ -104,7 +104,7 @@ function TasksManager(props: Props) {
     try {
       const params = { tasklist: listId, showCompleted: false, showHidden: false };
       const stdout = await execGws(
-        `tasks tasks list --params '${JSON.stringify(params)}'`,
+        ["tasks", "tasks", "list", "--params", JSON.stringify(params)],
         tasksToken()
       );
       const data = JSON.parse(stdout) as { items?: Task[] };
@@ -139,7 +139,7 @@ function TasksManager(props: Props) {
       logger.info(`[tasks] mark-complete taskId=${selectedTaskId}`);
       const params = { tasklist: selectedListId, task: selectedTaskId };
       await execGws(
-        `tasks tasks patch --params '${JSON.stringify(params)}' --json '${JSON.stringify({ status: "completed" })}'`,
+        ["tasks", "tasks", "patch", "--params", JSON.stringify(params), "--json", JSON.stringify({ status: "completed" })],
         tasksToken()
       );
       setInfo(`"${selectedTask?.title ?? selectedTaskId}" marked as complete.`);
@@ -164,7 +164,7 @@ function TasksManager(props: Props) {
       if (editNotes) body.notes = editNotes;
       body.due = editDue.toISOString();
       await execGws(
-        `tasks tasks patch --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
+        ["tasks", "tasks", "patch", "--params", JSON.stringify(params), "--json", JSON.stringify(body)],
         tasksToken()
       );
       setInfo(`"${editTitle}" updated.`);
@@ -187,7 +187,7 @@ function TasksManager(props: Props) {
       logger.info(`[tasks] delete taskId=${selectedTaskId}`);
       const params = { tasklist: selectedListId, task: selectedTaskId };
       await execGws(
-        `tasks tasks delete --params '${JSON.stringify(params)}' -o /dev/null`,
+        ["tasks", "tasks", "delete", "--params", JSON.stringify(params), "-o", "/dev/null"],
         tasksToken()
       );
       setInfo(`"${selectedTask?.title ?? selectedTaskId}" deleted.`);
@@ -214,7 +214,7 @@ function TasksManager(props: Props) {
       if (newNotes) body.notes = newNotes;
       body.due = newDue.toISOString();
       await execGws(
-        `tasks tasks insert --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
+        ["tasks", "tasks", "insert", "--params", JSON.stringify(params), "--json", JSON.stringify(body)],
         tasksToken()
       );
       setInfo(`"${newTitle}" created.`);

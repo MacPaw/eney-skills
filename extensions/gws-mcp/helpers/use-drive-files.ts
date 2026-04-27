@@ -23,7 +23,7 @@ export function useDriveFiles(): UseDriveFilesResult {
       try {
         const params = { fields: "files(id,name,mimeType)", pageSize: 50 };
         const stdout = await execGws(
-          `drive files list --params '${JSON.stringify(params)}'`,
+          ["drive", "files", "list", "--params", JSON.stringify(params)],
           driveToken()
         );
         const data = JSON.parse(stdout) as { files?: DriveFile[] };

@@ -49,7 +49,7 @@ function DocsCreateFromTemplate(props: Props) {
       // Step 1: Copy template
       logger.info(`[docs-from-template] copying templateId=${templateId} name="${name}"`);
       const copyStdout = await execGws(
-        `drive files copy --params '${JSON.stringify({ fileId: templateId })}' --json '${JSON.stringify({ name })}'`,
+        ["drive", "files", "copy", "--params", JSON.stringify({ fileId: templateId }), "--json", JSON.stringify({ name })],
         driveToken()
       );
       const copied = JSON.parse(copyStdout) as CopyResponse;
@@ -61,7 +61,7 @@ function DocsCreateFromTemplate(props: Props) {
       if (text) {
         logger.info(`[docs-from-template] appending text`);
         await execGws(
-          `docs +write --document ${newId} --text ${JSON.stringify(text)}`,
+          ["docs", "+write", "--document", newId, "--text", text],
           driveToken()
         );
       }
@@ -70,7 +70,7 @@ function DocsCreateFromTemplate(props: Props) {
       if (shareWith) {
         logger.info(`[docs-from-template] sharing with ${shareWith}`);
         await execGws(
-          `drive permissions create --params '${JSON.stringify({ fileId: newId })}' --json '${JSON.stringify({ role: "writer", type: "user", emailAddress: shareWith })}'`,
+          ["drive", "permissions", "create", "--params", JSON.stringify({ fileId: newId }), "--json", JSON.stringify({ role: "writer", type: "user", emailAddress: shareWith })],
           driveToken()
         );
       }

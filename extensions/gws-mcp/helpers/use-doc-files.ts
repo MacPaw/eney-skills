@@ -26,7 +26,7 @@ export function useDocFiles(): UseDocFilesResult {
           pageSize: 50,
         };
         const stdout = await execGws(
-          `drive files list --params '${JSON.stringify(params)}'`,
+          ["drive", "files", "list", "--params", JSON.stringify(params)],
           driveToken()
         );
         const data = JSON.parse(stdout) as { files?: DocFile[] };

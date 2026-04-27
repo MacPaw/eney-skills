@@ -83,7 +83,7 @@ function DocsGet(props: Props) {
     try {
       logger.info(`[docs-get] documentId=${selectedId}`);
       const stdout = await execGws(
-        `docs documents get --params '${JSON.stringify({ documentId: selectedId })}'`,
+        ["docs", "documents", "get", "--params", JSON.stringify({ documentId: selectedId })],
         driveToken()
       );
       const doc = JSON.parse(stdout) as DocResponse;

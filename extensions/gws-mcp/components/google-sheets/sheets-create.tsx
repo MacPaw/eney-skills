@@ -94,10 +94,10 @@ function SheetsCreate(props: Props) {
       // Step 1: Create spreadsheet via Drive
       logger.info(`[sheets-create] title="${sheetTitle}"`);
       const createStdout = await execGws(
-        `drive files create --json '${JSON.stringify({
+        ["drive", "files", "create", "--json", JSON.stringify({
           name: sheetTitle,
           mimeType: "application/vnd.google-apps.spreadsheet",
-        })}'`,
+        })],
         driveToken()
       );
       const file = JSON.parse(createStdout) as DriveFileResponse;
@@ -113,7 +113,7 @@ function SheetsCreate(props: Props) {
       if (rows.length > 0) {
         logger.info(`[sheets-create] appending ${rows.length} rows`);
         await execGws(
-          `sheets +append --spreadsheet ${fileId} --json-values '${JSON.stringify(rows)}'`,
+          ["sheets", "+append", "--spreadsheet", fileId, "--json-values", JSON.stringify(rows)],
           driveToken()
         );
       }

@@ -46,7 +46,7 @@ function DriveCopyFile(props: Props) {
     try {
       const body = newName ? { name: newName } : {};
       const stdout = await execGws(
-          `drive files copy --params '${JSON.stringify({ fileId: selectedId })}' --json '${JSON.stringify(body)}'`,
+          ["drive", "files", "copy", "--params", JSON.stringify({ fileId: selectedId }), "--json", JSON.stringify(body)],
           driveToken()
       );
       const data = JSON.parse(stdout) as { id?: string; name?: string };

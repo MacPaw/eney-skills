@@ -55,7 +55,7 @@ function DriveDownloadFile(props: Props) {
       const resolvedPath = outputPath.replace(/^~/, homedir());
       logger.info(`[download] fileId=${selectedId} resolvedPath=${resolvedPath}`);
       const stdout = await execGws(
-          `drive files download --params '${JSON.stringify({ fileId: selectedId })}' -o "${resolvedPath}"`,
+          ["drive", "files", "download", "--params", JSON.stringify({ fileId: selectedId }), "-o", resolvedPath],
           driveToken()
       );
       logger.info(`[download] completed stdout=${stdout.trim() || "(empty)"}`);

@@ -67,7 +67,7 @@ function DriveGetFileMetadata(props: Props) {
         fields: "id,name,mimeType,size,createdTime,modifiedTime,owners,webViewLink",
       };
       const stdout = await execGws(
-          `drive files get --params '${JSON.stringify(params)}'`,
+          ["drive", "files", "get", "--params", JSON.stringify(params)],
           driveToken()
       );
       const metadata = JSON.parse(stdout) as FileMetadata;

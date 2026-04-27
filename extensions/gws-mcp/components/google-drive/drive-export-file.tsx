@@ -62,7 +62,7 @@ function DriveExportFile(props: Props) {
     try {
       const resolvedPath = outputPath.replace(/^~/, homedir());
       await execGws(
-          `drive files export --params '${JSON.stringify({ fileId: selectedId, mimeType })}' -o "${resolvedPath}"`,
+          ["drive", "files", "export", "--params", JSON.stringify({ fileId: selectedId, mimeType }), "-o", resolvedPath],
           driveToken()
       );
       setSavedPath(resolvedPath);

@@ -32,7 +32,7 @@ interface DocBodyResponse {
 
 async function getDocEndIndex(docId: string): Promise<number> {
   const stdout = await execGws(
-    `docs documents get --params '${JSON.stringify({ documentId: docId })}'`,
+    ["docs", "documents", "get", "--params", JSON.stringify({ documentId: docId })],
     driveToken()
   );
   const doc = JSON.parse(stdout) as DocBodyResponse;
@@ -69,7 +69,7 @@ function DocsWrite(props: Props) {
         ? markdownToDocRequests("\n" + normalizedText, insertAt)
         : [{ insertText: { location: { index: insertAt }, text: "\n" + normalizedText } }];
       await execGws(
-        `docs documents batchUpdate --params '${JSON.stringify({ documentId: selectedId })}' --json '${JSON.stringify({ requests })}'`,
+        ["docs", "documents", "batchUpdate", "--params", JSON.stringify({ documentId: selectedId }), "--json", JSON.stringify({ requests })],
         driveToken()
       );
 
@@ -79,7 +79,7 @@ function DocsWrite(props: Props) {
       if (shareEmail.trim()) {
         logger.info(`[docs-write] sharing with ${shareEmail} as ${shareRole}`);
         await execGws(
-          `drive permissions create --params '${JSON.stringify({ fileId: selectedId, sendNotificationEmail: false })}' --json '${JSON.stringify({ role: shareRole, type: "user", emailAddress: shareEmail.trim() })}'`,
+          ["drive", "permissions", "create", "--params", JSON.stringify({ fileId: selectedId, sendNotificationEmail: false }), "--json", JSON.stringify({ role: shareRole, type: "user", emailAddress: shareEmail.trim() })],
           driveToken()
         );
       }

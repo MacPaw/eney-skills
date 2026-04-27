@@ -44,7 +44,7 @@ function SlidesFromTemplate(props: Props) {
     try {
       logger.info(`[slides-from-template] copying templateId=${templateId} name="${name}"`);
       const copyStdout = await execGws(
-        `drive files copy --params '${JSON.stringify({ fileId: templateId })}' --json '${JSON.stringify({ name })}'`,
+        ["drive", "files", "copy", "--params", JSON.stringify({ fileId: templateId }), "--json", JSON.stringify({ name })],
         driveToken()
       );
       const copied = JSON.parse(copyStdout) as CopyResponse;
@@ -55,7 +55,7 @@ function SlidesFromTemplate(props: Props) {
       if (shareWith.trim()) {
         logger.info(`[slides-from-template] sharing with ${shareWith}`);
         await execGws(
-          `drive permissions create --params '${JSON.stringify({ fileId: newId })}' --json '${JSON.stringify({ role: "writer", type: "user", emailAddress: shareWith.trim() })}'`,
+          ["drive", "permissions", "create", "--params", JSON.stringify({ fileId: newId }), "--json", JSON.stringify({ role: "writer", type: "user", emailAddress: shareWith.trim() })],
           driveToken()
         );
       }

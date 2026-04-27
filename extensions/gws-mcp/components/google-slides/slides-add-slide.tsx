@@ -47,7 +47,7 @@ function SlidesAddSlide(props: Props) {
 
       // Get current slide count to determine insertion index
       const getStdout = await execGws(
-        `slides presentations get --params '${JSON.stringify({ presentationId })}'`,
+        ["slides", "presentations", "get", "--params", JSON.stringify({ presentationId })],
         driveToken()
       );
       const current = JSON.parse(getStdout) as SlideCountResponse;
@@ -90,7 +90,7 @@ function SlidesAddSlide(props: Props) {
 
       logger.info(`[slides-add-slide] batchUpdate requests=${requests.length}`);
       await execGws(
-        `slides presentations batchUpdate --params '${JSON.stringify({ presentationId })}' --json '${JSON.stringify({ requests })}'`,
+        ["slides", "presentations", "batchUpdate", "--params", JSON.stringify({ presentationId }), "--json", JSON.stringify({ requests })],
         driveToken()
       );
 

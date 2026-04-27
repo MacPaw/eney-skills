@@ -25,7 +25,7 @@ export function useConferenceRecords(): UseConferenceRecordsResult {
       try {
         const params = { pageSize: 20 };
         const stdout = await execGws(
-          `meet conferenceRecords list --params '${JSON.stringify(params)}'`,
+          ["meet", "conferenceRecords", "list", "--params", JSON.stringify(params)],
           meetToken()
         );
         const data = JSON.parse(stdout) as { conferenceRecords?: ConferenceRecord[] };

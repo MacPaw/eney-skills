@@ -113,7 +113,7 @@ function TasksFilter(props: Props) {
   useEffect(() => {
     async function loadLists() {
       try {
-        const stdout = await execGws("tasks tasklists list", tasksToken());
+        const stdout = await execGws(["tasks", "tasklists", "list"], tasksToken());
         const data = JSON.parse(stdout) as { items?: TaskList[] };
         setTaskLists(data.items ?? []);
       } catch (e) {
@@ -143,7 +143,7 @@ function TasksFilter(props: Props) {
 
       logger.info(`[tasks-filter] filter=${preset} params=${JSON.stringify(params)}`);
       const stdout = await execGws(
-        `tasks tasks list --params '${JSON.stringify(params)}'`,
+        ["tasks", "tasks", "list", "--params", JSON.stringify(params)],
         tasksToken()
       );
       const data = JSON.parse(stdout) as { items?: Task[] };

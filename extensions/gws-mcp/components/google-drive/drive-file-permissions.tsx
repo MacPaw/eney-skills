@@ -49,8 +49,8 @@ function DriveFilePermissions(props: Props) {
     setError("");
     try {
       const [metaStdout, permStdout] = await Promise.all([
-        execGws(`drive files get --params '${JSON.stringify({ fileId: selectedId, fields: "webViewLink" })}'`, driveToken()),
-        execGws(`drive permissions list --params '${JSON.stringify({ fileId: selectedId, fields: "permissions(id,emailAddress,displayName,role,type)" })}'`, driveToken()),
+        execGws(["drive", "files", "get", "--params", JSON.stringify({ fileId: selectedId, fields: "webViewLink" })], driveToken()),
+        execGws(["drive", "permissions", "list", "--params", JSON.stringify({ fileId: selectedId, fields: "permissions(id,emailAddress,displayName,role,type)" })], driveToken()),
       ]);
       const meta = JSON.parse(metaStdout) as { webViewLink?: string };
       setWebViewLink(meta.webViewLink ?? "");
@@ -72,7 +72,7 @@ function DriveFilePermissions(props: Props) {
       const params = { fileId: selectedId };
       const body = { role: newRole, type: "user", emailAddress: newEmail };
       await execGws(
-        `drive permissions create --params '${JSON.stringify(params)}' --json '${JSON.stringify(body)}'`,
+        ["drive", "permissions", "create", "--params", JSON.stringify(params), "--json", JSON.stringify(body)],
         driveToken()
       );
       setInfo(`Permission granted: ${newEmail} as ${newRole}.`);

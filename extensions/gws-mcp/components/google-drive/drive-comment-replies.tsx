@@ -63,7 +63,7 @@ function DriveCommentReplies(props: Props) {
         includeDeleted: false,
       };
       const stdout = await execGws(
-        `drive comments list --params '${JSON.stringify(params)}'`,
+        ["drive", "comments", "list", "--params", JSON.stringify(params)],
         driveToken()
       );
       const data = JSON.parse(stdout) as { comments?: Comment[] };
@@ -86,7 +86,7 @@ function DriveCommentReplies(props: Props) {
     setError("");
     try {
       const metaStdout = await execGws(
-        `drive files get --params '${JSON.stringify({ fileId: selectedFileId, fields: "webViewLink" })}'`,
+        ["drive", "files", "get", "--params", JSON.stringify({ fileId: selectedFileId, fields: "webViewLink" })],
         driveToken()
       );
       const meta = JSON.parse(metaStdout) as { webViewLink?: string };
@@ -100,7 +100,7 @@ function DriveCommentReplies(props: Props) {
         includeDeleted: false,
       };
       const stdout = await execGws(
-        `drive replies list --params '${JSON.stringify(params)}'`,
+        ["drive", "replies", "list", "--params", JSON.stringify(params)],
         driveToken()
       );
       const data = JSON.parse(stdout) as { replies?: Reply[] };

@@ -80,7 +80,7 @@ function SlidesView(props: Props) {
     try {
       logger.info(`[slides-view] presentationId=${presentationId}`);
       const stdout = await execGws(
-        `slides presentations get --params '${JSON.stringify({ presentationId })}'`,
+        ["slides", "presentations", "get", "--params", JSON.stringify({ presentationId })],
         driveToken()
       );
       const data = JSON.parse(stdout) as PresentationData;

@@ -74,7 +74,7 @@ function MeetSpace(props: Props) {
     try {
       logger.info(`[meet-space] get name=${name}`);
       const stdout = await execGws(
-        `meet spaces get --params '${JSON.stringify({ name })}'`,
+        ["meet", "spaces", "get", "--params", JSON.stringify({ name })],
         meetToken()
       );
       const data = JSON.parse(stdout) as SpaceResponse;
@@ -100,7 +100,7 @@ function MeetSpace(props: Props) {
     try {
       logger.info(`[meet-space] update name=${selectedSpace} accessType=${accessType}`);
       const stdout = await execGws(
-        `meet spaces patch --params '${JSON.stringify({ name: selectedSpace, updateMask: "config.accessType" })}' --json '${JSON.stringify({ config: { accessType } })}'`,
+        ["meet", "spaces", "patch", "--params", JSON.stringify({ name: selectedSpace, updateMask: "config.accessType" }), "--json", JSON.stringify({ config: { accessType } })],
         meetToken()
       );
       const data = JSON.parse(stdout) as SpaceResponse;

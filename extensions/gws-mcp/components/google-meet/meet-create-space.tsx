@@ -49,7 +49,7 @@ function MeetCreateSpace(props: Props) {
     try {
       logger.info(`[create-space] accessType=${accessType}`);
       const stdout = await execGws(
-        `meet spaces create --json '${JSON.stringify({ config: { accessType } })}'`,
+        ["meet", "spaces", "create", "--json", JSON.stringify({ config: { accessType } })],
         meetToken()
       );
       logger.info(`[create-space] completed`);

@@ -59,7 +59,7 @@ function SlidesCreate(props: Props) {
 
       // Step 1: Create presentation (response includes first slide with placeholder IDs)
       const stdout = await execGws(
-        `slides presentations create --json '${JSON.stringify({ title })}'`,
+        ["slides", "presentations", "create", "--json", JSON.stringify({ title })],
         driveToken()
       );
       const presentation = JSON.parse(stdout) as PresentationResponse;
@@ -90,7 +90,7 @@ function SlidesCreate(props: Props) {
         if (requests.length > 0) {
           logger.info(`[slides-create] batchUpdate requests=${requests.length}`);
           await execGws(
-            `slides presentations batchUpdate --params '${JSON.stringify({ presentationId })}' --json '${JSON.stringify({ requests })}'`,
+            ["slides", "presentations", "batchUpdate", "--params", JSON.stringify({ presentationId }), "--json", JSON.stringify({ requests })],
             driveToken()
           );
         }
@@ -100,7 +100,7 @@ function SlidesCreate(props: Props) {
       if (folderId && presentationId) {
         logger.info(`[slides-create] moving to folderId=${folderId}`);
         await execGws(
-          `drive files update --params '${JSON.stringify({ fileId: presentationId, addParents: folderId, removeParents: "root" })}' --json '{}'`,
+          ["drive", "files", "update", "--params", JSON.stringify({ fileId: presentationId, addParents: folderId, removeParents: "root" }), "--json", "{}"],
           driveToken()
         );
       }
