@@ -15,7 +15,7 @@ import { execGws, driveToken } from "../../helpers/gws.js";
 import { useDriveFiles } from "../../helpers/use-drive-files.js";
 
 const schema = z.object({
-  fileId: z.string().optional().describe("ID of the file to permanently delete."),
+  fileId: z.string().optional().describe("ID of the file to move to trash."),
 });
 
 type Props = z.infer<typeof schema>;
@@ -38,18 +38,18 @@ function DriveDeleteFile(props: Props) {
     setIsLoading(true);
     setError("");
     try {
-      logger.info(`[delete] fileId=${selectedId} name="${selectedFile?.name ?? "unknown"}"`);
+      logger.info(`[trash] fileId=${selectedId} name="${selectedFile?.name ?? "unknown"}"`);
       const stdout = await execGws(
-          ["drive", "files", "delete", "--params", JSON.stringify({ fileId: selectedId }), "-o", "/dev/null"],
-          driveToken()
+        ["drive", "files", "update", "--params", JSON.stringify({ fileId: selectedId }), "--json", JSON.stringify({ trashed: true })],
+        driveToken()
       );
-      logger.info(`[delete] completed stdout=${stdout.trim() || "(empty)"}`);
+      logger.info(`[trash] completed stdout=${stdout.trim() || "(empty)"}`);
       closeWidget(
-        `File "${selectedFile?.name ?? selectedId}" has been permanently deleted.`
+        `File "${selectedFile?.name ?? selectedId}" has been moved to Trash.`
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      logger.error(`[delete] error=${msg}`);
+      logger.error(`[trash] error=${msg}`);
       setError(msg);
       setIsLoading(false);
       setStep("select");
@@ -57,7 +57,7 @@ function DriveDeleteFile(props: Props) {
   }
 
   const header = (
-    <CardHeader title="Delete File" iconBundleId="com.google.drivefs" />
+    <CardHeader title="Move File to Trash" iconBundleId="com.google.drivefs" />
   );
 
   if (step === "confirm") {
@@ -68,7 +68,7 @@ function DriveDeleteFile(props: Props) {
           <ActionPanel layout="row">
             <Action title="Cancel" onAction={() => setStep("select")} style="secondary" />
             <Action
-              title={isLoading ? "Deleting…" : "Delete Permanently"}
+              title={isLoading ? "Moving…" : "Move to Trash"}
               onAction={onDelete}
               style="primary"
               isLoading={isLoading}
@@ -78,7 +78,7 @@ function DriveDeleteFile(props: Props) {
       >
         {error && <Paper markdown={`**Error:** ${error}`} />}
         <Paper
-          markdown={`**Are you sure you want to delete this file?**\n\n> **${selectedFile?.name ?? selectedId}**\n\nThis action cannot be undone. The file will be permanently deleted and will not be moved to trash.`}
+          markdown={`**Move this file to Trash?**\n\n> **${selectedFile?.name ?? selectedId}**\n\nThe file will be moved to Trash. You can restore it from Trash later.`}
         />
       </Form>
     );
@@ -102,7 +102,7 @@ function DriveDeleteFile(props: Props) {
       {filesError && <Paper markdown={`**Error loading files:** ${filesError}`} />}
       <Form.Dropdown
         name="fileId"
-        label="File to Delete"
+        label="File to Move to Trash"
         value={selectedId}
         onChange={setSelectedId}
       >
@@ -118,7 +118,7 @@ function DriveDeleteFile(props: Props) {
 
 const DriveDeleteFileWidget = defineWidget({
   name: "drive-delete-file",
-  description: "Permanently delete a file from Google Drive",
+  description: "Move a file to Trash in Google Drive",
   schema,
   component: DriveDeleteFile,
 });
