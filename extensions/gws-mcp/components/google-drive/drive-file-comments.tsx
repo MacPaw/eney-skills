@@ -84,16 +84,6 @@ function DriveFileComments(props: Props) {
     }
   }
 
-  function buildOutput(): string {
-    if (comments.length === 0) return "No comments found.";
-    const lines = comments.map((c, i) => {
-      const author = c.author?.displayName ?? "Unknown";
-      const status = c.resolved ? "[resolved]" : "[open]";
-      return `${i + 1}. ${author} ${status}: ${c.content ?? ""}`;
-    });
-    return `${comments.length} comment${comments.length !== 1 ? "s" : ""}:\n${lines.join("\n")}`;
-  }
-
   const header = <CardHeader title="File Comments" iconBundleId="com.google.drivefs" />;
 
   if (result) {
@@ -134,8 +124,8 @@ function DriveFileComments(props: Props) {
         {isLoadingFiles
           ? [<Form.Dropdown.Item key="loading" title="Loading files…" value="" />]
           : files.map((f) => (
-              <Form.Dropdown.Item key={f.id} title={f.name} value={f.id} />
-            ))}
+            <Form.Dropdown.Item key={f.id} title={f.name} value={f.id} />
+          ))}
       </Form.Dropdown>
     </Form>
   );
