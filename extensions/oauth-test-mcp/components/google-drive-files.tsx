@@ -20,6 +20,10 @@ const googleDriveOAuth: OAuthConfig = {
   "authorizeUrl": "https://extensions-pr-253.eney.appflix.io/api/v1/public/oauth-proxy/authorize/GkmHQgikJqaFMwcMELHLBpHXQkDP94Mrz-vjnIuzlS9p0gwgm9ruIzJpEXu4elExMKjUwJ9JX0a2MiIXLlakijar2gq4r8ttMmH0cNDAMebDZGDiBYn5gyVfgkq0Wm7Kazh_Ap9_tEvZh5bdzmW-TISZJAdHkKeqWaLYL1GFq1NZEFTqtb27pVwjE6hl0K63toRqktHlvE7OJRDE4wR9--OVZjfa72qt9LsBge_rkvS2w7IDnV4tjMHt7q0LJMQYEdr73hVYk-vBeyMCFDkFoKAvHFttlZ8qsOdVWyv5gubmZeDWTgBzbt2JxE_BWkUDklZyc5uhXUSWxjqUWi2lxwtCXzX7ULVbFvKmHKh078YdAI97Es6kcPHTi7MX-ZyGi-W3lwdvsuEjg8hqT0zvzlUsdl12KiCn5cFqBmLCbbIafj5nbSQpF60OpQs0CoQ",
   "tokenUrl": "https://extensions-pr-253.eney.appflix.io/api/v1/public/oauth-proxy/token/GkmHQgikJqaFMwcMELHLBpHXQkDP94Mrz-vjnIuzlS9p0gwgm9ruIzJpEXu4elExMKjUwJ9JX0a2MiIXLlakijar2gq4r8ttMmH0cNDAMebDZGDiBYn5gyVfgkq0Wm7Kazh_Ap9_tEvZh5bdzmW-TISZJAdHkKeqWaLYL1GFq1NZEFTqtb27pVwjE6hl0K63toRqktHlvE7OJRDE4wR9--OVZjfa72qt9LsBge_rkvS2w7IDnV4tjMHt7q0LJMQYEdr73hVYk-vBeyMCFDkFoKAvHFttlZ8qsOdVWyv5gubmZeDWTgBzbt2JxE_BWkUDklZyc5uhXUSWxjqUWi2lxwtCXzX7ULVbFvKmHKh078YdAI97Es6kcPHTi7MX-ZyGi-W3lwdvsuEjg8hqT0zvzlUsdl12KiCn5cFqBmLCbbIafj5nbSQpF60OpQs0CoQ",
   scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+  extraParams: {
+    access_type: "offline",
+    prompt: "consent",
+  }
 };
 
 const DRIVE_URL =
@@ -107,7 +111,7 @@ function GoogleDriveFiles(_props: Props) {
     return (
       <Paper
         actions={signInActions}
-        markdown="Please sign in with Google to view your recent Drive files."
+        markdown={`Please sign in with Google to view your recent Drive files. ${JSON.stringify(tokens)}`}
       />
     );
   }
