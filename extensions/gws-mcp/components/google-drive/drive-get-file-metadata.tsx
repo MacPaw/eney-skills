@@ -74,7 +74,7 @@ function DriveGetFileMetadata(props: Props) {
       setWebViewLink(metadata.webViewLink ?? "");
       setResult(formatMetadata(metadata));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoading(false);
     }

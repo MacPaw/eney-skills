@@ -1,3 +1,4 @@
+import { parseGwsError } from "./gws.js";
 import { useState, useEffect } from "react";
 import { execGws, meetToken } from "./gws.js";
 
@@ -31,7 +32,7 @@ export function useConferenceRecords(): UseConferenceRecordsResult {
         const data = JSON.parse(stdout) as { conferenceRecords?: ConferenceRecord[] };
         setRecords(data.conferenceRecords ?? []);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(parseGwsError(e));
       } finally {
         setIsLoading(false);
       }

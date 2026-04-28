@@ -1,3 +1,4 @@
+import { parseGwsError } from "./gws.js";
 import { useState, useEffect } from "react";
 import { execGws, driveToken } from "./gws.js";
 
@@ -32,7 +33,7 @@ export function useDocFiles(): UseDocFilesResult {
         const data = JSON.parse(stdout) as { files?: DocFile[] };
         setDocs(data.files ?? []);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(parseGwsError(e));
       } finally {
         setIsLoading(false);
       }

@@ -1,3 +1,4 @@
+import { parseGwsError } from "./gws.js";
 import { useState, useEffect } from "react";
 import { execGws, driveToken } from "./gws.js";
 
@@ -33,7 +34,7 @@ export function useDriveFolders(): UseDriveFoldersResult {
         const data = JSON.parse(stdout) as { files?: DriveFolder[] };
         setFolders(data.files ?? []);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(parseGwsError(e));
       } finally {
         setIsLoading(false);
       }

@@ -68,7 +68,7 @@ function DriveExportFile(props: Props) {
       setSavedPath(resolvedPath);
       setResult(`**File exported successfully**\n\nSaved to: \`${resolvedPath}\``);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoading(false);
     }

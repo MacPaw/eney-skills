@@ -82,7 +82,7 @@ function TasksManager(props: Props) {
         const data = JSON.parse(stdout) as { items?: TaskList[] };
         setTaskLists(data.items ?? []);
       } catch (e) {
-        setListsError(e instanceof Error ? e.message : String(e));
+        setListsError(parseGwsError(e));
       } finally {
         setIsLoadingLists(false);
       }
@@ -116,7 +116,7 @@ function TasksManager(props: Props) {
       const data = JSON.parse(stdout) as { items?: Task[] };
       setTasks(data.items ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoadingTasks(false);
     }

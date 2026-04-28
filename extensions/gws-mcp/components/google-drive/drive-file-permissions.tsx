@@ -58,7 +58,7 @@ function DriveFilePermissions(props: Props) {
       setPermissions(data.permissions ?? []);
       setStep("list");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +79,7 @@ function DriveFilePermissions(props: Props) {
       setNewEmail("");
       await onListPermissions();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
       setIsLoading(false);
     }
   }

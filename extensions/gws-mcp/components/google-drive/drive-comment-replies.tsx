@@ -69,7 +69,7 @@ function DriveCommentReplies(props: Props) {
       const data = JSON.parse(stdout) as { comments?: Comment[] };
       setComments(data.comments ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoadingComments(false);
     }
@@ -126,7 +126,7 @@ function DriveCommentReplies(props: Props) {
         `${commentSnippet}\n\n**${items.length} repl${items.length !== 1 ? "ies" : "y"}**\n\n${lines.join("\n\n---\n\n")}`
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoadingReplies(false);
     }

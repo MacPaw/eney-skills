@@ -78,7 +78,7 @@ function DriveFileComments(props: Props) {
       });
       setResult(`**${items.length} comment${items.length !== 1 ? "s" : ""}**\n\n${lines.join("\n\n---\n\n")}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoading(false);
     }

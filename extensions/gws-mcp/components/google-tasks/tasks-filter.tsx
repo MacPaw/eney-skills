@@ -118,7 +118,7 @@ function TasksFilter(props: Props) {
         const data = JSON.parse(stdout) as { items?: TaskList[] };
         setTaskLists(data.items ?? []);
       } catch (e) {
-        setListsError(e instanceof Error ? e.message : String(e));
+        setListsError(parseGwsError(e));
       } finally {
         setIsLoadingLists(false);
       }

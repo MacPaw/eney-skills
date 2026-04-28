@@ -56,7 +56,7 @@ function DriveCopyFile(props: Props) {
         `**File copied successfully**\n\n| | |\n| --- | --- |\n| **New Name** | ${data.name ?? "—"} |\n| **New ID** | \`${data.id ?? "—"}\` |`
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(parseGwsError(e));
     } finally {
       setIsLoading(false);
     }
