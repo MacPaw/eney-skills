@@ -1,0 +1,46 @@
+{
+  "manifest_version": "0.3",
+  "name": "gws-mcp",
+  "version": "1.0.0",
+  "description": "Google Workspace MCP server",
+  "author": {
+    "name": "Eney"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {
+        "GOOGLE_DRIVE_TOKEN": "${user_config.gdrive}",
+        "GOOGLE_MEET_TOKEN": "${user_config.gcalendar}",
+        "GOOGLE_TASKS_TOKEN": "${user_config.gtasks}"
+      }
+    }
+  },
+  "user_config": {
+    "gcalendar": {
+      "type": "string",
+      "title": "Google Calendar Access Token",
+      "description": "A valid Google OAuth2 access token with Calendar read scope.",
+      "sensitive": true,
+      "required": false
+    },
+    "gdrive": {
+      "type": "string",
+      "title": "Google Drive Access Token",
+      "description": "A valid Google OAuth2 access token with Drive read/write scope.",
+      "sensitive": true,
+      "required": false
+    },
+    "gtasks": {
+      "type": "string",
+      "title": "Google Tasks Access Token",
+      "description": "A valid Google OAuth2 access token with Tasks read/write scope.",
+      "sensitive": true,
+      "required": false
+    }
+  },
+  "license": "MIT"
+}
