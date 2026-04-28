@@ -1,0 +1,22 @@
+{
+  "manifest_version": "0.3",
+  "name": "oauth-test-mcp",
+  "version": "1.0.0",
+  "description": "Test extension for OAuth PKCE flow",
+  "author": {
+    "name": "Test"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {
+        "OAUTH_ACCESS_TOKEN": "${OAUTH_ACCESS_TOKEN}",
+        "OAUTH_REFRESH_TOKEN": "${OAUTH_REFRESH_TOKEN}"
+      }
+    }
+  },
+  "license": "MIT"
+}
