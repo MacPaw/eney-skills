@@ -17,7 +17,7 @@ jobs:
 
   publish-node-mcp:
     name: Publish Node MCP
-    runs-on: ubuntu-24.04-arm
+    runs-on: macos-26
     needs: detect-changes
     env:
       API_TOKEN: ${{ secrets.API_TOKEN }}
