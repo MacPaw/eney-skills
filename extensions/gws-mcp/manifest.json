@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.3",
   "name": "gws-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Google Workspace MCP server",
   "author": {
     "name": "Eney"
