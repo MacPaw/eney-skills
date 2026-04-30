@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Action, ActionPanel, CardHeader, Form, Paper, defineWidget, useCloseWidget } from "@eney/api";
+import he from "he";
 
 const schema = z.object({
   difficulty: z
@@ -51,27 +52,7 @@ async function loadCategories(): Promise<CategoryEntry[]> {
 }
 
 function decodeHtml(s: string): string {
-  return s
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&eacute;/g, "é")
-    .replace(/&Eacute;/g, "É")
-    .replace(/&aacute;/g, "á")
-    .replace(/&iacute;/g, "í")
-    .replace(/&oacute;/g, "ó")
-    .replace(/&uacute;/g, "ú")
-    .replace(/&ntilde;/g, "ñ")
-    .replace(/&hellip;/g, "…")
-    .replace(/&mdash;/g, "—")
-    .replace(/&ndash;/g, "–")
-    .replace(/&rsquo;/g, "’")
-    .replace(/&lsquo;/g, "‘")
-    .replace(/&ldquo;/g, "“")
-    .replace(/&rdquo;/g, "”");
+  return he.decode(s);
 }
 
 function shuffle<T>(arr: T[]): T[] {
