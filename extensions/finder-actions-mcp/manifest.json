@@ -1,0 +1,21 @@
+{
+  "manifest_version": "0.3",
+  "name": "finder-actions-mcp",
+  "version": "1.0.0",
+  "description": "Finder Actions MCP server",
+  "author": {
+    "name": ""
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/index.js"
+      ],
+      "env": {}
+    }
+  },
+  "license": "MIT"
+}
